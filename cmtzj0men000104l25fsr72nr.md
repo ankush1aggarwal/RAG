@@ -81,8 +81,6 @@ Following are some of the possible chunking strategies which can be selected dep
 
 Generally done at a word level or character level, this strategy provides fixed size chunks, even if deriving proper meaning of a text required multiple words within the same chunk.
 
-Word Level Chunking is the one used in Sparse Retrieval.
-
 **Tip:** Retrieval Quality is significantly improved with Fixed Size Chunking by adding an overlap of *'n'* characters between 2 consecutive chunks, to each chunk. Here, *'n'* can be a fixed number or a percentage of fixed chunk size.
 
 **Recursive Character Text Splitting**
@@ -223,7 +221,7 @@ Defined as *Response Time or Turnaround Time taken by an AI system to generate r
 
 In order to optimize overall latency of a RAG System, it is important to breakdown and measure latency of each individual component, in other words, measure & optimize separately -
 
-![](https://cdn.hashnode.com/uploads/covers/6a9bbdb3c75b01d98a662d42/ad2a9dca-a833-47a5-8747-dbc929e9c0ec.png align="center")
+![](https://cdn.hashnode.com/uploads/covers/6a9bbdb3c75b01d98a662d42/ddf4390c-61f2-4143-a246-7ef251211ed0.png align="center")
 
 Also, most of the techniques mentioned for cost optimization also help directly in improving latency of the system like smaller models, optimized prompts, quantization etc.
 
