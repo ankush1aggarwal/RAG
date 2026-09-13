@@ -192,4 +192,4 @@ Metadata Filtering can be used across any design as business-logic based documen
 
 Note: To improve final ranking of relevant documents in RAG, sometimes a secondary LLM is also used in Re-Ranking to provide relevance scores.
 
-That's all. As a deep dive in RAG, please checkout my learnings from designing & building Production-Grade RAG Systems here -
+That's all. As a deep dive in RAG, please checkout my learnings from designing & building Production-Grade RAG Systems here - [https://ankushagg-ai.hashnode.dev/practical-considerations-while-designing-a-production-grade-rag-system](https://ankushagg-ai.hashnode.dev/practical-considerations-while-designing-a-production-grade-rag-system)
