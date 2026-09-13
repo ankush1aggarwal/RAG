@@ -223,24 +223,7 @@ Defined as *Response Time or Turnaround Time taken by an AI system to generate r
 
 In order to optimize overall latency of a RAG System, it is important to breakdown and measure latency of each individual component, in other words, measure & optimize separately -
 
-```markdown
-flowchart LR
-    Start --> Input[Enter Data]
-    Input --> Process{Valid?}
-    Process -- Yes --> Success[Save Data]
-    Process -- No --> Error[Show Error]
-    Success --> End
-    Error --> End
-```
-
-1.  Query Re-writing Latency
-    
-2.  Retrieval Latency
-    
-3.  Re-Ranker Latency
-    
-4.  Text Generation Latency
-    
+![](https://cdn.hashnode.com/uploads/covers/6a9bbdb3c75b01d98a662d42/ad2a9dca-a833-47a5-8747-dbc929e9c0ec.png align="center")
 
 Also, most of the techniques mentioned for cost optimization also help directly in improving latency of the system like smaller models, optimized prompts, quantization etc.
 
@@ -253,7 +236,42 @@ There are also some additional latency specific optimization techniques which ca
 
 ## Evaluation
 
-AI-based systems require extensive evaluation as it is the single most important component which can help ensure if the system will fail in Production or not and I will try to cover more on it in one of my next articles, Here, I will mention two most common RAG-specific evaluation techniques used in Production -
+AI-based systems require extensive evaluation as it is the single most important component which can help ensure if the system will fail in Production or not.
+
+Generally in Production RAG Systems, evaluation is done in 2 Stages -
+
+1.  Retrieval Evaluation
+    
+2.  Generation/RAG Evaluation
+    
+
+### **Retrieval Evaluation**
+
+*Are we retrieving the right information ?*
+
+There are some standard evaluation metrics widely used to measure retrieval accuracy -
+
+$$Precision @ K = \frac {Number\ of\ relevant\ documents\ in\ K} {K}$$
+
+ $$ Recall @ K = \frac {Number\ of\ relevant\ documents\ in\ K} {Total\ Relevant\ Documents}$$
+
+ $$ MeanAveragePrecision\ (MAP) = Average\ [Precision\ at\ K],\ for\ all\ K$$
+
+ $$ MeanReciprocalRank\ (MRR) = \frac {1}{|Q|}\sum_{i=1}^{|Q|} \frac {1}{Rank_i}$$
+
+ $$ NormalizedDicountedCumulativeGain (NDCG@K) = \frac {DCG@K}{IDCG@K}$$
+
+ $$ DCG@K = \sum_{i=1}^K \frac {rel_i}{log_2(i+1)}$$
+
+$$rel_i = relevant\ score\ of\ item\ at\ position\ i$$
+
+ $$ IDCG@K = Max\ DCG\ score.\ Calculated\ by\ sorting\ all\ items\ by\ relevance\ in\ descending\ order$$
+
+### Generation/RAG Evaluation
+
+*Given the retrieved context, did the system generate a good answer?*
+
+Here, I will mention two most common RAG evaluation techniques used in Production -
 
 1.  **Human-as-a-Judge** - AI Engineers curate a large set of prompts covering as much diversity as possible including document-related prompts to evaluate relevance accuracy as well as other prompts to evaluate guardrails and security. Each one of the prompts is then manually evaluated by humans for pre-decided criteria
     
@@ -266,6 +284,22 @@ AI-based systems require extensive evaluation as it is the single most important
 
 There are also additional metrics like **Noise Sensitivity** and **Citation Ability** which are sometimes used to evaluate effectiveness of the RAG system.
 
-**Tip:** RAGAS is a great library for evaluation. Reading about certain metrics and definitions (not just their implementation) brings better clarity on applicability of certain metrics for robustness of your specific use case.
+**Tip:** RAGAS is a great library for RAG evaluation. Reading about certain metrics and definitions (not just their implementation) brings better clarity on applicability of certain metrics for robustness of your specific use case.
+
+Before we end this article, I wanted to share my personal thoughts on debugging RAG Pipelines.
+
+### Debugging
+
+Understanding points of failure in a Production RAG Pipeline and their possible reasons is one of the most underrated skill in my opinion. If mapped well, this can save a lot of valuable engineering time and also help maintain user trust.
+
+Some of the most common failure nodes in a RAG system and their potential causes are -
+
+| Failure Mode | Source of Problem |
+| --- | --- |
+| Relevant document isn't retrieved | Retrieval |
+| Relevant document is retrieved but buried at rank 20 | Re-Ranking |
+| Correct document retrieved but chunk lacks context | Chunking |
+| Correct context retrieved but LLM ignores it | Generation/Prompt |
+| Correct answer but unacceptable latency/cost | System Design |
 
 That's all on RAG for now. Feel free to comment below if there are some other possibilities in the architecture or optimization or evaluation which helped you improve your specific use cases.
