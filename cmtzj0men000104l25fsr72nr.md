@@ -6,11 +6,13 @@ slug: practical-considerations-while-designing-a-production-grade-rag-system
 
 ---
 
-Note: If you are looking for RAG fundamentals, then please check out my previous article in RAG series - [https://ankushagg-ai.hashnode.dev/rag-and-information-retrieval](https://ankushagg-ai.hashnode.dev/rag-and-information-retrieval)
+Note: If you are looking for RAG fundamentals, then please check out my previous article in RAG series - [https://ankushagg-ai.hashnode.dev/rag-information-retrieval-understanding-the-retrieval-layer](https://ankushagg-ai.hashnode.dev/rag-information-retrieval-understanding-the-retrieval-layer)
+
+A RAG prototype can be built in a few lines of code. A production-grade RAG system is a very different engineering problem.
 
 ## Architecture
 
-As discussed in above [blog](https://ankushagg-ai.hashnode.dev/rag-and-information-retrieval), while the architecture of modern RAG systems looks something like this -
+As discussed in above [blog](https://ankushagg-ai.hashnode.dev/rag-information-retrieval-understanding-the-retrieval-layer), while the architecture of modern RAG systems looks something like this -
 
 ![](https://cdn.hashnode.com/uploads/covers/6a9bbdb3c75b01d98a662d42/5ab3ca89-c389-42ed-8b04-a14545e7001c.png align="center")
 
@@ -52,11 +54,24 @@ Some useful techniques include -
 
 ### Chunking
 
-Chunking is the strategy of splitting a text into smaller components, each of which are then encoded separately since LLMs can only process a fixed length of input prompt (context window).
+Chunking is the strategy of splitting a text into smaller components, each of which are then encoded separately since Embedding Models can only process a fixed length of (context window).
 
-Now, if we **create too big chunks** then there will be too many information within a single chunk. If Encoder LLM's context window is small, then a significant part of the chunk can be lost, otherwise the embedding will be too generic since a lot of information will be there in the chunk.
+Now, if we **create too big chunks** then there will be too many information within a single chunk. If Embedding Model's context window is small, then a significant part of the chunk can be lost, otherwise the embedding will be too generic since a lot of information will be there in the chunk.
 
 If we **create too small chunks**, we run the risk of losing surrounding context for each chunk and hence impacting relevance accuracy since few relevant documents might come out as irrelevant because of disjoint chunks.
+
+In short, Chunk Size affects -
+
+1.  Retrieval Granularity
+    
+2.  Embedding Quality
+    
+3.  Context Preservation
+    
+4.  Number of retrieved chunks
+    
+5.  Downstream Context/Token Cost
+    
 
 Hence, right **chunking strategy is critical to overall RAG accuracy** !
 
@@ -68,7 +83,7 @@ Generally done at a word level or character level, this strategy provides fixed 
 
 Word Level Chunking is the one used in Sparse Retrieval.
 
-**Tip:** Fixed Size Chunking is many times improved by adding an overlap of *'n'* characters between 2 consecutive chunks, to each chunk. Here, *'n'* can be a fixed number or a percentage of fixed chunk size.
+**Tip:** Retrieval Quality is significantly improved with Fixed Size Chunking by adding an overlap of *'n'* characters between 2 consecutive chunks, to each chunk. Here, *'n'* can be a fixed number or a percentage of fixed chunk size.
 
 **Recursive Character Text Splitting**
 
@@ -94,6 +109,16 @@ Use another LLM in the RAG pipeline to create chunks of the given user query by 
 **Context-Aware Chunking**
 
 Use another LLM to add additional context to every single chunk (e.g. summary text) and re-create the chunk. This strategy is flexible enough to be applied on top of any other previous strategies.
+
+Based on my experience, here is a quick suggestion on when to apply which strategy -
+
+| Strategy | Best Suited For |
+| --- | --- |
+| Fixed Size | Simple, Unstructured Text; Cost is critical |
+| Recursive | Structured Documents; Cost is critical |
+| Semantic | Topic-Heavy Documents; Medium Scale |
+| LLM Based | Complex Document Structures; Cost not critical |
+| Context-Aware | When isolated chunks lose meaning; Accuracy is critical |
 
 ### Indexing & Search
 
@@ -130,17 +155,32 @@ Q is also then partitioned into sub-vectors and cosine distance is calculated ac
 
 The more popular technique here is the one which brings the best of both worlds - first grouping document vectors using K-Means & finding top-k centroid vectors. Then, *residual vectors* are computed (original - centroid) and partitioning is done on these residual vectors.
 
-**Tip**: With PQ based approaches, we end up effectively doing an Approximate Nearest Neighbor (ANN) Search instead of Exact Search. For most practical purposes, ANN Search is good enough especially when dealing with millions of documents and latency is critical. Exact Search based techniques are mostly reserved for Post-Retrieval/Re-Ranking.
+**Tip**: With PQ based approaches, we end up effectively doing an Approximate Nearest Neighbor (ANN) Search instead of Exact Search. For most practical purposes, ANN Search is good enough especially when dealing with millions of documents and latency is critical. Exact Search based techniques are generally reserved for Post-Retrieval/Re-Ranking.
 
 **Navigable Small Worlds (Hierarchical - HSNW)**
 
-Most Vector DBs today implement a different strategy for indexing & search which leverages the flexibility of graphs. In NSW, a graph is built connecting close vectors (nodes) with each other but keeping the number of connections small -- every node is connected to maximum 6 other nodes.
+Most Vector DBs today implement a different strategy for indexing & search which leverages the flexibility of graphs. In NSW, a graph is built connecting close vectors (nodes) with each other but limiting the number of connections -- every node is connected to maximum *'k'* other nodes, based on cost vs accuracy analysis.
 
 In Hierarchical NSW, multiple graphs are built (imagine vertically), each connected with another graph below it using common nodes. Number of neighbors of each node increase as we go towards lower graphs. A node present in upper graph will always be present in lower graphs.
 
-Search starts by finding the most similar node in top most graph and its similar neighbors are added to relevant documents list as we traverse downwards, with each similar document becoming the parent node for next search.
+Search starts by finding the most similar node in top most graph and its similar neighbors are added to relevant documents list as we traverse downwards, with each similar document becoming the parent node for next search. This reduces search complexity of HSNW to **O(D\*logN)**.
 
-**Tip:** The biggest benefit of HSNW is the flexibility of adding & removing nodes (documents) from the graph simply by adding (or removing) links to k closest nodes. On the other hand, IVF based techniques require entire Index to be re-created whenever a new document is added or removed, which is costly and doesn't scale well.
+Here is a comparative analysis of HSNW and IVF (+PQ):
+
+| Criteria | Winner |
+| --- | --- |
+| Retrieval Speed/Latency | HSNW |
+| Index Build Cost | IVF+PQ |
+| Memory Footprint | IVF+PQ |
+| Accuracy | HSNW |
+| Scalability | IVF+PQ |
+| Document Updates Handling | HSNW |
+| Build Complexity | HSNW |
+| Metadata Filtering Performance | IVF+PQ |
+
+As you can see, there is no clear winner here. A general rule of thumb is that if accuracy and latency are paramount, then HSNW, otherwise if Cost is critical and marginally lower accuracy and latency is acceptable, then IVF+PQ works better.
+
+However, many Production RAG systems are increasingly favoring HSNW and trying to strike a balance with cost by trying lower number of '*k'* neighbors.
 
 ## System Optimization
 
@@ -179,9 +219,19 @@ Following are some of the best techniques to explore in finding the right balanc
 
 ### Latency
 
-Defined as Response Time or Turnaround Time taken by an AI system to generate response for an input query, Latency is one of the most important system performance metric which used by Engineers across domains. Higher latency leads to end user frustration and depletion of trust in system usability.
+Defined as *Response Time or Turnaround Time taken by an AI system to generate response for an input query*, Latency is one of the most important system performance metric which used by Engineers across domains. Higher latency leads to end user frustration and depletion of trust in system usability.
 
 In order to optimize overall latency of a RAG System, it is important to breakdown and measure latency of each individual component, in other words, measure & optimize separately -
+
+```markdown
+flowchart LR
+    Start --> Input[Enter Data]
+    Input --> Process{Valid?}
+    Process -- Yes --> Success[Save Data]
+    Process -- No --> Error[Show Error]
+    Success --> End
+    Error --> End
+```
 
 1.  Query Re-writing Latency
     
@@ -209,13 +259,13 @@ AI-based systems require extensive evaluation as it is the single most important
     
 2.  **LLM-as-a-Judge** - Most of the time AI systems are first evaluated by another LLM(s) which act a Judge against a pre-decided rubric of evaluation criteria. '*RAGAS'* is one such library which provides this functionality. Here, the rubric generally comprises of metrics like -
     
-3.  **Response Relevancy** - Evaluates relevance of response regardless of factual accuracy. Here input prompt is compared, in terms of similarity, with synthetic prompts which could have led to the same response.
-    
-4.  **Faithfulness** - It determines factual accuracy by making additional LLM calls to determine if the response claim is factually supported by the retrieved information.
-    
+    1.  **Response Relevancy** - Evaluates relevance of response regardless of factual accuracy. Here input prompt is compared, in terms of similarity, with synthetic prompts which could have led to the same response.
+        
+    2.  **Faithfulness** - It determines factual accuracy by making additional LLM calls to determine if the response claim is factually supported by the retrieved information.
+        
 
-There are also other metrics like Noise Sensitivity and Citation Ability which are sometimes used to evaluate effectiveness of the RAG system.
+There are also additional metrics like **Noise Sensitivity** and **Citation Ability** which are sometimes used to evaluate effectiveness of the RAG system.
 
-**Tip:** RAGAS is a great library for evaluation. Reading about certain metrics and definitions (not just their implementation) brings more clarity on usage of certain metrics for your specific use case.
+**Tip:** RAGAS is a great library for evaluation. Reading about certain metrics and definitions (not just their implementation) brings better clarity on applicability of certain metrics for robustness of your specific use case.
 
 That's all on RAG for now. Feel free to comment below if there are some other possibilities in the architecture or optimization or evaluation which helped you improve your specific use cases.
