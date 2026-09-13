@@ -84,7 +84,7 @@ $$TF(t,d) = 1+log_{10}(Count(t,d)/total\ words\ in\ doc\ d),\ if\ Count(t,d)\ >\
 
 $$Score(q,d)=\sum_{t\in q\cap d} TF_{t,d}\ .\ IDF_{t}$$
 
-Note**:** A common alternative is to normalize term frequency by document length (as above). The exact TF normalization varies across implementations but the important intuition is that raw term counts can favor longer documents.
+**Note:** A common alternative is to normalize term frequency by document length (as above). The exact TF normalization varies across implementations but the important intuition is that raw term counts can favor longer documents.
 
 **Best Matching 25 (BM25)**
 
@@ -209,5 +209,7 @@ $$w_1, w_2 = Weights\ of\ each\ ranker\ (configurable)$$
 Metadata Filtering can be used across any design as business-logic based document filter.
 
 Note: To improve final ranking of relevant documents in RAG, sometimes a secondary LLM is also used in Re-Ranking to provide relevance scores.
+
+* * *
 
 This concludes the deep dive into the retrieval layer. If you'd like to explore how these concepts come together in a production-grade RAG architecture, check out my next article: [*Practical Considerations While Designing a Production-Grade RAG System*.](https://ankushagg-ai.hashnode.dev/practical-considerations-while-designing-a-production-grade-rag-system)
