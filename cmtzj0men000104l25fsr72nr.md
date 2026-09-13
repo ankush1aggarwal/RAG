@@ -8,6 +8,8 @@ slug: practical-considerations-while-designing-a-production-grade-rag-system
 
 Note: If you are looking for RAG fundamentals, then please check out my previous article in RAG series - [https://ankushagg-ai.hashnode.dev/rag-information-retrieval-understanding-the-retrieval-layer](https://ankushagg-ai.hashnode.dev/rag-information-retrieval-understanding-the-retrieval-layer)
 
+* * *
+
 A RAG prototype can be built in a few lines of code. A production-grade RAG system is a very different engineering problem.
 
 ## Architecture
