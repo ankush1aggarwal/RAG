@@ -1,8 +1,8 @@
 ---
-title: "RAG and Information Retrieval"
+title: "RAG & Information Retrieval: Understanding the Retrieval Layer"
 datePublished: 2026-07-31T03:30:00.000Z
 cuid: cmtx15q94000004lifl17gkrp
-slug: rag-and-information-retrieval
+slug: rag-information-retrieval-understanding-the-retrieval-layer
 tags: ai, rag, ai-architecture, information-retrieval, agentic-ai, rag-architecture
 
 ---
