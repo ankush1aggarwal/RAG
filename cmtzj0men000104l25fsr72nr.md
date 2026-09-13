@@ -209,10 +209,9 @@ AI-based systems require extensive evaluation as it is the single most important
     
 2.  **LLM-as-a-Judge** - Most of the time AI systems are first evaluated by another LLM(s) which act a Judge against a pre-decided rubric of evaluation criteria. '*RAGAS'* is one such library which provides this functionality. Here, the rubric generally comprises of metrics like -
     
-
-1.  **Response Relevancy** - Evaluates relevance of response regardless of factual accuracy. Here input prompt is compared, in terms of similarity, with synthetic prompts which could have led to the same response.
+3.  **Response Relevancy** - Evaluates relevance of response regardless of factual accuracy. Here input prompt is compared, in terms of similarity, with synthetic prompts which could have led to the same response.
     
-2.  **Faithfulness** - It determines factual accuracy by making additional LLM calls to determine if the response claim is factually supported by the retrieved information.
+4.  **Faithfulness** - It determines factual accuracy by making additional LLM calls to determine if the response claim is factually supported by the retrieved information.
     
 
 There are also other metrics like Noise Sensitivity and Citation Ability which are sometimes used to evaluate effectiveness of the RAG system.
