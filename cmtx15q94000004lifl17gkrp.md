@@ -7,7 +7,7 @@ tags: ai, rag, ai-architecture, information-retrieval, agentic-ai, rag-architect
 
 ---
 
-**LLMs are remarkably good at generating answers. But generation alone doesn't guarantee that the answer is relevant, up-to-date or grounded in your organization's data.**
+**LLMs are remarkably good at generating answers. But generation alone doesn't guarantee that the answer is relevant, up-to-date, or grounded in your organization's data.**
 
 Fine-tuning or retraining can help adapt a model to a specific use case, but neither is an ideal solution when the underlying information changes frequently or exists outside the model's training data.
 
@@ -15,14 +15,14 @@ This is where **Retrieval-Augmented Generation (RAG)** comes in.
 
 ## RAG
 
-In simple words, give model access to secondary source of information before generating any response, thereby grounding the response in factual data. From this very sentence, we can see that RAG is made of 2 steps -
+In simple words, give model access to external source of information before generating any response, thereby grounding the response in factual data. From this very sentence, we can see that RAG consists of 2 stages -
 
 1.  Access to secondary information
     
 2.  Response Generation (or Text Generation)
     
 
-While LLM were always meant to be exceptional in Text Generation (thanks to Transformers - primary tech innovation behind all LLMs), Information Retrieval (IR) systems, backbone of search engines like Google, Bing for over decades, was one of the straight-forward options to help with Step 1.
+While Transformer-based language models are exceptionally good at text generation, Information Retrieval (IR)—the technology underlying search engines for decades—provides a natural way to retrieve relevant external information before generation.
 
 Hence, RAG architecture became -
 
@@ -30,11 +30,11 @@ Hence, RAG architecture became -
 
 ## Retrieval
 
-Text Retrieval is the most critical part of any RAG system. While there are many complexities involved in implementing the same, one of the easiest, fastest implementation came from Information Retrieval (IR) systems.
+Text Retrieval is one of the most critical part of any RAG system. While there are many complexities involved in implementing the same, one of the easiest, fastest implementation came from Information Retrieval (IR) systems.
 
 IR systems have mostly been based on Keyword-Search, i.e. documents are represented using term-based representations and are scored based on the occurrence and importance of query terms. This has been a fast and efficient technique which enabled search engines return matching links/documents based on search queries.
 
-Since, each document is split into a collection of words, and total possible number of unique words across the entire corpus of documents can be very large, so each document represented only a much, smaller subset of words (sparse representation), this retrieval technique is also called **Sparse Retrieval.**
+Because the total vocabulary across a corpus can be very large, each document typically contains only a small subset of those terms. As a result, the corresponding vector representation contains mostly zeros and is therefore called a ***sparse representation***. Hence, this approach is commonly referred to as *Sparse Retrieval*.
 
 ### **Sparse Retrieval**
 
@@ -42,7 +42,7 @@ $$Each\ document\ d_i:\ [c_1,c_2,....,c_k]\ -\ vector\ of\ dimension\ k$$
 
 $$k\ =\ total\ unique\ words\ across\ corpus$$
 
-$$c_j\ =\ count\ of\ word\ j\ in\ the\ document$$
+$$c_j\ =\ count\ of\ word\ j\ in\ the\ document\ (simplified\ version)$$
 
 In Sparse retrieval, Each document is saved as a vector representation of word counts. For any incoming user query -
 
@@ -55,7 +55,7 @@ In Sparse retrieval, Each document is saved as a vector representation of word c
 4.  Documents are then returned as sorted list based on these scores - higher the score, relevant the document
     
 
-**Score Computation**
+### **Score Computation**
 
 Multiple techniques have been used for computing this *'relevance score'*, but the 2 main techniques used widely were -
 
@@ -84,6 +84,8 @@ $$TF(t,d) = 1+log_{10}(Count(t,d)/total\ words\ in\ doc\ d),\ if\ Count(t,d)\ >\
 
 $$Score(q,d)=\sum_{t\in q\cap d} TF_{t,d}\ .\ IDF_{t}$$
 
+Note**:** A common alternative is to normalize term frequency by document length (as above). The exact TF normalization varies across implementations but the important intuition is that raw term counts can favor longer documents.
+
 **Best Matching 25 (BM25)**
 
 BM25 can be viewed as an evolution of TF-IDF that introduces tunable controls for *'term-frequency saturation'* and *'document-length normalization'*. This flexibility has made BM25 one of the most widely used scoring functions for Sparse Retrieval.
@@ -100,13 +102,15 @@ Here,
 
 |d| = length of document d; Avg|d| = Avg. length of all documents in corpus,
 
-k = any whole number (generally between 0.5 to 2); and 0 < b < 1
+k = commonly between 0.5 to 2; and 0 <= b <= 1
 
 **Tuning 'b'** - Increase to apply higher normalization like in cases where document sizes are of varying length and longer ones should not dominate.
 
 **Tuning 'k'** - Increase if term repetition is actually important like legal documents, scientific journals, tech manuals etc.
 
-**Indexing** - Core Data Structure behind BM25 is **Inverted Index** - Mapping of each word to a *Postings List* containing pairs of document-id and term-frequency. This enables fast retrieval of documents as we traverse through each word in the user query.
+### **Indexing**
+
+A core data structure behind efficient sparse retrieval is **Inverted Index**. It maps each term to a *postings list* containing document IDs and, typically, term-frequency information. This allows the search engine to efficiently retrieve documents containing query terms.
 
 ![](https://cdn.hashnode.com/uploads/covers/6a9bbdb3c75b01d98a662d42/edbd8ca8-786e-4eb7-aad1-74c8fdf33e4c.png align="center")
 
@@ -125,7 +129,7 @@ Since Sparse Retrieval is only concerned with occurrence of words, it can only h
 
 But thanks to Transformer architecture and subsequent explosion of Language Models - big and small, it is now possible to encode the meaning of a document in an **embedding** (another name for vector representation).
 
-Since these embeddings are generally a by-product of a model trained for some other objective (like next word prediction etc.), they are usually much smaller in size as compared to sparse vectors (size = total unique words). As such, these are also called '*Dense Vectors'*, hence the name '*Dense Retrieval'*. And search over this embedding space is called '*semantic search'* (since it is now trying to find *'semantically similar'* documents)
+An embedding model is commonly a fine tuned model trained on retrieval objectives, which encodes text into a dense vector representation designed to capture useful semantic information. These vectors are much smaller than a vocabulary-sized sparse representation, hence the term *dense vectors*. Searching this embedding space is commonly referred to as *semantic search*.
 
 Here's a quick comparison between Sparse & Dense Retrieval
 
@@ -149,7 +153,7 @@ Cross-encoders can model query-document interactions more directly and often pro
 
 **Bi-Encoder**
 
-Siamese Network model is trained on query-document pairs optimizing for similarity between the pair. But instead of using the model for prediction, we use the model to return the embeddings (output of model's intermediate layer) for both query and documents.
+A bi-encoder independently encodes the query and document into vector representations. The model is trained so that relevant query-document pairs have similar representations for e.g. a Siamese Network.
 
 ![](https://cdn.hashnode.com/uploads/covers/6a9bbdb3c75b01d98a662d42/6ee83c41-0df5-4c15-aa3b-4d8944052249.png align="center")
 
@@ -164,16 +168,16 @@ In Production RAG Systems, there are generally 2 stages of dense retrieval -
 
 Some common similarity measures used are -
 
-1.  Euclidean Distance - Distance between 2 vectors (L2 Norm)
+1.  Euclidean Distance - Distance between 2 vectors (L2 Distance)
     
-2.  Dot Product - Length of projection of first vector onto other vector
+2.  Dot Product - Sum of element-wise products of two vectors; equivalently, the product of their magnitudes and the cosine of the angle between them
     
-3.  Cosine Similarity (most common) - Directional similarity between 2 vectors using the angle between them
+3.  Cosine Similarity (most common) - Measures the angular similarity between two vectors, independent of their magnitude
     
 
 ### **Hybrid Retrieval**
 
-Most Production RAG systems today don't use only retrieval technique, instead they deploy a Hybrid RAG system where both dense retrieval and sparse retrieval work in tandem. This is then supported by **'*Metadata Filtering'*** as another Post-Retrieval step.
+Many Production RAG systems today don't use only one retrieval technique, instead they deploy a Hybrid RAG system where both dense retrieval and sparse retrieval work in tandem. This is then complemented by **'*Metadata Filtering'*** which can be applied alongside retrieval as a business-logic-based constraint—for example, filtering documents by tenant, date, document type, access permissions, or geography.
 
 **Production RAG Architecture**
 
@@ -206,4 +210,4 @@ Metadata Filtering can be used across any design as business-logic based documen
 
 Note: To improve final ranking of relevant documents in RAG, sometimes a secondary LLM is also used in Re-Ranking to provide relevance scores.
 
-That's all. As a deep dive in RAG, please checkout my learnings from designing & building Production-Grade RAG Systems here - [https://ankushagg-ai.hashnode.dev/practical-considerations-while-designing-a-production-grade-rag-system](https://ankushagg-ai.hashnode.dev/practical-considerations-while-designing-a-production-grade-rag-system)
+This concludes the deep dive into the retrieval layer. If you'd like to explore how these concepts come together in a production-grade RAG architecture, check out my next article: [*Practical Considerations While Designing a Production-Grade RAG System*.](https://ankushagg-ai.hashnode.dev/practical-considerations-while-designing-a-production-grade-rag-system)
