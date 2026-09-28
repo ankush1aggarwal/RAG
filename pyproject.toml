@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fiqa-production-rag"
+version = "0.1.0"
+description = "Production-Grade RAG for FiQA-2018 financial information retrieval"
+readme = "README.md"
+# Minimum floor; actual interpreter and pins follow the workspace (.venv + requirements.txt).
+# Playbook Python/package versions are reference only unless we explicitly adopt them here.
+requires-python = ">=3.11"
+authors = [{ name = "Ankush" }]
+
+# Week 0 baseline: config + Qdrant client. Optional groups grow with each playbook week.
+dependencies = [
+    "qdrant-client>=1.12.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+]
+
+[project.optional-dependencies]
+embeddings = ["sentence-transformers>=3.0"]
+hosted = ["cohere>=5.0"]
+lexical = ["rank-bm25>=0.2.2"]
+api = ["fastapi>=0.115.0", "uvicorn[standard]>=0.30.0"]
+dev = ["pytest>=8.0", "ruff>=0.8.0", "ipython>=8.0", "ipykernel>=6.0"]
+notebooks = ["jupyter>=1.0", "pandas>=2.0"]
+ingestion = ["datasets>=2.0"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
