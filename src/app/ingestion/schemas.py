@@ -3,22 +3,24 @@
 from typing import Any
 
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator
 
 
 class DocumentRecord(BaseModel):
-    doc_id: int
+    doc_id: str
+    doc_title: str = ""
     doc_text: str
     word_len: int
     char_len: int
 
 
 class ChunkRecord(BaseModel):
-    doc_id: int
+    doc_id: str
     chunk_id: int
     chunk_text: str
     word_len: int
     char_len: int
+    doc_word_len: int
     chunk_embed: list[float] | None = None
 
     def set_embedding(self, vector: np.ndarray | list[float]) -> None:
@@ -27,10 +29,15 @@ class ChunkRecord(BaseModel):
 
 
 class SearchHit(BaseModel):
-    doc_id: int
+    doc_id: str
     chunk_id: int
     chunk_text: str
     score: float
+
+    @field_validator("doc_id", mode="before")
+    @classmethod
+    def _coerce_doc_id(cls, value: Any) -> str:
+        return str(value)
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any], score: float) -> "SearchHit":

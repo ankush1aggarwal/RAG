@@ -1,8 +1,9 @@
-"""Load FiQA document corpus from Hugging Face."""
+"""Load FiQA document corpus from Hugging Face (BEIR layout)."""
 
 from datasets import Dataset, load_dataset
 
-FIQA_HF_ID = "explodinggradients/fiqa"
+# Official BEIR FiQA corpus (~57k docs); aligns with BeIR/fiqa-qrels corpus-id.
+FIQA_HF_ID = "BeIR/fiqa"
 FIQA_CORPUS_CONFIG = "corpus"
 FIQA_CORPUS_SPLIT = "corpus"
 

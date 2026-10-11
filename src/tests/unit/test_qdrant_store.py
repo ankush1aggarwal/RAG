@@ -21,13 +21,14 @@ def vector_store() -> QdrantChunkStore:
     return store
 
 
-def _chunk(doc_id: int, chunk_id: int, text: str, vector: list[float]) -> ChunkRecord:
+def _chunk(doc_id: str, chunk_id: int, text: str, vector: list[float]) -> ChunkRecord:
     record = ChunkRecord(
         doc_id=doc_id,
         chunk_id=chunk_id,
         chunk_text=text,
         word_len=len(text.split()),
         char_len=len(text),
+        doc_word_len=100,
     )
     record.set_embedding(vector)
     return record
@@ -35,11 +36,12 @@ def _chunk(doc_id: int, chunk_id: int, text: str, vector: list[float]) -> ChunkR
 
 def test_upsert_requires_embeddings(vector_store: QdrantChunkStore):
     chunk = ChunkRecord(
-        doc_id=0,
+        doc_id="3",
         chunk_id=0,
         chunk_text="no vector",
         word_len=2,
         char_len=9,
+        doc_word_len=50,
     )
     with pytest.raises(ValueError, match="no embedding"):
         vector_store.upsert_chunks([chunk])
@@ -47,26 +49,26 @@ def test_upsert_requires_embeddings(vector_store: QdrantChunkStore):
 
 def test_search_returns_ranked_hits(vector_store: QdrantChunkStore):
     chunks = [
-        _chunk(0, 0, "finance investing stocks", [1.0, 0.0, 0.0]),
-        _chunk(1, 0, "cooking recipes pasta", [0.0, 1.0, 0.0]),
+        _chunk("160", 0, "finance investing stocks", [1.0, 0.0, 0.0]),
+        _chunk("766", 0, "cooking recipes pasta", [0.0, 1.0, 0.0]),
     ]
     vector_store.upsert_chunks(chunks)
 
     hits = vector_store.search([1.0, 0.0, 0.0], limit=2)
 
     assert len(hits) == 2
-    assert hits[0].doc_id == 0
+    assert hits[0].doc_id == "160"
     assert hits[0].score >= hits[1].score
 
 
 def test_search_text_uses_embedder(vector_store: QdrantChunkStore):
     chunks = [
-        _chunk(0, 0, "finance investing stocks", [1.0, 0.0, 0.0]),
-        _chunk(1, 0, "cooking recipes pasta", [0.0, 1.0, 0.0]),
+        _chunk("160", 0, "finance investing stocks", [1.0, 0.0, 0.0]),
+        _chunk("766", 0, "cooking recipes pasta", [0.0, 1.0, 0.0]),
     ]
     vector_store.upsert_chunks(chunks)
 
     hits = vector_store.search_text("finance question", _FakeEmbedder(), limit=1)
 
     assert len(hits) == 1
-    assert hits[0].doc_id == 0
+    assert hits[0].doc_id == "160"

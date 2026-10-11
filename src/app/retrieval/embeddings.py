@@ -25,7 +25,7 @@ class SentenceTransformerEmbedding:
 
     @property
     def dimension(self) -> int:
-        return int(self._encoder.get_embedding_dimension())
+        return int(self._encoder.get_sentence_embedding_dimension())
 
     def embed_documents(self, texts: list[str]) -> np.ndarray:
         return np.asarray(self._encoder.encode(texts), dtype=np.float32)

@@ -47,6 +47,7 @@ class QdrantChunkStore:
                         "chunk_text": chunk.chunk_text,
                         "word_len": chunk.word_len,
                         "char_len": chunk.char_len,
+                        "doc_word_len": chunk.doc_word_len,
                     },
                 )
             )
