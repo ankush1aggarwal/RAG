@@ -99,7 +99,7 @@ Factory functions:
 
 | Capability | This repo implementation | Week | Status |
 |------------|-------------------------|------|--------|
-| Ingest + chunk | `ingestion/*`, `scripts/ingest.py` (`--recreate` optional; default reuse) | 1 | ✅ |
+| Ingest + chunk | `ingestion/*`, `scripts/ingest.py` (`--recreate` default **true**; `--no-recreate` to reuse) | 1 | ✅ |
 | Dense retrieval | `QdrantChunkStore.search_text`, `scripts/query.py` | 1 | ✅ |
 | Prompt + grounded generation | `generation/prompt.py`, `pipeline/rag.py` | 2 | ✅ |
 | LLM providers | Ollama + Cohere chat | 2 | ✅ |

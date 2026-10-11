@@ -41,8 +41,8 @@ def main() -> None:
     parser.add_argument(
         "--recreate",
         action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Delete and rebuild the collection if it already exists (default: false). "
+        default=True,
+        help="Delete and rebuild the collection if it already exists (default: True). "
     )
     args = parser.parse_args()
 

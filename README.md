@@ -129,7 +129,7 @@ BeIR/fiqa corpus → normalize → chunk → embed → Qdrant → dense search
 | Embeddings | `src/app/retrieval/embeddings.py` | `EmbeddingProvider`: Sentence Transformers + Cohere |
 | Vector store | `src/app/retrieval/qdrant_store.py` | Local path or in-memory; `close()` on shutdown; payload includes `doc_id`, `chunk_id`, `doc_title`, `chunk_text` |
 | Settings | `src/app/config/settings.py` | `pydantic-settings` from `.env` |
-| Ingest CLI | `src/scripts/ingest.py` | Default **reuses** collection; pass `--recreate` to delete/rebuild; closes Qdrant client after run |
+| Ingest CLI | `src/scripts/ingest.py` | Default **`--recreate`** (delete/rebuild collection); use `--no-recreate` to upsert into existing index; closes Qdrant client after run |
 | Query CLI | `src/scripts/query.py` | Retrieval-only: prints top-k hits + scores (no LLM) |
 
 **Default embedding model:** `all-MiniLM-L6-v2` (`sentence_transformer`). **Default index:** `data/qdrant_local`, collection `fiqa_sample`, 1k-doc sample (`fiqa_corpus_limit`).
@@ -196,11 +196,11 @@ COLLECTION_NAME=fiqa_sample
 **3. Build the index** (Ollama not required for ingest):
 
 ```powershell
-# First build or after embedding/corpus changes — delete and recreate collection:
-python src/scripts/ingest.py --recreate
-
-# Append/re-upsert into existing collection (default; checks vector dimension):
+# Default: delete and recreate the collection, then index (safe for dev re-runs):
 python src/scripts/ingest.py
+
+# Reuse existing collection and upsert (checks embedding dimension matches):
+python src/scripts/ingest.py --no-recreate
 ```
 
 **4. Retrieval smoke test:**
