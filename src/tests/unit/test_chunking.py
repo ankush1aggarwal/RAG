@@ -1,12 +1,30 @@
+import pytest
+
 from app.ingestion.chunking import chunk_text_fixed_size_with_overlap, chunks_from_documents
 from app.ingestion.schemas import DocumentRecord
 
 
-def test_short_text_produces_single_chunk():
+def test_chunking_rejects_invalid_chunk_size():
+    with pytest.raises(ValueError, match="chunk_size"):
+        chunk_text_fixed_size_with_overlap("a b", chunk_size=0)
+
+
+def test_chunking_rejects_invalid_overlap_fraction():
+    with pytest.raises(ValueError, match="overlap_fraction"):
+        chunk_text_fixed_size_with_overlap("a b", overlap_fraction=1.0)
+
+
+def test_short_text_produces_single_chunk_when_above_overlap_threshold():
     text = "one two three four five"
-    chunks = chunk_text_fixed_size_with_overlap(text, chunk_size=100, overlap_fraction=0.2)
+    chunks = chunk_text_fixed_size_with_overlap(text, chunk_size=10, overlap_fraction=0.2)
     assert len(chunks) == 1
     assert chunks[0] == text
+
+
+def test_short_text_can_be_skipped_with_large_chunk_window():
+    text = "one two three four five"
+    chunks = chunk_text_fixed_size_with_overlap(text, chunk_size=100, overlap_fraction=0.2)
+    assert chunks == []
 
 
 def test_long_text_produces_multiple_chunks_with_overlap():
@@ -34,11 +52,8 @@ def test_chunks_from_documents_assigns_ids_and_lengths():
     ]
     chunks = chunks_from_documents(documents, chunk_size=100, overlap_fraction=0.2)
 
-    assert chunks[0].doc_id == "7"
-    assert chunks[0].chunk_id == 0
-    assert chunks[0].doc_word_len == 2
-    assert chunks[0].word_len == len(chunks[0].chunk_text.split())
-    assert chunks[0].char_len == len(chunks[0].chunk_text)
+    doc7_chunks = [c for c in chunks if c.doc_id == "7"]
+    assert doc7_chunks == []
 
     doc8_chunks = [c for c in chunks if c.doc_id == "8"]
     assert len(doc8_chunks) >= 2

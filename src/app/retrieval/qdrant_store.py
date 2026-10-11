@@ -8,6 +8,10 @@ from app.ingestion.schemas import ChunkRecord, SearchHit
 from app.retrieval.embeddings import EmbeddingProvider
 
 
+class VectorDimensionMismatchError(ValueError):
+    """Raised when collection or chunk vectors do not match the embedding model."""
+
+
 class QdrantChunkStore:
     def __init__(self, client: QdrantClient, collection_name: str) -> None:
         self._client = client
@@ -21,9 +25,29 @@ class QdrantChunkStore:
             client = QdrantClient(path=path)
         return cls(client, collection_name)
 
-    def create_collection(self, vector_size: int) -> None:
-        if self._client.collection_exists(self._collection_name):
-            self._client.delete_collection(self._collection_name)
+    def collection_exists(self) -> bool:
+        return self._client.collection_exists(self._collection_name)
+
+    def vector_size(self) -> int | None:
+        if not self.collection_exists():
+            return None
+        info = self._client.get_collection(self._collection_name)
+        vectors = info.config.params.vectors
+        if isinstance(vectors, dict):
+            if not vectors:
+                return None
+            first = next(iter(vectors.values()))
+            return int(first.size)
+        return int(vectors.size)
+
+    def prepare_collection(self, vector_size: int, *, recreate: bool = False) -> None:
+        if self.collection_exists():
+            if recreate:
+                self._client.delete_collection(self._collection_name)
+            else:
+                self.assert_collection_vector_size(vector_size)
+                return
+
         self._client.create_collection(
             collection_name=self._collection_name,
             vectors_config=models.VectorParams(
@@ -31,6 +55,16 @@ class QdrantChunkStore:
                 distance=models.Distance.COSINE,
             ),
         )
+
+    def assert_collection_vector_size(self, expected_size: int) -> None:
+        actual = self.vector_size()
+        if actual is None:
+            raise RuntimeError(f"Collection '{self._collection_name}' does not exist.")
+        if actual != expected_size:
+            raise VectorDimensionMismatchError(
+                f"Collection '{self._collection_name}' vector size is {actual}, "
+                f"but the embedding model produces dimension {expected_size}."
+            )
 
     def upsert_chunks(self, chunks: list[ChunkRecord]) -> None:
         points = []
@@ -43,6 +77,7 @@ class QdrantChunkStore:
                     vector=chunk.chunk_embed,
                     payload={
                         "doc_id": chunk.doc_id,
+                        "doc_title": chunk.doc_title,
                         "chunk_id": chunk.chunk_id,
                         "chunk_text": chunk.chunk_text,
                         "word_len": chunk.word_len,

@@ -55,8 +55,10 @@ def main() -> None:
 
     for rank, hit in enumerate(hits, start=1):
         snippet = hit.chunk_text[:200] + ("..." if len(hit.chunk_text) > 200 else "")
+        title = f" title={hit.doc_title!r}" if hit.doc_title else ""
         print(
-            f"{rank}. score={hit.score:.4f} doc_id={hit.doc_id} chunk_id={hit.chunk_id}\n   {snippet}\n"
+            f"{rank}. score={hit.score:.4f} doc_id={hit.doc_id} chunk_id={hit.chunk_id}{title}\n"
+            f"   {snippet}\n"
         )
 
 

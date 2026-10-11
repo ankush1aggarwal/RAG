@@ -16,6 +16,7 @@ class DocumentRecord(BaseModel):
 
 class ChunkRecord(BaseModel):
     doc_id: str
+    doc_title: str = ""
     chunk_id: int
     chunk_text: str
     word_len: int
@@ -30,6 +31,7 @@ class ChunkRecord(BaseModel):
 
 class SearchHit(BaseModel):
     doc_id: str
+    doc_title: str = ""
     chunk_id: int
     chunk_text: str
     score: float
@@ -43,6 +45,7 @@ class SearchHit(BaseModel):
     def from_payload(cls, payload: dict[str, Any], score: float) -> "SearchHit":
         return cls(
             doc_id=payload["doc_id"],
+            doc_title=payload.get("doc_title") or "",
             chunk_id=payload["chunk_id"],
             chunk_text=payload["chunk_text"],
             score=score,

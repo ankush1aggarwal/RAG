@@ -11,6 +11,7 @@ def test_chunk_record_set_embedding_from_list():
         word_len=1,
         char_len=5,
         doc_word_len=10,
+        doc_title="",
     )
     chunk.set_embedding([0.1, 0.2, 0.3])
     assert chunk.chunk_embed is not None

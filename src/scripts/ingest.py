@@ -13,6 +13,7 @@ if _REPO_ROOT not in sys.path:
 from app.config import get_settings
 from app.ingestion import chunks_from_documents, documents_from_corpus, load_fiqa_corpus
 from app.retrieval import QdrantChunkStore, attach_embeddings, create_embedding_provider
+from app.retrieval.embeddings import embedding_dimension, validate_chunk_embedding_dimensions
 
 
 def main() -> None:
@@ -37,6 +38,13 @@ def main() -> None:
         default=settings.qdrant_path,
         help="Local Qdrant storage path (empty string for in-memory)",
     )
+    parser.add_argument(
+        "--recreate",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Delete and rebuild the collection if it already exists (default: true). "
+        "Use --no-recreate to upsert into an existing collection.",
+    )
     args = parser.parse_args()
 
     qdrant_path = args.qdrant_path.strip() or None
@@ -52,6 +60,8 @@ def main() -> None:
         overlap_fraction=args.overlap,
     )
     print(f"Documents: {len(documents)}, chunks: {len(chunks)}")
+    if not chunks:
+        raise SystemExit("No chunks produced; check corpus sample and chunking settings.")
 
     embedder = create_embedding_provider(
         args.method,
@@ -61,14 +71,19 @@ def main() -> None:
         cohere_embed_batch_size=settings.cohere_embed_batch_size,
         cohere_embed_batch_sleep_seconds=settings.cohere_embed_batch_sleep_seconds,
     )
+    expected_dim = embedding_dimension(embedder)
+    print(f"Embedding model dimension: {expected_dim}")
 
     print("Embedding chunks...")
     attach_embeddings(chunks, embedder)
+    validate_chunk_embedding_dimensions(chunks, expected_dim)
 
-    vector_size = len(chunks[0].chunk_embed or [])
     store = QdrantChunkStore.from_path(qdrant_path, args.collection)
-    print(f"Creating collection '{args.collection}' (dim={vector_size})...")
-    store.create_collection(vector_size)
+    if store.collection_exists() and not args.recreate:
+        print(f"Using existing collection '{args.collection}'.")
+    store.prepare_collection(expected_dim, recreate=args.recreate)
+    store.assert_collection_vector_size(expected_dim)
+    print(f"Indexing {len(chunks)} chunks into '{args.collection}' (dim={expected_dim})...")
     store.upsert_chunks(chunks)
     print("Ingest complete.")
 

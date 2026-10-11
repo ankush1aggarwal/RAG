@@ -16,10 +16,22 @@ class _FakeEmbedder:
 def test_attach_embeddings_fills_all_chunks():
     chunks = [
         ChunkRecord(
-            doc_id="3", chunk_id=0, chunk_text="ab", word_len=1, char_len=2, doc_word_len=5
+            doc_id="3",
+            doc_title="",
+            chunk_id=0,
+            chunk_text="ab",
+            word_len=1,
+            char_len=2,
+            doc_word_len=5,
         ),
         ChunkRecord(
-            doc_id="3", chunk_id=1, chunk_text="abcd", word_len=1, char_len=4, doc_word_len=5
+            doc_id="3",
+            doc_title="",
+            chunk_id=1,
+            chunk_text="abcd",
+            word_len=1,
+            char_len=4,
+            doc_word_len=5,
         ),
     ]
     attach_embeddings(chunks, _FakeEmbedder(), batch_size=1)
