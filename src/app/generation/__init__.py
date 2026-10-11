@@ -9,6 +9,7 @@ from app.generation.prompt import (
     DEFAULT_SYSTEM_PROMPT,
     RagPrompt,
     build_rag_prompt,
+    format_citation_reference,
     format_context_block,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "RagPrompt",
     "build_rag_prompt",
     "create_llm_provider",
+    "format_citation_reference",
     "format_context_block",
 ]

@@ -50,7 +50,7 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["src/tests"]
 pythonpath = ["src"]
-# Week 2: 61 unit tests (ingestion, retrieval, generation, pipeline, API)
+# Unit tests: ingestion, retrieval, generation, pipeline, API (see pytest)
 
 [tool.ruff]
 line-length = 100

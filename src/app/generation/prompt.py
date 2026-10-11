@@ -12,9 +12,14 @@ You are a helpful assistant for financial information questions.
 Answer using only the provided context excerpts.
 If the context does not contain enough information, say that you cannot answer from the \
 provided sources. Do not invent facts.
-When you use information from a source, cite it inline using [doc_id:chunk_id] matching \
-the source labels in the context.\
+When you use information from a source, cite it inline using the exact Citation reference \
+value shown for that source in the context (for example [42:0]).\
 """
+
+
+def format_citation_reference(hit: SearchHit) -> str:
+    """Stable cite token the model should reproduce verbatim."""
+    return f"[{hit.doc_id}:{hit.chunk_id}]"
 
 
 @dataclass(frozen=True)
@@ -32,10 +37,13 @@ def format_context_block(hits: Sequence[SearchHit]) -> str:
 
     blocks: list[str] = []
     for index, hit in enumerate(hits, start=1):
-        title_line = f"title: {hit.doc_title}\n" if hit.doc_title else ""
+        cite = format_citation_reference(hit)
+        title_line = f"Document title: {hit.doc_title}\n" if hit.doc_title else ""
         blocks.append(
-            f"[Source {index} | doc_id:{hit.doc_id} | chunk_id:{hit.chunk_id}]\n"
+            f"[Source {index}]\n"
+            f"Citation reference: {cite}\n"
             f"{title_line}"
+            f"\n"
             f"{hit.chunk_text.strip()}"
         )
     return "\n\n".join(blocks)

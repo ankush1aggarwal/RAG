@@ -93,7 +93,7 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 3 | Hybrid retrieval | Not started | BM25 + dense + RRF + comparison |
 | 4+ | Rerank, eval, prod | Planned | See §10 roadmap |
 
-**Automated tests:** 61 unit tests under `src/tests/unit/` (ingestion, retrieval, generation, pipeline, API).
+**Automated tests:** 65 unit tests under `src/tests/unit/` (ingestion, retrieval, generation, pipeline, API).
 
 ---
 
@@ -124,12 +124,12 @@ BeIR/fiqa corpus → normalize → chunk → embed → Qdrant → dense search
 |-----------|----------|--------|
 | Corpus loader | `src/app/ingestion/corpus.py` | `BeIR/fiqa`, configurable limit |
 | Normalize | `src/app/ingestion/normalize.py` | `_id` → `doc_id`, title/text fields |
-| Chunking | `src/app/ingestion/chunking.py` | Word-based size/overlap; metadata on chunks |
+| Chunking | `src/app/ingestion/chunking.py` | Word-based size/overlap; **tail-only** skip when a trailing window is ≤ overlap width |
 | Schemas | `src/app/ingestion/schemas.py` | `DocumentRecord`, `ChunkRecord`, `SearchHit` |
 | Embeddings | `src/app/retrieval/embeddings.py` | `EmbeddingProvider`: Sentence Transformers + Cohere |
-| Vector store | `src/app/retrieval/qdrant_store.py` | Local path or in-memory; payload includes `doc_id`, `chunk_id`, `doc_title`, `chunk_text` |
+| Vector store | `src/app/retrieval/qdrant_store.py` | Local path or in-memory; `close()` on shutdown; payload includes `doc_id`, `chunk_id`, `doc_title`, `chunk_text` |
 | Settings | `src/app/config/settings.py` | `pydantic-settings` from `.env` |
-| Ingest CLI | `src/scripts/ingest.py` | `--recreate` / `--no-recreate`, embedding method, collection path |
+| Ingest CLI | `src/scripts/ingest.py` | Default **reuses** collection; pass `--recreate` to delete/rebuild; closes Qdrant client after run |
 | Query CLI | `src/scripts/query.py` | Retrieval-only: prints top-k hits + scores (no LLM) |
 
 **Default embedding model:** `all-MiniLM-L6-v2` (`sentence_transformer`). **Default index:** `data/qdrant_local`, collection `fiqa_sample`, 1k-doc sample (`fiqa_corpus_limit`).
@@ -150,9 +150,9 @@ Question → dense retrieve → prompt builder → LLM → answer + citations (f
 | Ollama | `OllamaLLM` | `POST /api/chat`, non-streaming; context manager + `close()` |
 | Cohere chat | `CohereLLM` | `ClientV2.chat`; same interface |
 | Factory | `create_llm_provider("ollama" \| "cohere", ...)` | Cohere requires `COHERE_API_KEY` |
-| Prompt builder | `src/app/generation/prompt.py` | `build_rag_prompt`, grounded system prompt, `[doc_id:chunk_id]` cite instruction |
+| Prompt builder | `src/app/generation/prompt.py` | `build_rag_prompt`; per-source `Citation reference: [doc_id:chunk_id]` in context |
 | Orchestrator | `src/app/pipeline/rag.py` | `answer_query()` → `RagAnswer` (citations from retrieval, not LLM parsing) |
-| FastAPI | `src/app/api/` | `create_app()`, lifespan-managed resources |
+| FastAPI | `src/app/api/` | `create_app()`, lifespan opens/closes Qdrant + Ollama clients |
 | Serve CLI | `src/scripts/serve_api.py` | Uvicorn wrapper |
 
 **Not in Week 2 scope (later weeks):** `POST /query/stream`, `POST /ingest` over HTTP, structured request logging, Docker, offline generation metrics.
@@ -196,9 +196,11 @@ COLLECTION_NAME=fiqa_sample
 **3. Build the index** (Ollama not required for ingest):
 
 ```powershell
+# First build or after embedding/corpus changes — delete and recreate collection:
+python src/scripts/ingest.py --recreate
+
+# Append/re-upsert into existing collection (default; checks vector dimension):
 python src/scripts/ingest.py
-# Reuse existing collection without delete:
-# python src/scripts/ingest.py --no-recreate
 ```
 
 **4. Retrieval smoke test:**
@@ -732,16 +734,16 @@ Served by `src/app/api/` (`create_app()`). Local entrypoint: `python src/scripts
 
 For `LLM_PROVIDER=cohere`, `llm_ready` means `COHERE_API_KEY` is configured (no live Cohere ping on readiness).
 
-**`POST /query` response (200):**
+**`POST /query` response shape (200):**
 
 ```json
 {
-  "answer": "…",
+  "answer": "<grounded natural-language answer>",
   "citations": [
     {
-      "document_id": "42",
+      "document_id": "<BEIR doc_id>",
       "chunk_id": 0,
-      "title": "Example title"
+      "title": "<doc_title or empty string>"
     }
   ],
   "retrieval": {
@@ -751,7 +753,47 @@ For `LLM_PROVIDER=cohere`, `llm_ready` means `COHERE_API_KEY` is configured (no 
 }
 ```
 
-Citations are derived from **retrieval hits** (`doc_id` / `chunk_id` / `doc_title` in Qdrant), not from parsing the LLM output. Ingest remains a **CLI** (`src/scripts/ingest.py`), not an HTTP route yet.
+### Example — `POST /query` (FiQA sample index)
+
+**Request:**
+
+```json
+{
+  "question": "What is Broker Fees?",
+  "top_k": 3
+}
+```
+
+**Response** (local run; answer text depends on LLM and retrieved chunks):
+
+```json
+{
+  "answer": "Based on the provided sources, I can explain the concept of broker fees and how they are structured. \n\nBroker fees, in the context of financial transactions, refer to the charges or commissions that retail brokers impose on their clients for various services. These fees are a way for brokers to cover their operational costs and generate profits. \n\nRetail brokers, as mentioned in Source 2, are generally not members of exchanges and route orders to market makers who are exchange members. Discount brokers, which charge lower fees, typically route orders to market makers and have lower operational costs compared to full-service brokers. \n\nThe fees charged by brokers can include:\n- Clearing fees: These are costs associated with processing and settling trades.\n- Regulation and licensing fees: Brokers and market makers must pay registration and licensing fees to regulatory bodies like FINRA.\n- Technology costs: Maintaining and updating technological infrastructure is an expense for both brokers and market makers.\n- Human capital: The cost of employing staff and providing training.\n- Exchange access fees: Market makers may have to pay fees for access to exchanges, although these are often not passed on to routing brokers.\n- Transaction fees: Regulatory bodies like the SEC and FINRA charge transaction fees, which are sometimes passed on to customers.\n\nIt's important to note that the structure and amount of broker fees can vary, and some brokers may offer different fee models or waive certain fees for specific types of trades or clients. The example given in Source 1 about the buying and selling of money illustrates how businesses, including brokers, generate profits by buying at one price and selling at a higher price.",
+  "citations": [
+    {
+      "document_id": "7411",
+      "chunk_id": 0,
+      "title": ""
+    },
+    {
+      "document_id": "4883",
+      "chunk_id": 0,
+      "title": ""
+    },
+    {
+      "document_id": "4883",
+      "chunk_id": 2,
+      "title": ""
+    }
+  ],
+  "retrieval": {
+    "method": "dense",
+    "top_k": 3
+  }
+}
+```
+
+Citations are derived from **retrieval hits** (`doc_id` / `chunk_id` / `doc_title` in Qdrant), not from parsing the LLM output. The model may refer to “Source 1” / “Source 2” in prose; API citations remain the structured list above. Ingest remains a **CLI** (`src/scripts/ingest.py`), not an HTTP route yet.
 
 OpenAPI / Swagger UI: `/docs` (provided by FastAPI).
 
@@ -792,7 +834,7 @@ RAG/
 │   │   ├── evaluate.py       ⬜ planned
 │   │   └── benchmark.py      ⬜ planned
 │   └── tests/
-│       └── unit/             ✅ 61 tests (no integration/ eval dirs yet)
+│       └── unit/             ✅ 65 tests (no integration/ eval dirs yet)
 │
 ├── data/                     # Local Qdrant path, FiQA artifacts (gitignored as needed)
 ├── notebooks/                # code_dev.ipynb — experiments, not canonical app code
@@ -884,6 +926,7 @@ Deliverables (done — see §1):
 - [x] `GET /health`, `GET /ready`
 - [x] `answer_query` orchestrator
 - [x] Unit tests (LLM, prompt, pipeline, API)
+- [x] Graceful Qdrant client `close()` on API shutdown
 
 ---
 
@@ -1263,7 +1306,7 @@ The project will be considered complete when all of the following are true.
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
 - [x] Request validation (Pydantic) + basic HTTP errors (`422`, `503`)
 - [ ] Streaming works (`POST /query/stream` — Week 5)
-- [x] Unit tests exist (61 tests; integration tests later)
+- [x] Unit tests exist (65 tests; integration tests later)
 - [ ] Structured logging exists (Week 6)
 - [x] Configuration is externalized (`Settings` + `.env`)
 
