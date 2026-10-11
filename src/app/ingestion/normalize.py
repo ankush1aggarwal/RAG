@@ -23,8 +23,8 @@ def documents_from_corpus(dataset: Dataset) -> list[DocumentRecord]:
                 doc_id=doc_id,
                 doc_title=doc_title,
                 doc_text=doc_text,
-                word_len=len(raw_text.split()),
-                char_len=len(raw_text),
+                word_len=len(doc_text.split()),
+                char_len=len(doc_text),
             )
         )
     return records

@@ -106,6 +106,26 @@ def create_embedding_provider(
     raise ValueError(f"Invalid embedding method: {method}")
 
 
+def embedding_dimension(provider: EmbeddingProvider) -> int:
+    """Return vector dimension for the provider's embedding model."""
+    dimension = getattr(provider, "dimension", None)
+    if dimension is not None:
+        return int(dimension)
+    probe = provider.embed_query("dimension probe")
+    return len(probe)
+
+
+def validate_chunk_embedding_dimensions(chunks: list, expected_dim: int) -> None:
+    for idx, chunk in enumerate(chunks):
+        if chunk.chunk_embed is None:
+            raise ValueError(f"Chunk at index {idx} has no embedding")
+        if len(chunk.chunk_embed) != expected_dim:
+            raise ValueError(
+                f"Chunk at index {idx} has dimension {len(chunk.chunk_embed)}, "
+                f"expected {expected_dim}"
+            )
+
+
 def attach_embeddings(
     chunks: list,
     provider: EmbeddingProvider,

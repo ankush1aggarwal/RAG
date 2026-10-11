@@ -25,7 +25,7 @@ def test_documents_from_corpus_builds_beir_records():
     assert records[0].doc_title == ""
     assert records[0].doc_text == "first doc"
     assert records[0].word_len == 2
-    assert records[0].char_len == len("  first   doc  ")
+    assert records[0].char_len == len("first doc")
     assert records[1].doc_id == "31"
     assert records[1].doc_title == "My Title"
     assert records[1].doc_text == "second doc"
