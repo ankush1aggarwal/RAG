@@ -49,6 +49,7 @@ def build_resources(settings: Settings) -> AppResources:
 
 
 def close_resources(resources: AppResources) -> None:
+    resources.store.close()
     llm = resources.llm
     if isinstance(llm, OllamaLLM):
         llm.close()

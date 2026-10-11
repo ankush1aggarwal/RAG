@@ -16,6 +16,7 @@ class QdrantChunkStore:
     def __init__(self, client: QdrantClient, collection_name: str) -> None:
         self._client = client
         self._collection_name = collection_name
+        self._closed = False
 
     @classmethod
     def from_path(cls, path: str | None, collection_name: str) -> "QdrantChunkStore":
@@ -115,3 +116,12 @@ class QdrantChunkStore:
     ) -> list[SearchHit]:
         query_vector = embedder.embed_query(query)
         return self.search(query_vector=query_vector, limit=limit)
+
+    def close(self) -> None:
+        """Release the underlying Qdrant client (important for local persistent storage)."""
+        if self._closed:
+            return
+        close = getattr(self._client, "close", None)
+        if callable(close):
+            close()
+        self._closed = True

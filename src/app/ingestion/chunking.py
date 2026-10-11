@@ -25,7 +25,8 @@ def chunk_text_fixed_size_with_overlap(
 
     for i in range(0, len(text_words), step):
         chunk_words = text_words[i : i + chunk_size]
-        if len(chunk_words) <= overlap_int:
+        # Skip only trailing windows that are overlap-sized (not the first window).
+        if chunks and len(chunk_words) <= overlap_int:
             continue
         chunks.append(" ".join(chunk_words))
 

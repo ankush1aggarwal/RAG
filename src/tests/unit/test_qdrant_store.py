@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from app.ingestion.schemas import ChunkRecord
@@ -94,6 +96,15 @@ def test_search_returns_ranked_hits_with_doc_title(vector_store: QdrantChunkStor
     assert hits[0].doc_id == "160"
     assert hits[0].doc_title == "Example title"
     assert hits[0].score >= hits[1].score
+
+
+def test_close_calls_underlying_client():
+    client = MagicMock()
+    store = QdrantChunkStore(client, "c")
+    store.close()
+    client.close.assert_called_once()
+    store.close()
+    client.close.assert_called_once()
 
 
 def test_search_text_uses_embedder(vector_store: QdrantChunkStore):

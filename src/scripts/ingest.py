@@ -41,9 +41,8 @@ def main() -> None:
     parser.add_argument(
         "--recreate",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Delete and rebuild the collection if it already exists (default: true). "
-        "Use --no-recreate to upsert into an existing collection.",
+        default=False,
+        help="Delete and rebuild the collection if it already exists (default: false). "
     )
     args = parser.parse_args()
 
@@ -79,13 +78,16 @@ def main() -> None:
     validate_chunk_embedding_dimensions(chunks, expected_dim)
 
     store = QdrantChunkStore.from_path(qdrant_path, args.collection)
-    if store.collection_exists() and not args.recreate:
-        print(f"Using existing collection '{args.collection}'.")
-    store.prepare_collection(expected_dim, recreate=args.recreate)
-    store.assert_collection_vector_size(expected_dim)
-    print(f"Indexing {len(chunks)} chunks into '{args.collection}' (dim={expected_dim})...")
-    store.upsert_chunks(chunks)
-    print("Ingest complete.")
+    try:
+        if store.collection_exists() and not args.recreate:
+            print(f"Using existing collection '{args.collection}'.")
+        store.prepare_collection(expected_dim, recreate=args.recreate)
+        store.assert_collection_vector_size(expected_dim)
+        print(f"Indexing {len(chunks)} chunks into '{args.collection}' (dim={expected_dim})...")
+        store.upsert_chunks(chunks)
+        print("Ingest complete.")
+    finally:
+        store.close()
 
 
 if __name__ == "__main__":
