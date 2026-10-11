@@ -9,11 +9,14 @@ def chunk_text_fixed_size_with_overlap(
     overlap_fraction: float = 0.2,
 ) -> list[str]:
     text_words = text.split()
+
     overlap_int = int(chunk_size * overlap_fraction)
+    step = chunk_size - overlap_int
+
     chunks: list[str] = []
 
-    for i in range(0, len(text_words), chunk_size):
-        chunk_words = text_words[max(i - overlap_int, 0) : i + chunk_size]
+    for i in range(0, len(text_words), step):
+        chunk_words = text_words[i : i + chunk_size]
         chunks.append(" ".join(chunk_words))
 
     return chunks
@@ -39,6 +42,7 @@ def chunks_from_documents(
                     chunk_text=chunk_text,
                     word_len=len(chunk_text.split()),
                     char_len=len(chunk_text),
+                    doc_word_len=doc.word_len,
                 )
             )
     return chunk_records

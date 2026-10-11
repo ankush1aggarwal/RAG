@@ -5,11 +5,12 @@ from app.ingestion.schemas import ChunkRecord, DocumentRecord, SearchHit
 
 def test_chunk_record_set_embedding_from_list():
     chunk = ChunkRecord(
-        doc_id=0,
+        doc_id="3",
         chunk_id=0,
         chunk_text="hello",
         word_len=1,
         char_len=5,
+        doc_word_len=10,
     )
     chunk.set_embedding([0.1, 0.2, 0.3])
     assert chunk.chunk_embed is not None
@@ -19,11 +20,12 @@ def test_chunk_record_set_embedding_from_list():
 
 def test_chunk_record_set_embedding_from_numpy():
     chunk = ChunkRecord(
-        doc_id=1,
+        doc_id="31",
         chunk_id=0,
         chunk_text="world",
         word_len=1,
         char_len=5,
+        doc_word_len=20,
     )
     chunk.set_embedding(np.array([1.0, 2.0], dtype=np.float64))
     assert chunk.chunk_embed == [1.0, 2.0]
@@ -32,18 +34,18 @@ def test_chunk_record_set_embedding_from_numpy():
 def test_search_hit_from_payload():
     hit = SearchHit.from_payload(
         {
-            "doc_id": 10,
+            "doc_id": "160",
             "chunk_id": 2,
             "chunk_text": "sample text",
         },
         score=0.87,
     )
-    assert hit.doc_id == 10
+    assert hit.doc_id == "160"
     assert hit.chunk_id == 2
     assert hit.chunk_text == "sample text"
     assert hit.score == 0.87
 
 
 def test_document_record_fields():
-    doc = DocumentRecord(doc_id=0, doc_text="a b", word_len=2, char_len=3)
+    doc = DocumentRecord(doc_id="3", doc_text="a b", word_len=2, char_len=3)
     assert doc.doc_text == "a b"

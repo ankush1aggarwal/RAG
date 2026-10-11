@@ -43,7 +43,7 @@ def main() -> None:
     if qdrant_path is not None and not os.path.isabs(qdrant_path):
         qdrant_path = os.path.join(_REPO_ROOT, qdrant_path)
 
-    print(f"Loading FiQA corpus (limit={args.limit})...")
+    print(f"Loading BEIR FiQA corpus (limit={args.limit})...")
     dataset = load_fiqa_corpus(limit=args.limit)
     documents = documents_from_corpus(dataset)
     chunks = chunks_from_documents(
