@@ -5,27 +5,38 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fiqa-production-rag"
 version = "0.1.0"
-description = "Production-Grade RAG for FiQA-2018 financial information retrieval"
+description = "Production-grade RAG for BEIR FiQA-2018: dense retrieval (Qdrant), grounded generation (Ollama/Cohere), FastAPI"
 readme = "README.md"
 # Minimum floor; actual interpreter and pins follow the workspace (.venv + requirements.txt).
 # Playbook Python/package versions are reference only unless we explicitly adopt them here.
 requires-python = ">=3.11"
 authors = [{ name = "Ankush" }]
 
-# Week 0 baseline: config + Qdrant client. Optional groups grow with each playbook week.
+# Core runtime (Weeks 0–2): config, Qdrant client, HTTP clients for Ollama readiness.
+# Embeddings, datasets, Cohere, and FastAPI are optional extras — see [project.optional-dependencies].
 dependencies = [
     "qdrant-client>=1.12.0",
     "python-dotenv>=1.0.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
+    "httpx>=0.27.0",
 ]
 
 [project.optional-dependencies]
 embeddings = ["sentence-transformers>=3.0"]
 hosted = ["cohere>=5.0"]
 lexical = ["rank-bm25>=0.2.2"]
+
+# Week 2 HTTP service (FastAPI + ASGI server)
 api = ["fastapi>=0.115.0", "uvicorn[standard]>=0.30.0"]
-dev = ["pytest>=8.0", "ruff>=0.8.0", "ipython>=8.0", "ipykernel>=6.0"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8.0",
+    "ipython>=8.0",
+    "ipykernel>=6.0",
+    # TestClient for API unit tests without a separate api install
+    "fastapi>=0.115.0",
+]
 notebooks = ["jupyter>=1.0", "pandas>=2.0"]
 ingestion = ["datasets>=2.0"]
 
@@ -39,6 +50,7 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["src/tests"]
 pythonpath = ["src"]
+# Week 2: 61 unit tests (ingestion, retrieval, generation, pipeline, API)
 
 [tool.ruff]
 line-length = 100
