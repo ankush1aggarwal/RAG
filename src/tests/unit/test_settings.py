@@ -7,6 +7,11 @@ def test_settings_defaults():
     settings = Settings(_env_file=None)
     assert settings.embedding_model == "all-MiniLM-L6-v2"
     assert settings.embedding_method == "sentence_transformer"
+    assert settings.llm_provider == "ollama"
+    assert settings.ollama_base_url == "http://localhost:11434"
+    assert settings.ollama_model == "mistral:latest"
+    assert settings.ollama_timeout_seconds == 120.0
+    assert settings.cohere_chat_model == "command-r-08-2024"
     assert settings.fiqa_corpus_limit == 1000
     assert settings.chunk_size == 100
     assert settings.collection_name == "fiqa_sample"

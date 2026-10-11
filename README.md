@@ -78,28 +78,176 @@ By the end of the project, the system should demonstrate:
 
 # 1. Current Project Status
 
-> **Current phase: Week 0 — Project setup and architecture**
+> **Current phase: Week 2 complete — Generation + HTTP API**  
+> **Next phase: Week 3 — Hybrid retrieval (BM25 + dense + RRF)**
+
+Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
+
+### Progress summary
+
+| Week | Theme | Status | Exit criterion (playbook) |
+|------|--------|--------|---------------------------|
+| 0 | Foundation | Done (local) | Repo, config, architecture docs, dev environment |
+| 1 | Dense retrieval | **Done** | Natural-language query → top-k chunks with IDs and scores from Qdrant |
+| 2 | Generation + API | **Done** | Local HTTP `POST /query` → answer + traceable citations; `/health` + `/ready` |
+| 3 | Hybrid retrieval | Not started | BM25 + dense + RRF + comparison |
+| 4+ | Rerank, eval, prod | Planned | See §10 roadmap |
+
+**Automated tests:** 61 unit tests under `src/tests/unit/` (ingestion, retrieval, generation, pipeline, API).
+
+---
 
 ### Week 0 checklist
 
-- [ ] Create GitHub repository
-- [ ] Create local project directory
-- [ ] Create Python virtual environment
-- [ ] Configure Cursor workspace
-- [ ] Create initial project structure
-- [ ] Add `README.md`
-- [ ] Add `.gitignore`
-- [ ] Configure local `.env` (gitignored secrets; no committed env template)
-- [x] Create initial `pyproject.toml`
-- [x] Decide Python version (workspace-driven; playbook pins are reference only)
-- [ ] Verify local Qdrant Python setup
-- [ ] Verify Ollama installation
-- [ ] Select initial embedding model
-- [ ] Download/sample FiQA-2018 data
-- [x] Document architecture (`README.md`, `PROJECT_SPEC.md`)
-- [ ] Make first Git commit
+- [x] Create local project directory and Python virtual environment (`.venv` + `requirements.txt` freeze)
+- [x] Configure Cursor workspace (incl. project context rules)
+- [x] Initial structure: `src/`, `data/`, `notebooks/`, `docs/`
+- [x] `README.md`, `PROJECT_SPEC.md`, `.gitignore`
+- [x] Local `.env` for secrets (gitignored; no committed `.env.example`)
+- [x] `pyproject.toml` (package metadata + optional dependency groups)
+- [x] Python **≥ 3.11** (workspace-driven; playbook version pins are reference only)
+- [x] Architecture documented
+- [ ] GitHub remote / portfolio publish (your timeline)
+- [ ] “First commit” / branch hygiene (your timeline)
 
-The README will be updated throughout the project as features, experiments, metrics, screenshots, and deployment details become available.
+---
+
+### Week 1 — implemented (dense RAG index + retrieval)
+
+**Pipeline:**
+
+```text
+BeIR/fiqa corpus → normalize → chunk → embed → Qdrant → dense search
+```
+
+| Component | Location | Notes |
+|-----------|----------|--------|
+| Corpus loader | `src/app/ingestion/corpus.py` | `BeIR/fiqa`, configurable limit |
+| Normalize | `src/app/ingestion/normalize.py` | `_id` → `doc_id`, title/text fields |
+| Chunking | `src/app/ingestion/chunking.py` | Word-based size/overlap; metadata on chunks |
+| Schemas | `src/app/ingestion/schemas.py` | `DocumentRecord`, `ChunkRecord`, `SearchHit` |
+| Embeddings | `src/app/retrieval/embeddings.py` | `EmbeddingProvider`: Sentence Transformers + Cohere |
+| Vector store | `src/app/retrieval/qdrant_store.py` | Local path or in-memory; payload includes `doc_id`, `chunk_id`, `doc_title`, `chunk_text` |
+| Settings | `src/app/config/settings.py` | `pydantic-settings` from `.env` |
+| Ingest CLI | `src/scripts/ingest.py` | `--recreate` / `--no-recreate`, embedding method, collection path |
+| Query CLI | `src/scripts/query.py` | Retrieval-only: prints top-k hits + scores (no LLM) |
+
+**Default embedding model:** `all-MiniLM-L6-v2` (`sentence_transformer`). **Default index:** `data/qdrant_local`, collection `fiqa_sample`, 1k-doc sample (`fiqa_corpus_limit`).
+
+---
+
+### Week 2 — implemented (grounded generation + FastAPI)
+
+**Pipeline:**
+
+```text
+Question → dense retrieve → prompt builder → LLM → answer + citations (from hits)
+```
+
+| Component | Location | Notes |
+|-----------|----------|--------|
+| LLM interface | `src/app/generation/llm.py` | `LLMProvider.generate(prompt, system=...)` |
+| Ollama | `OllamaLLM` | `POST /api/chat`, non-streaming; context manager + `close()` |
+| Cohere chat | `CohereLLM` | `ClientV2.chat`; same interface |
+| Factory | `create_llm_provider("ollama" \| "cohere", ...)` | Cohere requires `COHERE_API_KEY` |
+| Prompt builder | `src/app/generation/prompt.py` | `build_rag_prompt`, grounded system prompt, `[doc_id:chunk_id]` cite instruction |
+| Orchestrator | `src/app/pipeline/rag.py` | `answer_query()` → `RagAnswer` (citations from retrieval, not LLM parsing) |
+| FastAPI | `src/app/api/` | `create_app()`, lifespan-managed resources |
+| Serve CLI | `src/scripts/serve_api.py` | Uvicorn wrapper |
+
+**Not in Week 2 scope (later weeks):** `POST /query/stream`, `POST /ingest` over HTTP, structured request logging, Docker, offline generation metrics.
+
+---
+
+### Quick start (Weeks 1–2)
+
+**1. Install dependencies** (from repo root):
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+# Or minimal slices:
+# pip install -e ".[ingestion,embeddings,api,hosted,dev]"
+```
+
+**2. Configure `.env`** (examples — do not commit):
+
+```env
+# Embeddings (Week 1)
+EMBEDDING_METHOD=sentence_transformer
+EMBEDDING_MODEL=all-MiniLM-L6-v2
+
+# LLM (Week 2) — pick one provider
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=mistral:latest
+
+# Optional hosted LLM
+# LLM_PROVIDER=cohere
+# COHERE_API_KEY=...
+# COHERE_CHAT_MODEL=command-r-08-2024
+
+# Qdrant (Week 1)
+QDRANT_PATH=data/qdrant_local
+COLLECTION_NAME=fiqa_sample
+```
+
+**3. Build the index** (Ollama not required for ingest):
+
+```powershell
+python src/scripts/ingest.py
+# Reuse existing collection without delete:
+# python src/scripts/ingest.py --no-recreate
+```
+
+**4. Retrieval smoke test:**
+
+```powershell
+python src/scripts/query.py "What are broker fees?" --top-k 3
+```
+
+**5. Run API** (Ollama running if `LLM_PROVIDER=ollama`, or Cohere key if `cohere`):
+
+```powershell
+python src/scripts/serve_api.py --reload
+```
+
+- Liveness: `GET http://127.0.0.1:8000/health`
+- Readiness: `GET http://127.0.0.1:8000/ready` (Qdrant collection + configured LLM backend)
+- Interactive docs: `http://127.0.0.1:8000/docs`
+- RAG query: `POST http://127.0.0.1:8000/query` with JSON `{"question": "...", "top_k": 3}`
+
+**6. Run tests:**
+
+```powershell
+pytest src/tests/unit
+```
+
+---
+
+### Configuration reference (`Settings`)
+
+Environment variables map to fields in `src/app/config/settings.py` (case-insensitive). Common keys:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `EMBEDDING_METHOD` | `sentence_transformer` | `sentence_transformer` or `cohere` |
+| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | ST model name |
+| `COHERE_API_KEY` | — | Cohere embeddings and/or chat |
+| `COHERE_EMBED_MODEL` | `embed-v4.0` | Cohere embedding model |
+| `LLM_PROVIDER` | `ollama` | `ollama` or `cohere` |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API |
+| `OLLAMA_MODEL` | `mistral:latest` | Ollama model tag |
+| `OLLAMA_TIMEOUT_SECONDS` | `120` | HTTP timeout for Ollama |
+| `COHERE_CHAT_MODEL` | `command-r-08-2024` | Cohere chat model |
+| `FIQA_CORPUS_LIMIT` | `1000` | Ingest sample size |
+| `CHUNK_SIZE` | `100` | Chunk size (words) |
+| `CHUNK_OVERLAP_FRACTION` | `0.2` | Overlap as fraction of chunk size |
+| `QDRANT_PATH` | `data/qdrant_local` | Empty string → in-memory Qdrant |
+| `COLLECTION_NAME` | `fiqa_sample` | Qdrant collection name |
+
+Full list and design notes: [`PROJECT_SPEC.md`](PROJECT_SPEC.md).
 
 ---
 
@@ -559,97 +707,104 @@ The evaluation dataset will eventually contain a reproducible set of benchmark q
 
 ---
 
-# 8. Planned API
+# 8. HTTP API
 
-The exact API may evolve, but the initial target is:
+## Implemented (Week 2)
 
-```text
-GET  /health
-GET  /ready
+Served by `src/app/api/` (`create_app()`). Local entrypoint: `python src/scripts/serve_api.py`.
 
-POST /ingest
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/health` | **Liveness** — process up; no dependency checks |
+| `GET` | `/ready` | **Readiness** — Qdrant collection exists + LLM backend ready (`503` if not) |
+| `POST` | `/query` | **RAG** — body: `question`, optional `top_k` (1–20, default 3) |
 
-POST /query
-POST /query/stream
-```
-
-Potential later additions:
-
-```text
-POST /ingest/async
-GET  /ingest/jobs/{job_id}
-```
-
-The API should return useful metadata, including source/citation information.
-
-Example target response:
+**`GET /ready` response (200):**
 
 ```json
 {
-  "answer": "Example answer...",
+  "status": "ready",
+  "qdrant_collection": true,
+  "llm_provider": "ollama",
+  "llm_ready": true
+}
+```
+
+For `LLM_PROVIDER=cohere`, `llm_ready` means `COHERE_API_KEY` is configured (no live Cohere ping on readiness).
+
+**`POST /query` response (200):**
+
+```json
+{
+  "answer": "…",
   "citations": [
     {
-      "document_id": "123",
-      "title": "Example source",
-      "chunk_id": "456"
+      "document_id": "42",
+      "chunk_id": 0,
+      "title": "Example title"
     }
   ],
   "retrieval": {
-    "method": "hybrid",
-    "reranker": "cross-encoder"
+    "method": "dense",
+    "top_k": 3
   }
 }
 ```
 
----
+Citations are derived from **retrieval hits** (`doc_id` / `chunk_id` / `doc_title` in Qdrant), not from parsing the LLM output. Ingest remains a **CLI** (`src/scripts/ingest.py`), not an HTTP route yet.
 
-# 9. Planned Repository Structure
+OpenAPI / Swagger UI: `/docs` (provided by FastAPI).
 
-The repository is expected to evolve toward:
+## Planned (later weeks)
 
 ```text
-production-rag/
+POST /ingest
+POST /query/stream          # SSE — Week 5 hardening
+POST /ingest/async
+GET  /ingest/jobs/{job_id}
+```
+
+Future `retrieval` metadata may include `hybrid`, `reranker`, etc. (Weeks 3–4).
+
+---
+
+# 9. Repository Structure
+
+**As of Week 2** (✅ = present in this repo):
+
+```text
+RAG/
 │
 ├── src/
 │   ├── app/
-│   │   ├── api/
-│   │   ├── ingestion/
-│   │   ├── retrieval/
-│   │   ├── generation/
-│   │   ├── evaluation/
-│   │   ├── observability/
-│   │   ├── config/
-│   │   └── pipeline/
+│   │   ├── api/              ✅ FastAPI routes, schemas, lifespan resources
+│   │   ├── config/           ✅ Settings (pydantic-settings)
+│   │   ├── ingestion/        ✅ FiQA load, normalize, chunk, schemas
+│   │   ├── retrieval/        ✅ Embeddings + QdrantChunkStore
+│   │   ├── generation/       ✅ LLM providers + prompt builder
+│   │   ├── pipeline/         ✅ answer_query orchestrator
+│   │   ├── evaluation/       ⬜ Week 4+
+│   │   └── observability/    ⬜ Week 6+
 │   ├── scripts/
-│   │   ├── ingest.py
-│   │   ├── query.py
-│   │   ├── evaluate.py
-│   │   └── benchmark.py
-│   ├── tests/
-│   │   ├── unit/
-│   │   ├── integration/
-│   │   └── evaluation/
-│   ├── experiments/
-│   └── data/
+│   │   ├── ingest.py         ✅ Build Qdrant index
+│   │   ├── query.py          ✅ Dense retrieval CLI (no LLM)
+│   │   ├── serve_api.py      ✅ Uvicorn entrypoint
+│   │   ├── evaluate.py       ⬜ planned
+│   │   └── benchmark.py      ⬜ planned
+│   └── tests/
+│       └── unit/             ✅ 61 tests (no integration/ eval dirs yet)
 │
-├── data/
-│   ├── raw/
-│   └── evaluation/
+├── data/                     # Local Qdrant path, FiQA artifacts (gitignored as needed)
+├── notebooks/                # code_dev.ipynb — experiments, not canonical app code
+├── docs/                       # Playbook PDFs, plans
+├── configs/                    ⬜ planned
+├── frontend/                   ⬜ Week 8 demo UI
+├── .github/workflows/          ⬜ Week 7 CI
 │
-├── notebooks/
-├── docs/
-├── frontend/
-├── configs/
-│
-├── .github/
-│   └── workflows/
-│
-├── Dockerfile
-├── docker-compose.yml
 ├── pyproject.toml
-├── requirements.txt
+├── requirements.txt            # Full workspace freeze (incl. FastAPI, notebooks)
 ├── PROJECT_SPEC.md
-├── .env                 # local only (gitignored)
+├── .env                        # local only (gitignored)
 └── README.md
 ```
 
@@ -679,7 +834,7 @@ Deliverables:
 
 ---
 
-## Week 1 — Baseline RAG
+## Week 1 — Baseline RAG ✅
 
 ```text
 Documents
@@ -693,18 +848,18 @@ Qdrant
 Dense retrieval
 ```
 
-Deliverables:
+Deliverables (done — see §1):
 
-- Document loader
-- Chunking implementation
-- Embedding interface
-- Qdrant abstraction
-- Basic retrieval script
-- Baseline retrieval results
+- [x] Document loader (`BeIR/fiqa`)
+- [x] Chunking implementation
+- [x] Embedding interface (Sentence Transformers + Cohere)
+- [x] Qdrant abstraction
+- [x] `ingest.py` / `query.py` CLIs
+- [x] Unit tests for ingestion + retrieval
 
 ---
 
-## Week 2 — Generation + API
+## Week 2 — Generation + API ✅
 
 ```text
 Question
@@ -718,15 +873,17 @@ LLM
 Answer + citations
 ```
 
-Deliverables:
+Deliverables (done — see §1):
 
-- Prompt builder
-- LLM provider interface
-- Ollama provider
-- Optional hosted provider
-- FastAPI application
-- Query endpoint
-- Health/readiness endpoints
+- [x] Prompt builder
+- [x] LLM provider interface
+- [x] Ollama provider
+- [x] Cohere chat provider (hosted)
+- [x] FastAPI application + lifespan
+- [x] `POST /query`
+- [x] `GET /health`, `GET /ready`
+- [x] `answer_query` orchestrator
+- [x] Unit tests (LLM, prompt, pipeline, API)
 
 ---
 
@@ -1103,12 +1260,12 @@ The project will be considered complete when all of the following are true.
 
 ## Engineering
 
-- [ ] FastAPI API works
-- [ ] Validation/error handling exists
-- [ ] Streaming works
-- [ ] Tests exist
-- [ ] Structured logging exists
-- [ ] Configuration is externalized
+- [x] FastAPI API works (`/health`, `/ready`, `/query`)
+- [x] Request validation (Pydantic) + basic HTTP errors (`422`, `503`)
+- [ ] Streaming works (`POST /query/stream` — Week 5)
+- [x] Unit tests exist (61 tests; integration tests later)
+- [ ] Structured logging exists (Week 6)
+- [x] Configuration is externalized (`Settings` + `.env`)
 
 ## Productionization
 

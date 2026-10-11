@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     cohere_embed_batch_size: int = 96
     cohere_embed_batch_sleep_seconds: float = 60.0
 
+    llm_provider: str = "ollama"  # or "cohere" -- overridden in .env
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "mistral:latest"
+    ollama_timeout_seconds: float = 120.0
+    cohere_chat_model: str = "command-r-08-2024"
+
     fiqa_corpus_limit: int = 1000
     chunk_size: int = 100
     chunk_overlap_fraction: float = 0.2
