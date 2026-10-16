@@ -782,12 +782,13 @@ Served by `src/app/api/` (`create_app()`). Local entrypoint: `python src/scripts
   "status": "ready",
   "qdrant_collection": true,
   "bm25_index": true,
+  "retrieval_index_aligned": true,
   "llm_provider": "ollama",
   "llm_ready": true
 }
 ```
 
-**`GET /ready` failure (503)** includes `qdrant_collection`, `bm25_index`, `llm_provider`, and `llm_ready` in `detail`. Run ingest so `data/bm25_indexes/<collection>.pkl` exists before expecting readiness to pass.
+**`GET /ready` failure (503)** includes `qdrant_collection`, `bm25_index`, `retrieval_index_aligned`, `llm_provider`, and `llm_ready` in `detail`. BM25 pickle, `*.manifest.json`, and Qdrant point count must agree (published together by `ingest.py`).
 
 For `LLM_PROVIDER=cohere`, `llm_ready` means `COHERE_API_KEY` is configured (no live Cohere ping on readiness).
 

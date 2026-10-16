@@ -44,6 +44,7 @@ class Bm25ChunkIndex:
         self._bm25 = bm25
         self._chunks = chunks
         self._corpus_tokens = corpus_tokens
+        self._corpus_token_sets = tuple(frozenset(tokens) for tokens in corpus_tokens)
 
     @property
     def num_chunks(self) -> int:
@@ -68,22 +69,18 @@ class Bm25ChunkIndex:
 
         query_token_set = set(query_tokens)
         scores = self._bm25.get_scores(query_tokens)
-
-        def overlap_count(index: int) -> int:
-            chunk_tokens = set(self._corpus_tokens[index])
-            return len(query_token_set & chunk_tokens)
-
-        eligible = [
-            index
+        overlaps = [
+            len(query_token_set & self._corpus_token_sets[index])
             for index in range(len(scores))
-            if overlap_count(index) > 0
         ]
+
+        eligible = [index for index, count in enumerate(overlaps) if count > 0]
         if not eligible:
             return []
 
         ranked_indices = sorted(
             eligible,
-            key=lambda index: (scores[index], overlap_count(index)),
+            key=lambda index: (scores[index], overlaps[index]),
             reverse=True,
         )[:limit]
 

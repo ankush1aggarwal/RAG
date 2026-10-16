@@ -82,6 +82,20 @@ class CohereEmbedding:
         return list(response.embeddings.float[0])
 
 
+def embedding_model_for_method(
+    method: EmbeddingMethod,
+    *,
+    sentence_transformer_model: str,
+    cohere_embed_model: str,
+) -> str:
+    """Model id stored in the ingest manifest (matches create_embedding_provider)."""
+    if method == "sentence_transformer":
+        return sentence_transformer_model
+    if method == "cohere":
+        return cohere_embed_model
+    raise ValueError(f"Invalid embedding method: {method}")
+
+
 def create_embedding_provider(
     method: EmbeddingMethod,
     *,

@@ -15,6 +15,7 @@ class ReadyResponse(BaseModel):
     status: str = "ready"
     qdrant_collection: bool
     bm25_index: bool
+    retrieval_index_aligned: bool
     llm_provider: str
     llm_ready: bool
 
