@@ -45,6 +45,7 @@ class Bm25ChunkIndex:
         self._chunks = chunks
         self._corpus_tokens = corpus_tokens
         self._corpus_token_sets = tuple(frozenset(tokens) for tokens in corpus_tokens)
+        self._ingest_generation_id: str | None = None
 
     @property
     def num_chunks(self) -> int:
@@ -52,6 +53,10 @@ class Bm25ChunkIndex:
 
     def unique_doc_count(self) -> int:
         return len({chunk.doc_id for chunk in self._chunks})
+
+    @property
+    def ingest_generation_id(self) -> str | None:
+        return self._ingest_generation_id
 
     @classmethod
     def from_chunks(cls, chunks: list[ChunkRecord]) -> Bm25ChunkIndex:
@@ -98,7 +103,7 @@ class Bm25ChunkIndex:
             )
         return hits
 
-    def save(self, path: str | Path) -> None:
+    def save(self, path: str | Path, *, ingest_generation_id: str = "") -> None:
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
         payload: dict[str, Any] = {
@@ -106,6 +111,8 @@ class Bm25ChunkIndex:
             "chunks": [chunk.model_dump() for chunk in self._chunks],
             "bm25": self._bm25,
         }
+        if ingest_generation_id:
+            payload["ingest_generation_id"] = ingest_generation_id
         with target.open("wb") as handle:
             pickle.dump(payload, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -123,4 +130,8 @@ class Bm25ChunkIndex:
         chunks = [ChunkRecord(**item) for item in payload["chunks"]]
         corpus_tokens = [tokenize(chunk.chunk_text) for chunk in chunks]
         bm25 = BM25Okapi(corpus_tokens)
-        return cls(bm25, chunks, corpus_tokens)
+        index = cls(bm25, chunks, corpus_tokens)
+        generation_id = payload.get("ingest_generation_id")
+        if isinstance(generation_id, str) and generation_id:
+            index._ingest_generation_id = generation_id
+        return index

@@ -14,10 +14,15 @@ from app.ingestion.ingest_manifest import (
     IngestManifest,
     load_manifest,
     manifest_path_for_collection,
+    validate_manifest_runtime_config,
     validate_retrieval_index_alignment,
 )
 from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
-from app.retrieval.embeddings import EmbeddingProvider
+from app.retrieval.embeddings import (
+    EmbeddingProvider,
+    embedding_dimension,
+    embedding_model_for_method,
+)
 
 
 @dataclass
@@ -93,18 +98,37 @@ def llm_ready(settings: Settings) -> bool:
 
 
 def retrieval_index_aligned(resources: AppResources) -> bool:
-    """True when BM25, manifest, and Qdrant point counts match."""
+    """True when artifacts align with Qdrant and the running embedding/ingest configuration."""
     if resources.bm25_index is None or resources.ingest_manifest is None:
         return False
     if not resources.store.collection_exists():
         return False
+    settings = resources.settings
+    method = settings.embedding_method
+    if method not in ("sentence_transformer", "cohere"):
+        return False
     try:
+        validate_manifest_runtime_config(
+            resources.ingest_manifest,
+            corpus_limit=settings.fiqa_corpus_limit,
+            chunk_size=settings.chunk_size,
+            overlap_fraction=settings.chunk_overlap_fraction,
+            embedding_method=method,
+            embedding_model=embedding_model_for_method(
+                method,  # type: ignore[arg-type]
+                sentence_transformer_model=settings.embedding_model,
+                cohere_embed_model=settings.cohere_embed_model,
+            ),
+            embedding_dimension=embedding_dimension(resources.embedder),
+            collection_name=settings.collection_name,
+        )
         validate_retrieval_index_alignment(
             resources.ingest_manifest,
-            collection_name=resources.settings.collection_name,
+            collection_name=settings.collection_name,
             qdrant_point_count=resources.store.point_count(),
             bm25_chunk_count=resources.bm25_index.num_chunks,
             qdrant_vector_size=resources.store.vector_size(),
+            bm25_ingest_generation_id=resources.bm25_index.ingest_generation_id,
         )
     except IndexAlignmentError:
         return False
