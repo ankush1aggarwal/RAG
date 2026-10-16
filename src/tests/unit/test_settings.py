@@ -15,6 +15,12 @@ def test_settings_defaults():
     assert settings.fiqa_corpus_limit == 1000
     assert settings.chunk_size == 100
     assert settings.collection_name == "fiqa_sample"
+    assert settings.bm25_index_dir == "data/bm25_indexes"
+
+
+def test_resolved_bm25_index_path():
+    settings = Settings(collection_name="fiqa_sample", bm25_index_dir="data/bm25_indexes", _env_file=None)
+    assert settings.resolved_bm25_index_path() == _REPO_ROOT / "data" / "bm25_indexes" / "fiqa_sample.pkl"
 
 
 def test_resolved_qdrant_path_relative_to_repo_root():

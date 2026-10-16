@@ -1,7 +1,7 @@
 # Project specification
 
-**Status:** Week 2 complete — dense retrieval + grounded generation + FastAPI  
-**Last updated:** 2026-10-11
+**Status:** Week 3 complete — hybrid retrieval (BM25 + dense + RRF) + retrieval benchmark  
+**Last updated:** 2026-10-16
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
@@ -30,12 +30,12 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | Embeddings (baseline) | **Hugging Face** `sentence-transformers` | Default **`all-MiniLM-L6-v2`** |
 | Embeddings (hosted) | **Cohere** `embed-v4.0` | Optional via `EMBEDDING_METHOD=cohere` |
 | Vector store | **Qdrant** | `qdrant-client`; local path or `:memory:` |
-| Lexical | **BM25** | `rank-bm25`; **Week 3** |
-| Hybrid fusion | **RRF** first | **Week 3** |
+| Lexical | **BM25** | `rank-bm25`; pickle aligned with chunk IDs |
+| Hybrid fusion | **RRF** (equal-weight lists) | `reciprocal_rank_fusion`; weighted RRF optional stretch |
 | Reranking | Cross-encoder and/or **Cohere Rerank** | **Week 4** |
 | Local LLM | **Ollama** (`/api/chat`) | `LLMProvider` interface |
 | Hosted LLM | **Cohere** `ClientV2.chat` | `LLM_PROVIDER=cohere` |
-| API | **FastAPI** + **Uvicorn** | `/health`, `/ready`, `POST /query` (Week 2); streaming later |
+| API | **FastAPI** + **Uvicorn** | `/health`, `/ready`, `POST /query` with `method`: `dense` \| `bm25` \| `hybrid`; streaming later |
 | Observability | Langfuse / OpenTelemetry | **Week 6** |
 | Packaging / CI | Docker + **GitHub Actions** | **Weeks 7–8** |
 | Hosting | Render + Qdrant Cloud | **Week 8** |
@@ -46,22 +46,24 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 RAG/
 ├── src/
 │   ├── app/
-│   │   ├── api/           # Week 2 — FastAPI
-│   │   ├── config/        # Week 0–1 — Settings
+│   │   ├── api/           # FastAPI + readiness (Qdrant + BM25 + LLM)
+│   │   ├── config/        # Settings
 │   │   ├── ingestion/     # Week 1
-│   │   ├── retrieval/     # Week 1
+│   │   ├── retrieval/     # Dense, BM25, fusion, hybrid
 │   │   ├── generation/    # Week 2
-│   │   ├── pipeline/      # Week 2 — RAG orchestrator
-│   │   ├── evaluation/    # planned Week 4
+│   │   ├── pipeline/      # RAG orchestrator + retrieve_hits
+│   │   ├── evaluation/    # Week 3 retrieval benchmark; qrels Week 4
 │   │   └── observability/ # planned Week 6
 │   ├── scripts/
-│   │   ├── ingest.py
-│   │   ├── query.py
+│   │   ├── ingest.py      # Qdrant + BM25
+│   │   ├── query.py       # dense / bm25 / hybrid CLI
 │   │   └── serve_api.py
 │   └── tests/unit/
 ├── data/
+│   └── benchmarks/        # fiqa_sample_query_set.json, CSV runs
 ├── notebooks/
-├── docs/
+│   └── retrieval_benchmark.ipynb
+├── docs/reports/          # week3_retrieval_comparison.md
 ├── pyproject.toml
 ├── requirements.txt
 ├── .env
@@ -74,11 +76,11 @@ RAG/
 |--------|----------------|--------|
 | `config` | `pydantic-settings` from `.env` | ✅ |
 | `ingestion` | FiQA load, normalize, chunk, schemas | ✅ |
-| `retrieval` | `EmbeddingProvider`, `QdrantChunkStore` (`close()` for local disk) | ✅ dense only |
+| `retrieval` | Embeddings, Qdrant, `Bm25ChunkIndex`, RRF, `hybrid_search_text` | ✅ |
 | `generation` | `LLMProvider`, Ollama + Cohere, prompt builder | ✅ |
-| `pipeline` | `answer_query` → `RagAnswer` + citations | ✅ |
-| `api` | FastAPI app, routes, readiness | ✅ |
-| `evaluation` | qrels, metrics, reports | ⬜ Week 4 |
+| `pipeline` | `retrieve_hits`, `answer_query` → `RagAnswer` + citations | ✅ |
+| `api` | FastAPI app, `POST /query` retrieval `method`, readiness | ✅ |
+| `evaluation` | `retrieval_benchmark` (latency, overlap, report) | ✅ Week 3; qrels metrics ⬜ Week 4 |
 | `observability` | Logging, tracing | ⬜ Week 6 |
 
 ## Provider interfaces (design contract)
@@ -88,6 +90,7 @@ EmbeddingProvider   → SentenceTransformerEmbedding, CohereEmbedding
 LLMProvider         → OllamaLLM, CohereLLM
 RerankerProvider    → (Week 4) local cross-encoder, Cohere Rerank
 VectorStore         → QdrantChunkStore (local; cloud adapter later)
+LexicalIndex        → Bm25ChunkIndex (in-memory + pickle)
 ```
 
 Factory functions:
@@ -101,11 +104,12 @@ Factory functions:
 |------------|-------------------------|------|--------|
 | Ingest + chunk | `ingestion/*`, `scripts/ingest.py` (`--recreate` default **true**; `--no-recreate` to reuse) | 1 | ✅ |
 | Dense retrieval | `QdrantChunkStore.search_text`, `scripts/query.py` | 1 | ✅ |
+| BM25 + RRF + hybrid | `bm25_store.py`, `fusion.py`, `hybrid.py`, `retrieve_hits` | 3 | ✅ |
 | Prompt + grounded generation | `generation/prompt.py`, `pipeline/rag.py` | 2 | ✅ |
 | LLM providers | Ollama + Cohere chat | 2 | ✅ |
-| HTTP API | `api/*`, `scripts/serve_api.py` | 2 | ✅ |
-| BM25 + hybrid + RRF | — | 3 | ⬜ |
-| Rerank + offline eval | — | 4 | ⬜ |
+| HTTP API | `api/*`, `scripts/serve_api.py`; `QueryRequest.method` | 2–3 | ✅ |
+| Retrieval benchmark | `evaluation/retrieval_benchmark.py`, notebook + report | 3 | ✅ |
+| Rerank + offline eval (qrels) | — | 4 | ⬜ |
 | SSE, hardening | — | 5 | ⬜ |
 | Observability | — | 6 | ⬜ |
 | Docker + CI + deploy | — | 7–8 | ⬜ |
@@ -140,15 +144,22 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 | `OLLAMA_TIMEOUT_SECONDS` | `120` | Ollama HTTP timeout |
 | `COHERE_CHAT_MODEL` | `command-r-08-2024` | Cohere chat model |
 
-### Ingestion / index (Week 1)
+### Ingestion / index (Weeks 1–3)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `FIQA_CORPUS_LIMIT` | `1000` | Max documents per ingest run |
+| `FIQA_CORPUS_LIMIT` | `1000` | Max documents per ingest run (`corpus[:limit]`) |
 | `CHUNK_SIZE` | `100` | Chunk size in words |
 | `CHUNK_OVERLAP_FRACTION` | `0.2` | Overlap fraction |
 | `QDRANT_PATH` | `data/qdrant_local` | Empty → in-memory Qdrant |
 | `COLLECTION_NAME` | `fiqa_sample` | Collection name |
+| `BM25_INDEX_DIR` | `data/bm25_indexes` | Pickle path: `<dir>/<collection>.pkl` |
+
+### API retrieval (Week 3)
+
+`POST /query` body field **`method`**: `dense` (default), `bm25`, or `hybrid`. Response `retrieval.method` echoes the method used.
+
+`GET /ready` requires Qdrant collection, loaded BM25 index, and LLM readiness.
 
 ### Planned (not wired in code yet)
 
@@ -156,6 +167,7 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 |----------|---------|
 | `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud |
 | `LOG_LEVEL` | Structured logging (Week 6) |
+| Default `method=hybrid` via settings | Optional product default (currently client default is `dense`) |
 
 ## Week exit criteria
 
@@ -164,7 +176,7 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 - [x] Repo structure, `pyproject.toml`, `requirements.txt`, `.gitignore`
 - [x] `README.md`, `PROJECT_SPEC.md`
 - [x] Local `.env` pattern
-- [x] `src/app` package skeleton → grown into Weeks 1–2 modules
+- [x] `src/app` package skeleton → grown into Weeks 1–3 modules
 
 ### Week 1 ✅ (dense retrieval)
 
@@ -178,22 +190,32 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 - [x] Prompt builder with grounding instructions
 - [x] `answer_query` with citations from hits
 - [x] FastAPI `/health`, `/ready`, `POST /query`
-- [x] Unit tests (62+ tests in `src/tests/unit/`)
 - [x] `QdrantChunkStore.close()` on API shutdown (and ingest CLI `finally`)
 
 ### Chunking behavior (Week 1, updated)
 
 Word windows advance by `chunk_size - overlap_int`. The **first** window is always kept (even if shorter than the overlap width). Only **trailing** windows with word count ≤ overlap width are dropped, to avoid tiny duplicate tail chunks.
 
-### Week 3 (next)
+### Week 3 ✅ (hybrid retrieval)
 
-- [ ] BM25 index on same corpus/chunk IDs
-- [ ] Dense + sparse retrieval paths
-- [ ] RRF fusion + comparison report
+- [x] BM25 index on same corpus/chunk IDs (`ingest.py` saves pickle)
+- [x] Dense + BM25 + hybrid (`retrieve_hits`, `query.py`, `hybrid_search_text`)
+- [x] RRF fusion (`fusion.py`)
+- [x] API `method` + `/ready` BM25 check
+- [x] Fixed query set + benchmark notebook + comparison report
+- [ ] Optional weighted RRF (stretch)
+- [x] Unit tests (99+ in `src/tests/unit/`)
+
+### Week 4 (next)
+
+- [ ] Reranker interface + cross-encoder (and/or Cohere)
+- [ ] BEIR qrels → NDCG / MRR / recall@k
+- [ ] `evaluate.py` runner; generation eval baseline
 
 ## Evaluation discipline
 
-- Use **qrels** (`BeIR/fiqa-qrels`) for retrieval metrics; do not tune repeatedly on the test set.
+- **Week 3:** unlabeled comparison — latency, top-k Jaccard overlap, qualitative snippets (`docs/reports/week3_retrieval_comparison.md`).
+- **Week 4+:** use **qrels** (`BeIR/fiqa-qrels`) for retrieval metrics; do not tune repeatedly on the test set.
 - Record every experiment: subset, chunking, embedding model, top-k, fusion, reranker, timestamp.
 - **Separate** retrieval quality from generation quality.
 - Keep a **known-good baseline** before each optimization ([README §19](README.md)).
@@ -206,11 +228,25 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 | `embeddings` | sentence-transformers | Ingest + ST query |
 | `hosted` | cohere | Cohere embed or chat |
 | `ingestion` | datasets | `BeIR/fiqa` load in ingest |
+| `lexical` | rank-bm25 | BM25 index + hybrid |
 | `api` | fastapi, uvicorn | `serve_api.py` |
 | `dev` | pytest, ruff, fastapi (TestClient) | Development |
 | `notebooks` | jupyter, pandas | `notebooks/` |
 
-Full notebook workspace: `pip install -r requirements.txt`.
+**Install patterns (use together for a full dev venv):**
+
+| File | Purpose |
+|------|---------|
+| `requirements.txt` | Pinned **third-party** deps only (UTF-8); does **not** install `fiqa-production-rag` |
+| `requirements-editable.txt` | `-e .[extras]` — **local** `src/` from `pyproject.toml` |
+| `requirements-git.txt` | `-e git+https://github.com/…/RAG.git@…` — same package from **GitHub** |
+
+```text
+pip install -r requirements.txt
+pip install -r requirements-editable.txt
+```
+
+Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` lines before saving to `requirements.txt`.
 
 ## Out of scope (for now)
 
@@ -218,12 +254,11 @@ Full notebook workspace: `pip install -r requirements.txt`.
 - `POST /query/stream` until Week 5 hardening
 - HTTP ingest endpoints (ingest remains CLI)
 - LangChain/LangGraph as core orchestrator
-- Docker/cloud before Weeks 3–4 benchmarks justify deploy
+- Docker/cloud until Week 7–8 (local benchmarks justify design first)
 
-## Next implementation steps (Week 3)
+## Next implementation steps (Week 4)
 
-1. BM25 index builder aligned with Qdrant `doc_id` / `chunk_id`
-2. Parallel dense + BM25 retrieval APIs in `retrieval/`
-3. RRF fusion module + experiment script / notebook comparison
-4. Update `answer_query` / API `retrieval.method` when hybrid is default
-
+1. `RerankerProvider` + rerank after hybrid top-N candidates
+2. Load FiQA qrels; map query IDs to benchmark questions or BEIR dev queries
+3. Implement NDCG@k / MRR in `evaluation/`; extend `evaluate.py`
+4. Optional: wire rerank into `answer_query` behind settings flag

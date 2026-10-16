@@ -1,9 +1,9 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from app.ingestion.schemas import SearchHit
-from app.pipeline.rag import answer_query, citations_from_hits
+from app.pipeline.rag import answer_query, citations_from_hits, retrieve_hits
 
 
 class _RecordingLLM:
@@ -87,4 +87,64 @@ def test_answer_query_rejects_invalid_top_k():
             embedder=MagicMock(),
             llm=_RecordingLLM(),
             top_k=0,
+        )
+
+
+def test_answer_query_bm25_uses_index_not_dense():
+    store = MagicMock()
+    bm25 = MagicMock()
+    bm25.search.return_value = [_hit(doc_id="9", chunk_id=1)]
+    embedder = MagicMock()
+    llm = _RecordingLLM()
+
+    result = answer_query(
+        "broker fees",
+        store=store,
+        embedder=embedder,
+        llm=llm,
+        retrieval_method="bm25",
+        bm25_index=bm25,
+    )
+
+    store.search_text.assert_not_called()
+    bm25.search.assert_called_once_with("broker fees", limit=3)
+    assert result.retrieval_method == "bm25"
+    assert result.citations[0].document_id == "9"
+
+
+def test_answer_query_hybrid_calls_fusion_path():
+    store = MagicMock()
+    store.search_text.return_value = [_hit()]
+    bm25 = MagicMock()
+    bm25.search.return_value = [_hit(doc_id="8", chunk_id=0)]
+    embedder = MagicMock()
+    llm = _RecordingLLM()
+
+    with patch("app.pipeline.rag.hybrid_search_text") as hybrid:
+        hybrid.return_value = [_hit(doc_id="fused", chunk_id=3)]
+        result = answer_query(
+            "fees",
+            store=store,
+            embedder=embedder,
+            llm=llm,
+            top_k=5,
+            retrieval_method="hybrid",
+            bm25_index=bm25,
+        )
+
+    hybrid.assert_called_once()
+    assert hybrid.call_args.kwargs["limit"] == 5
+    assert result.retrieval_method == "hybrid"
+    assert result.hits[0].doc_id == "fused"
+
+
+def test_retrieve_hits_bm25_requires_index():
+    with pytest.raises(ValueError, match="BM25 index is not available"):
+        retrieve_hits(
+            "q",
+            retrieval_method="bm25",
+            store=MagicMock(),
+            embedder=MagicMock(),
+            bm25_index=None,
+            top_k=3,
         )

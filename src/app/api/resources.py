@@ -9,7 +9,7 @@ import httpx
 
 from app.config.settings import Settings
 from app.generation.llm import LLMMethod, LLMProvider, OllamaLLM, create_llm_provider
-from app.retrieval import QdrantChunkStore, create_embedding_provider
+from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
 from app.retrieval.embeddings import EmbeddingProvider
 
 
@@ -19,6 +19,7 @@ class AppResources:
     store: QdrantChunkStore
     embedder: EmbeddingProvider
     llm: LLMProvider
+    bm25_index: Bm25ChunkIndex | None = None
 
 
 def build_resources(settings: Settings) -> AppResources:
@@ -45,7 +46,15 @@ def build_resources(settings: Settings) -> AppResources:
         cohere_api_key=settings.cohere_api_key,
         cohere_model=settings.cohere_chat_model,
     )
-    return AppResources(settings=settings, store=store, embedder=embedder, llm=llm)
+    bm25_path = settings.resolved_bm25_index_path()
+    bm25_index = Bm25ChunkIndex.load(bm25_path) if bm25_path.is_file() else None
+    return AppResources(
+        settings=settings,
+        store=store,
+        embedder=embedder,
+        llm=llm,
+        bm25_index=bm25_index,
+    )
 
 
 def close_resources(resources: AppResources) -> None:
@@ -70,3 +79,8 @@ def llm_ready(settings: Settings) -> bool:
     if settings.llm_provider == "cohere":
         return bool(settings.cohere_api_key or os.getenv("COHERE_API_KEY"))
     return False
+
+
+def bm25_ready(resources: AppResources) -> bool:
+    """True when the on-disk BM25 index was loaded at startup (required for hybrid/bm25)."""
+    return resources.bm25_index is not None

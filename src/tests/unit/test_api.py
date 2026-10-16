@@ -31,6 +31,7 @@ def client() -> TestClient:
         store=store,
         embedder=MagicMock(),
         llm=_FakeLLM(),
+        bm25_index=MagicMock(),
     )
     app = create_app(resources=resources)
     with TestClient(app) as test_client:
@@ -50,6 +51,7 @@ def test_ready_success(client: TestClient):
     body = response.json()
     assert body["status"] == "ready"
     assert body["qdrant_collection"] is True
+    assert body["bm25_index"] is True
     assert body["llm_provider"] == "ollama"
     assert body["llm_ready"] is True
 
@@ -59,6 +61,16 @@ def test_ready_returns_503_when_dependencies_down(client: TestClient):
     with patch("app.api.routes.llm_ready", return_value=False):
         response = client.get("/ready")
     assert response.status_code == 503
+
+
+def test_ready_returns_503_when_bm25_missing(client: TestClient):
+    client.app.state.resources.bm25_index = None
+    with patch("app.api.routes.llm_ready", return_value=True):
+        response = client.get("/ready")
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    assert detail["bm25_index"] is False
+    assert detail["qdrant_collection"] is True
 
 
 def test_query_success(client: TestClient):
@@ -73,3 +85,47 @@ def test_query_success(client: TestClient):
 def test_query_validation_empty_question(client: TestClient):
     response = client.post("/query", json={"question": ""})
     assert response.status_code == 422
+
+
+def test_query_hybrid_uses_bm25_and_reports_method(client: TestClient):
+    bm25 = MagicMock()
+    bm25.search.return_value = [
+        SearchHit(
+            doc_id="2",
+            doc_title="Lex",
+            chunk_id=1,
+            chunk_text="bm25 ctx",
+            score=1.0,
+        )
+    ]
+    client.app.state.resources.bm25_index = bm25
+
+    with patch("app.pipeline.rag.hybrid_search_text") as hybrid:
+        hybrid.return_value = [
+            SearchHit(
+                doc_id="2",
+                doc_title="Lex",
+                chunk_id=1,
+                chunk_text="bm25 ctx",
+                score=0.03,
+            )
+        ]
+        response = client.post(
+            "/query",
+            json={"question": "fees", "top_k": 2, "method": "hybrid"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["retrieval"] == {"method": "hybrid", "top_k": 2}
+    hybrid.assert_called_once()
+
+
+def test_query_bm25_returns_422_when_index_missing(client: TestClient):
+    client.app.state.resources.bm25_index = None
+    response = client.post(
+        "/query",
+        json={"question": "fees", "method": "bm25"},
+    )
+    assert response.status_code == 422
+    assert "BM25 index is not available" in response.json()["detail"]

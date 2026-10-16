@@ -12,7 +12,7 @@ if _REPO_ROOT not in sys.path:
 
 from app.config import get_settings
 from app.ingestion import chunks_from_documents, documents_from_corpus, load_fiqa_corpus
-from app.retrieval import QdrantChunkStore, attach_embeddings, create_embedding_provider
+from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, attach_embeddings, create_embedding_provider
 from app.retrieval.embeddings import embedding_dimension, validate_chunk_embedding_dimensions
 
 
@@ -76,6 +76,12 @@ def main() -> None:
     print("Embedding chunks...")
     attach_embeddings(chunks, embedder)
     validate_chunk_embedding_dimensions(chunks, expected_dim)
+
+    bm25_path = settings.resolved_bm25_index_path(args.collection)
+    print(f"Building BM25 index for {len(chunks)} chunks...")
+    bm25_index = Bm25ChunkIndex.from_chunks(chunks)
+    bm25_index.save(bm25_path)
+    print(f"BM25 index saved to {bm25_path}")
 
     store = QdrantChunkStore.from_path(qdrant_path, args.collection)
     try:
