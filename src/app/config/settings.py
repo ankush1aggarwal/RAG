@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     # Relative paths resolve from repository root. Use empty string for in-memory Qdrant.
     qdrant_path: str = "data/qdrant_local"
     collection_name: str = "fiqa_sample"
+    bm25_index_dir: str = "data/bm25_indexes"
 
     def resolved_qdrant_path(self) -> str | None:
         if not self.qdrant_path:
@@ -42,6 +43,13 @@ class Settings(BaseSettings):
         if not path.is_absolute():
             path = _REPO_ROOT / path
         return str(path)
+
+    def resolved_bm25_index_path(self, collection_name: str | None = None) -> Path:
+        name = collection_name or self.collection_name
+        directory = Path(self.bm25_index_dir)
+        if not directory.is_absolute():
+            directory = _REPO_ROOT / directory
+        return directory / f"{name}.pkl"
 
     hf_hub_disable_symlinks_warning: bool = True
 

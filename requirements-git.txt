@@ -1,0 +1,5 @@
+# Install the application from GitHub (editable). Use when you do not have the repo cloned
+# or you want a pinned remote checkout. Run after: pip install -r requirements.txt
+#
+# Update the commit hash on your branch when you pin a release.
+-e git+https://github.com/ankush1aggarwal/RAG.git@main#egg=fiqa-production-rag

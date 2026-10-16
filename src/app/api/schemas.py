@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
-from app.pipeline.rag import SourceCitation
+from app.pipeline.rag import RetrievalMethod, SourceCitation
 
 
 class HealthResponse(BaseModel):
@@ -14,6 +16,7 @@ class HealthResponse(BaseModel):
 class ReadyResponse(BaseModel):
     status: str = "ready"
     qdrant_collection: bool
+    bm25_index: bool
     llm_provider: str
     llm_ready: bool
 
@@ -21,6 +24,10 @@ class ReadyResponse(BaseModel):
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=1, description="User question for RAG")
     top_k: int = Field(default=3, ge=1, le=20, description="Number of chunks to retrieve")
+    method: RetrievalMethod = Field(
+        default="dense",
+        description="Retrieval: dense (Qdrant), bm25, or hybrid (RRF)",
+    )
 
 
 class RetrievalMeta(BaseModel):

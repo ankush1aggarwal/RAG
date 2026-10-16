@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "description": "Fixed retrieval benchmark queries for the default 1k-doc FiQA slice (corpus[:1000], collection fiqa_sample).",
+  "corpus": "BeIR/fiqa",
+  "corpus_limit": 1000,
+  "collection": "fiqa_sample",
+  "top_k": 5,
+  "queries": [
+    {
+      "id": "q01",
+      "theme": "brokerage",
+      "question": "What are broker fees and how do retail brokers charge commissions?"
+    },
+    {
+      "id": "q02",
+      "theme": "credit",
+      "question": "How does APR work on credit cards and loans?"
+    },
+    {
+      "id": "q03",
+      "theme": "investing",
+      "question": "Should I pay off student loans early or invest in index funds?"
+    },
+    {
+      "id": "q04",
+      "theme": "taxes",
+      "question": "How is capital gains tax calculated when selling stocks?"
+    },
+    {
+      "id": "q05",
+      "theme": "savings",
+      "question": "How much emergency fund should I keep in a savings account?"
+    },
+    {
+      "id": "q06",
+      "theme": "retirement",
+      "question": "What is the difference between a Roth IRA and a traditional IRA?"
+    },
+    {
+      "id": "q07",
+      "theme": "mortgage",
+      "question": "When does refinancing a mortgage break even on closing costs?"
+    },
+    {
+      "id": "q08",
+      "theme": "investing",
+      "question": "What is dollar cost averaging in the stock market?"
+    },
+    {
+      "id": "q09",
+      "theme": "income",
+      "question": "How do quarterly stock dividends work for investors?"
+    },
+    {
+      "id": "q10",
+      "theme": "401k",
+      "question": "How does employer 401k matching and vesting work?"
+    }
+  ]
+}

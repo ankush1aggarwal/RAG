@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.api.resources import AppResources, llm_ready
+from app.api.resources import AppResources, bm25_ready, llm_ready
 from app.api.schemas import (
     HealthResponse,
     QueryRequest,
@@ -29,23 +29,26 @@ def health() -> HealthResponse:
 
 @router.get("/ready", response_model=ReadyResponse)
 def ready(request: Request) -> ReadyResponse:
-    """Readiness: index and configured LLM backend are usable."""
+    """Readiness: Qdrant, BM25 (hybrid), and configured LLM backend are usable."""
     resources = _resources(request)
     settings = resources.settings
     qdrant_ok = resources.store.collection_exists()
+    bm25_ok = bm25_ready(resources)
     llm_ok = llm_ready(settings)
-    if not (qdrant_ok and llm_ok):
+    if not (qdrant_ok and bm25_ok and llm_ok):
         raise HTTPException(
             status_code=503,
             detail={
                 "status": "not_ready",
                 "qdrant_collection": qdrant_ok,
+                "bm25_index": bm25_ok,
                 "llm_provider": settings.llm_provider,
                 "llm_ready": llm_ok,
             },
         )
     return ReadyResponse(
         qdrant_collection=qdrant_ok,
+        bm25_index=bm25_ok,
         llm_provider=settings.llm_provider,
         llm_ready=llm_ok,
     )
@@ -62,6 +65,8 @@ def query(body: QueryRequest, request: Request) -> QueryResponse:
             embedder=resources.embedder,
             llm=resources.llm,
             top_k=body.top_k,
+            retrieval_method=body.method,
+            bm25_index=resources.bm25_index,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -69,5 +74,5 @@ def query(body: QueryRequest, request: Request) -> QueryResponse:
     return QueryResponse(
         answer=result.answer,
         citations=result.citations,
-        retrieval=RetrievalMeta(method="dense", top_k=body.top_k),
+        retrieval=RetrievalMeta(method=result.retrieval_method, top_k=body.top_k),
     )
