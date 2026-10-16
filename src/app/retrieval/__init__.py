@@ -1,3 +1,4 @@
+from app.retrieval.bm25_store import Bm25ChunkIndex
 from app.retrieval.embeddings import (
     CohereEmbedding,
     EmbeddingProvider,
@@ -7,7 +8,6 @@ from app.retrieval.embeddings import (
     embedding_dimension,
     validate_chunk_embedding_dimensions,
 )
-from app.retrieval.bm25_store import Bm25ChunkIndex
 from app.retrieval.fusion import DEFAULT_RRF_K, reciprocal_rank_fusion
 from app.retrieval.hybrid import hybrid_search_text
 from app.retrieval.qdrant_store import QdrantChunkStore, VectorDimensionMismatchError

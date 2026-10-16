@@ -93,7 +93,6 @@ def test_rrf_overlap_emits_each_chunk_once():
 
 def test_rrf_overlap_outranks_single_list_only_chunk():
     only_dense = [_hit("9", 0)]
-    overlap = [_hit("1", 0)]
     dense = [_hit("1", 0), _hit("9", 0)]
     bm25 = [_hit("1", 0), _hit("2", 0)]
 

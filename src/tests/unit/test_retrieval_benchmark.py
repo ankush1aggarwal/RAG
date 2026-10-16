@@ -4,6 +4,7 @@ from app.evaluation.retrieval_benchmark import (
     chunk_keys,
     jaccard_similarity,
     load_query_set,
+    percentile,
 )
 from app.ingestion.schemas import SearchHit
 
@@ -25,6 +26,12 @@ def test_chunk_keys_respects_limit():
         SearchHit(doc_id="b", chunk_id=1, chunk_text="y", score=0.5),
     ]
     assert chunk_keys(hits, 1) == {("a", 0)}
+
+
+def test_percentile_p95():
+    samples = [float(i) for i in range(1, 101)]
+    assert percentile(samples, 50) == 50.5
+    assert 94.0 <= percentile(samples, 95) <= 96.0
 
 
 def test_load_query_set_from_repo_fixture(tmp_path):
