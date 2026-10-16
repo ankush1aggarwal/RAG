@@ -17,7 +17,7 @@ from app.ingestion.ingest_manifest import (
     IngestReuseValidationError,
     load_manifest,
     manifest_path_for_collection,
-    save_manifest,
+    publish_ingest_artifacts,
     validate_reuse,
 )
 from app.retrieval import (
@@ -26,7 +26,11 @@ from app.retrieval import (
     attach_embeddings,
     create_embedding_provider,
 )
-from app.retrieval.embeddings import embedding_dimension, validate_chunk_embedding_dimensions
+from app.retrieval.embeddings import (
+    embedding_dimension,
+    embedding_model_for_method,
+    validate_chunk_embedding_dimensions,
+)
 
 
 def main() -> None:
@@ -97,7 +101,11 @@ def main() -> None:
         chunk_size=args.chunk_size,
         overlap_fraction=args.overlap,
         embedding_method=args.method,
-        embedding_model=settings.embedding_model,
+        embedding_model=embedding_model_for_method(
+            args.method,
+            sentence_transformer_model=settings.embedding_model,
+            cohere_embed_model=settings.cohere_embed_model,
+        ),
         embedding_dimension=expected_dim,
         collection_name=args.collection,
         num_documents=len(documents),
@@ -120,17 +128,17 @@ def main() -> None:
                 raise SystemExit(str(exc)) from exc
             print("Configuration matches saved ingest manifest.")
 
-        print(f"Building BM25 index for {len(chunks)} chunks...")
+        print(f"Building BM25 index for {len(chunks)} chunks (in memory until Qdrant upsert)...")
         bm25_index = Bm25ChunkIndex.from_chunks(chunks)
-        bm25_index.save(bm25_path)
-        print(f"BM25 index saved to {bm25_path}")
 
         store.prepare_collection(expected_dim, recreate=args.recreate)
         store.assert_collection_vector_size(expected_dim)
         print(f"Indexing {len(chunks)} chunks into '{args.collection}' (dim={expected_dim})...")
         store.upsert_chunks(chunks)
-        save_manifest(manifest_path, manifest)
-        print(f"Ingest manifest saved to {manifest_path}")
+
+        publish_ingest_artifacts(bm25_index, manifest, bm25_path)
+        print(f"BM25 index published to {bm25_path}")
+        print(f"Ingest manifest published to {manifest_path}")
         print("Ingest complete.")
     finally:
         store.close()

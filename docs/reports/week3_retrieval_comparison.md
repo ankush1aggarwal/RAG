@@ -34,6 +34,20 @@
 | BM25 | 23.4 | 27.7 | 23.4 | 18.5 | 28.6 | 70 |
 | hybrid (RRF) | 41.9 | 46.4 | 42.1 | 36.5 | 48.5 | 70 |
 
+## BM25 overlap eligibility pass (microbenchmark)
+
+Isolated timing for lexical overlap **filter + sort** inside `Bm25ChunkIndex.search` (does **not** include `BM25Okapi.get_scores`). Legacy path rebuilds `set(corpus_tokens[i])` on each overlap check; current path uses frozensets built at index load and one overlap vector per query.
+
+- **Query:** `broker fees commission`
+- **Indexed chunks:** `1900`
+- **Repeats (mean ms):** `50`
+
+| Path | Mean (ms) |
+|------|-----------|
+| Legacy (re-tokenize per overlap check) | 5.309 |
+| Precomputed token sets (current) | 0.382 |
+| **Speedup** | **13.90×** |
+
 ## Top-k overlap (single quality pass, mean Jaccard)
 
 - Dense vs BM25: **0.19**
@@ -59,4 +73,5 @@
 
 - Use **p50 / p95** for comparisons; ignore exploratory single-pass means when cold-start dominated.
 - Overlap metrics come from one post-warm-up quality run (not averaged across repeats).
+- BM25 overlap microbenchmark is a narrow slice of BM25 search; end-to-end BM25 p50/p95 still includes vector scoring and hit assembly.
 - Add BEIR qrels in Week 4 for NDCG/MRR.

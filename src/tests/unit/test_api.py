@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from app.api.main import create_app
 from app.api.resources import AppResources
 from app.config.settings import Settings
+from app.ingestion.ingest_manifest import IngestManifest
 from app.ingestion.schemas import SearchHit
 
 
@@ -18,6 +19,8 @@ class _FakeLLM:
 def client() -> TestClient:
     store = MagicMock()
     store.collection_exists.return_value = True
+    store.point_count.return_value = 1
+    store.vector_size.return_value = 384
     store.search_text.return_value = [
         SearchHit(
             doc_id="1",
@@ -28,12 +31,26 @@ def client() -> TestClient:
         )
     ]
     settings = Settings(_env_file=None)
+    manifest = IngestManifest(
+        corpus_limit=1000,
+        chunk_size=100,
+        overlap_fraction=0.2,
+        embedding_method="sentence_transformer",
+        embedding_model="all-MiniLM-L6-v2",
+        embedding_dimension=384,
+        collection_name="fiqa_sample",
+        num_documents=1000,
+        num_chunks=1,
+    )
+    bm25_index = MagicMock()
+    bm25_index.num_chunks = 1
     resources = AppResources(
         settings=settings,
         store=store,
         embedder=MagicMock(),
         llm=_FakeLLM(),
-        bm25_index=MagicMock(),
+        bm25_index=bm25_index,
+        ingest_manifest=manifest,
     )
     app = create_app(resources=resources)
     with TestClient(app) as test_client:
@@ -54,6 +71,7 @@ def test_ready_success(client: TestClient):
     assert body["status"] == "ready"
     assert body["qdrant_collection"] is True
     assert body["bm25_index"] is True
+    assert body["retrieval_index_aligned"] is True
     assert body["llm_provider"] == "ollama"
     assert body["llm_ready"] is True
 
@@ -67,12 +85,23 @@ def test_ready_returns_503_when_dependencies_down(client: TestClient):
 
 def test_ready_returns_503_when_bm25_missing(client: TestClient):
     client.app.state.resources.bm25_index = None
+    client.app.state.resources.ingest_manifest = None
     with patch("app.api.routes.llm_ready", return_value=True):
         response = client.get("/ready")
     assert response.status_code == 503
     detail = response.json()["detail"]
     assert detail["bm25_index"] is False
+    assert detail["retrieval_index_aligned"] is False
     assert detail["qdrant_collection"] is True
+
+
+def test_ready_returns_503_when_manifest_misaligned(client: TestClient):
+    client.app.state.resources.store.point_count.return_value = 99
+    with patch("app.api.routes.llm_ready", return_value=True):
+        response = client.get("/ready")
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    assert detail["retrieval_index_aligned"] is False
 
 
 def test_query_success(client: TestClient):

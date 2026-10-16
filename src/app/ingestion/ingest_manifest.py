@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
 from app.ingestion.corpus import FIQA_HF_ID
+
+if TYPE_CHECKING:
+    from app.retrieval.bm25_store import Bm25ChunkIndex
 
 MANIFEST_VERSION = 1
 
@@ -27,6 +32,10 @@ class IngestManifest(BaseModel):
 
 class IngestReuseValidationError(ValueError):
     """Raised when an existing index does not match the current ingest configuration."""
+
+
+class IndexAlignmentError(ValueError):
+    """Raised when Qdrant, BM25, and manifest disagree."""
 
 
 def manifest_path_for_collection(bm25_pickle_path: Path) -> Path:
@@ -91,3 +100,55 @@ def validate_reuse(
             f"Qdrant collection has {indexed_point_count} points but this ingest produces "
             f"{current.num_chunks} chunks. Use --recreate to rebuild."
         )
+
+
+def validate_retrieval_index_alignment(
+    manifest: IngestManifest,
+    *,
+    collection_name: str,
+    qdrant_point_count: int,
+    bm25_chunk_count: int,
+    qdrant_vector_size: int | None = None,
+) -> None:
+    """Ensure manifest, Qdrant collection, and BM25 chunk counts are consistent."""
+    if manifest.collection_name != collection_name:
+        raise IndexAlignmentError(
+            f"Manifest collection {manifest.collection_name!r} does not match "
+            f"configured collection {collection_name!r}."
+        )
+    if qdrant_point_count != manifest.num_chunks:
+        raise IndexAlignmentError(
+            f"Qdrant has {qdrant_point_count} points but manifest expects "
+            f"{manifest.num_chunks} chunks."
+        )
+    if bm25_chunk_count != manifest.num_chunks:
+        raise IndexAlignmentError(
+            f"BM25 index has {bm25_chunk_count} chunks but manifest expects "
+            f"{manifest.num_chunks}."
+        )
+    if qdrant_vector_size is not None and qdrant_vector_size != manifest.embedding_dimension:
+        raise IndexAlignmentError(
+            f"Qdrant vector size is {qdrant_vector_size} but manifest expects "
+            f"{manifest.embedding_dimension}."
+        )
+
+
+def publish_ingest_artifacts(
+    bm25_index: Bm25ChunkIndex,
+    manifest: IngestManifest,
+    bm25_path: Path,
+) -> None:
+    """Write BM25 pickle and manifest to temp files, then atomically replace published paths."""
+    manifest_path = manifest_path_for_collection(bm25_path)
+    bm25_path.parent.mkdir(parents=True, exist_ok=True)
+    bm25_tmp = bm25_path.with_name(f"{bm25_path.name}.tmp")
+    manifest_tmp = manifest_path.with_name(f"{manifest_path.name}.tmp")
+    try:
+        bm25_index.save(bm25_tmp)
+        save_manifest(manifest_tmp, manifest)
+        os.replace(bm25_tmp, bm25_path)
+        os.replace(manifest_tmp, manifest_path)
+    except Exception:
+        bm25_tmp.unlink(missing_ok=True)
+        manifest_tmp.unlink(missing_ok=True)
+        raise

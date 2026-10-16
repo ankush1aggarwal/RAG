@@ -12,7 +12,7 @@ from typing import Any, Literal
 
 from app.ingestion.schemas import SearchHit
 from app.pipeline.rag import retrieve_hits
-from app.retrieval.bm25_store import Bm25ChunkIndex
+from app.retrieval.bm25_store import Bm25ChunkIndex, tokenize
 from app.retrieval.embeddings import EmbeddingProvider
 from app.retrieval.hybrid import resolve_hybrid_candidate_limit
 from app.retrieval.qdrant_store import QdrantChunkStore
@@ -65,6 +65,24 @@ class BenchmarkTimingConfig:
     warmup_repeats: int = 3
     timed_repeats_per_query: int = 7
     warmup_query: str = "broker fees commission"
+    overlap_microbench_repeats: int = 50
+
+
+@dataclass(frozen=True)
+class Bm25OverlapEligibilityMicrobench:
+    """Time to filter/sort chunks by lexical overlap (excludes BM25Okapi scoring)."""
+
+    query: str
+    indexed_chunks: int
+    repeats: int
+    legacy_mean_ms: float
+    precomputed_mean_ms: float
+
+    @property
+    def speedup(self) -> float:
+        if self.precomputed_mean_ms <= 0:
+            return 0.0
+        return self.legacy_mean_ms / self.precomputed_mean_ms
 
 
 @dataclass(frozen=True)
@@ -88,6 +106,58 @@ class TimedBenchmarkResult:
     quality_results: list[QueryBenchmarkResult]
     model_load_ms: float | None
     model_loading_in_timed_latency: bool = False
+    bm25_overlap_microbench: Bm25OverlapEligibilityMicrobench | None = None
+
+
+def _legacy_overlap_filter_and_sort(index: Bm25ChunkIndex, query: str) -> None:
+    """Previous pattern: ``set(corpus_tokens[i])`` on every overlap check."""
+    query_token_set = set(tokenize(query))
+    corpus_tokens = index._corpus_tokens
+    n = index.num_chunks
+
+    def overlap_count(chunk_index: int) -> int:
+        return len(query_token_set & set(corpus_tokens[chunk_index]))
+
+    eligible = [i for i in range(n) if overlap_count(i) > 0]
+    eligible.sort(key=lambda i: overlap_count(i), reverse=True)
+
+
+def _precomputed_overlap_filter_and_sort(index: Bm25ChunkIndex, query: str) -> None:
+    query_token_set = set(tokenize(query))
+    overlaps = [
+        len(query_token_set & index._corpus_token_sets[i])
+        for i in range(index.num_chunks)
+    ]
+    eligible = [i for i, count in enumerate(overlaps) if count > 0]
+    eligible.sort(key=lambda i: overlaps[i], reverse=True)
+
+
+def benchmark_bm25_overlap_eligibility_pass(
+    bm25_index: Bm25ChunkIndex,
+    query: str,
+    *,
+    repeats: int = 50,
+) -> Bm25OverlapEligibilityMicrobench:
+    if repeats < 1:
+        raise ValueError("repeats must be at least 1")
+
+    start = time.perf_counter()
+    for _ in range(repeats):
+        _legacy_overlap_filter_and_sort(bm25_index, query)
+    legacy_ms = (time.perf_counter() - start) * 1000.0 / repeats
+
+    start = time.perf_counter()
+    for _ in range(repeats):
+        _precomputed_overlap_filter_and_sort(bm25_index, query)
+    precomputed_ms = (time.perf_counter() - start) * 1000.0 / repeats
+
+    return Bm25OverlapEligibilityMicrobench(
+        query=query,
+        indexed_chunks=bm25_index.num_chunks,
+        repeats=repeats,
+        legacy_mean_ms=legacy_ms,
+        precomputed_mean_ms=precomputed_ms,
+    )
 
 
 def load_query_set(path: str | Path) -> QuerySetSpec:
@@ -249,6 +319,12 @@ def benchmark_query_set_timed(
         top_k=k,
     )
 
+    overlap_microbench = benchmark_bm25_overlap_eligibility_pass(
+        bm25_index,
+        timing.warmup_query,
+        repeats=timing.overlap_microbench_repeats,
+    )
+
     return TimedBenchmarkResult(
         spec=spec,
         config=timing,
@@ -257,6 +333,7 @@ def benchmark_query_set_timed(
         per_query_latency=per_query_latency,
         quality_results=quality_results,
         model_load_ms=model_load_ms,
+        bm25_overlap_microbench=overlap_microbench,
     )
 
 
@@ -525,6 +602,32 @@ def render_exploratory_report(
 render_comparison_report = render_exploratory_report
 
 
+def _render_bm25_overlap_microbench_section(
+    bench: Bm25OverlapEligibilityMicrobench,
+) -> list[str]:
+    return [
+        "## BM25 overlap eligibility pass (microbenchmark)",
+        "",
+        (
+            "Isolated timing for lexical overlap **filter + sort** inside "
+            "`Bm25ChunkIndex.search` (does **not** include `BM25Okapi.get_scores`). "
+            "Legacy path rebuilds `set(corpus_tokens[i])` on each overlap check; "
+            "current path uses frozensets built at index load and one overlap vector per query."
+        ),
+        "",
+        f"- **Query:** `{bench.query}`",
+        f"- **Indexed chunks:** `{bench.indexed_chunks}`",
+        f"- **Repeats (mean ms):** `{bench.repeats}`",
+        "",
+        "| Path | Mean (ms) |",
+        "|------|-----------|",
+        f"| Legacy (re-tokenize per overlap check) | {bench.legacy_mean_ms:.3f} |",
+        f"| Precomputed token sets (current) | {bench.precomputed_mean_ms:.3f} |",
+        f"| **Speedup** | **{bench.speedup:.2f}×** |",
+        "",
+    ]
+
+
 def render_latency_report(
     timed: TimedBenchmarkResult,
     *,
@@ -601,6 +704,9 @@ def render_latency_report(
             f"{row['mean_ms']:.1f} | {row['min_ms']:.1f} | {row['max_ms']:.1f} | {int(row['n'])} |"
         )
 
+    if timed.bm25_overlap_microbench is not None:
+        lines.extend([""] + _render_bm25_overlap_microbench_section(timed.bm25_overlap_microbench))
+
     lines.extend(
         [
             "",
@@ -635,6 +741,10 @@ def render_latency_report(
             (
                 "- Overlap metrics come from one post-warm-up quality run "
                 "(not averaged across repeats)."
+            ),
+            (
+                "- BM25 overlap microbenchmark is a narrow slice of BM25 search; "
+                "end-to-end BM25 p50/p95 still includes vector scoring and hit assembly."
             ),
             "- Add BEIR qrels in Week 4 for NDCG/MRR.",
             "",

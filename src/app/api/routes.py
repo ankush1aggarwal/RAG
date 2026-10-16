@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.api.resources import AppResources, bm25_ready, llm_ready
+from app.api.resources import AppResources, bm25_ready, llm_ready, retrieval_index_aligned
 from app.api.schemas import (
     HealthResponse,
     QueryRequest,
@@ -33,6 +33,8 @@ def ready(request: Request) -> ReadyResponse:
     resources = _resources(request)
     settings = resources.settings
     qdrant_ok = resources.store.collection_exists()
+    bm25_loaded = resources.bm25_index is not None
+    index_aligned = retrieval_index_aligned(resources)
     bm25_ok = bm25_ready(resources)
     llm_ok = llm_ready(settings)
     if not (qdrant_ok and bm25_ok and llm_ok):
@@ -41,7 +43,8 @@ def ready(request: Request) -> ReadyResponse:
             detail={
                 "status": "not_ready",
                 "qdrant_collection": qdrant_ok,
-                "bm25_index": bm25_ok,
+                "bm25_index": bm25_loaded,
+                "retrieval_index_aligned": index_aligned,
                 "llm_provider": settings.llm_provider,
                 "llm_ready": llm_ok,
             },
@@ -49,6 +52,7 @@ def ready(request: Request) -> ReadyResponse:
     return ReadyResponse(
         qdrant_collection=qdrant_ok,
         bm25_index=bm25_ok,
+        retrieval_index_aligned=index_aligned,
         llm_provider=settings.llm_provider,
         llm_ready=llm_ok,
     )

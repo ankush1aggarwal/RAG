@@ -167,6 +167,8 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 
 **`ingest.py --no-recreate`:** re-embeds and upserts only if the new run matches the saved manifest (corpus limit, chunking, embedding method/model/dimension, document/chunk counts) and Qdrant `point_count` equals `num_chunks`. Otherwise ingest exits with an error — run with `--recreate`.
 
+**Atomic publish:** BM25 is built in memory; Qdrant is recreated/upserted first; pickle + manifest are written to `*.tmp` and `os.replace`d only after a successful upsert. `/ready` checks `retrieval_index_aligned` (manifest, Qdrant point count, BM25 chunk count, vector dimension).
+
 Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, embedding model) and `python src/scripts/ingest.py`, not from committing binary indexes. This project does **not** ship a demo BM25 pickle in git.
 
 ### BM25 pickle security
