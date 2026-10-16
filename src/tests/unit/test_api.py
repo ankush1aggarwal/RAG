@@ -32,6 +32,7 @@ def client() -> TestClient:
     ]
     settings = Settings(_env_file=None)
     manifest = IngestManifest(
+        ingest_generation_id="gen-api-test",
         corpus_limit=1000,
         chunk_size=100,
         overlap_fraction=0.2,
@@ -44,10 +45,13 @@ def client() -> TestClient:
     )
     bm25_index = MagicMock()
     bm25_index.num_chunks = 1
+    bm25_index.ingest_generation_id = "gen-api-test"
+    embedder = MagicMock()
+    embedder.dimension = 384
     resources = AppResources(
         settings=settings,
         store=store,
-        embedder=MagicMock(),
+        embedder=embedder,
         llm=_FakeLLM(),
         bm25_index=bm25_index,
         ingest_manifest=manifest,

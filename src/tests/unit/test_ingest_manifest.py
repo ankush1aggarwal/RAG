@@ -4,10 +4,12 @@ from app.ingestion.ingest_manifest import (
     IndexAlignmentError,
     IngestManifest,
     IngestReuseValidationError,
+    invalidate_published_ingest_artifacts,
     load_manifest,
     manifest_path_for_collection,
     manifests_compatible,
     publish_ingest_artifacts,
+    validate_manifest_runtime_config,
     validate_retrieval_index_alignment,
     validate_reuse,
 )
@@ -18,6 +20,7 @@ from app.retrieval.embeddings import embedding_model_for_method
 
 def _manifest(**overrides: object) -> IngestManifest:
     base = {
+        "ingest_generation_id": "gen-test-001",
         "corpus_limit": 1000,
         "chunk_size": 100,
         "overlap_fraction": 0.2,
@@ -92,6 +95,7 @@ def test_validate_retrieval_index_alignment_requires_matching_counts():
         qdrant_point_count=2,
         bm25_chunk_count=2,
         qdrant_vector_size=384,
+        bm25_ingest_generation_id="gen-test-001",
     )
     with pytest.raises(IndexAlignmentError, match="Qdrant has 1 points"):
         validate_retrieval_index_alignment(
@@ -100,6 +104,68 @@ def test_validate_retrieval_index_alignment_requires_matching_counts():
             qdrant_point_count=1,
             bm25_chunk_count=2,
             qdrant_vector_size=384,
+            bm25_ingest_generation_id="gen-test-001",
+        )
+
+
+def test_invalidate_published_ingest_artifacts_removes_pickle_and_manifest(tmp_path):
+    bm25_path = tmp_path / "fiqa_sample.pkl"
+    bm25_path.write_bytes(b"pickle")
+    manifest_path = manifest_path_for_collection(bm25_path)
+    manifest_path.write_text("{}", encoding="utf-8")
+    invalidate_published_ingest_artifacts(bm25_path)
+    assert not bm25_path.is_file()
+    assert not manifest_path.is_file()
+
+
+def test_validate_manifest_runtime_config_rejects_embedding_model_mismatch():
+    manifest = _manifest(embedding_model="other-model")
+    with pytest.raises(IndexAlignmentError, match="embedding_model"):
+        validate_manifest_runtime_config(
+            manifest,
+            corpus_limit=1000,
+            chunk_size=100,
+            overlap_fraction=0.2,
+            embedding_method="sentence_transformer",
+            embedding_model="all-MiniLM-L6-v2",
+            embedding_dimension=384,
+            collection_name="fiqa_sample",
+        )
+
+
+def test_validate_manifest_runtime_config_requires_generation_id():
+    manifest = _manifest(ingest_generation_id="")
+    with pytest.raises(IndexAlignmentError, match="ingest_generation_id"):
+        validate_manifest_runtime_config(
+            manifest,
+            corpus_limit=1000,
+            chunk_size=100,
+            overlap_fraction=0.2,
+            embedding_method="sentence_transformer",
+            embedding_model="all-MiniLM-L6-v2",
+            embedding_dimension=384,
+            collection_name="fiqa_sample",
+        )
+
+
+def test_validate_retrieval_index_alignment_checks_generation_id():
+    manifest = _manifest(ingest_generation_id="gen-a", num_chunks=2)
+    validate_retrieval_index_alignment(
+        manifest,
+        collection_name="fiqa_sample",
+        qdrant_point_count=2,
+        bm25_chunk_count=2,
+        qdrant_vector_size=384,
+        bm25_ingest_generation_id="gen-a",
+    )
+    with pytest.raises(IndexAlignmentError, match="ingest_generation_id"):
+        validate_retrieval_index_alignment(
+            manifest,
+            collection_name="fiqa_sample",
+            qdrant_point_count=2,
+            bm25_chunk_count=2,
+            qdrant_vector_size=384,
+            bm25_ingest_generation_id="gen-b",
         )
 
 
@@ -122,4 +188,7 @@ def test_publish_ingest_artifacts_writes_pickle_and_manifest(tmp_path):
     loaded_manifest = load_manifest(manifest_path_for_collection(bm25_path))
     assert loaded_manifest is not None
     assert loaded_manifest.num_chunks == 1
-    assert Bm25ChunkIndex.load(bm25_path).num_chunks == 1
+    assert loaded_manifest.ingest_generation_id == "gen-test-001"
+    loaded_index = Bm25ChunkIndex.load(bm25_path)
+    assert loaded_index.num_chunks == 1
+    assert loaded_index.ingest_generation_id == "gen-test-001"

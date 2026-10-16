@@ -94,7 +94,7 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 3 | Hybrid retrieval | **Done** | BM25 + dense + RRF; API/CLI; benchmark notebook + comparison report |
 | 4+ | Rerank, eval, prod | Planned | See §10 roadmap |
 
-**Automated tests:** 99 unit tests under `src/tests/unit/` (ingestion, retrieval, fusion, evaluation, generation, pipeline, API).
+**Automated tests:** **126** unit tests under `src/tests/unit/` (ingestion + ingest manifest, chunking, BM25/hybrid/fusion, embeddings, Qdrant store, evaluation benchmarks, generation, pipeline, API, settings). Run: `pytest src/tests/unit` (see §5 step 6).
 
 ---
 
@@ -104,7 +104,7 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 - [x] Configure Cursor workspace (incl. project context rules)
 - [x] Initial structure: `src/`, `data/`, `notebooks/`, `docs/`
 - [x] `README.md`, `PROJECT_SPEC.md`, `.gitignore`
-- [x] Local `.env` for secrets (gitignored; no committed `.env.example`)
+- [x] Local `.env` for secrets (gitignored); committed **`.env.example`** as a template (copy to `.env` and fill in values)
 - [x] `pyproject.toml` (package metadata + optional dependency groups)
 - [x] Python **≥ 3.11** (workspace-driven; playbook version pins are reference only)
 - [x] Architecture documented
@@ -210,7 +210,16 @@ Minimal install without the full freeze (CI or lightweight venv):
 pip install -e ".[ingestion,embeddings,api,hosted,lexical,dev]"
 ```
 
-**2. Configure `.env`** (examples — do not commit):
+**2. Configure environment**
+
+Copy the committed template and edit locally (never commit `.env`):
+
+```powershell
+copy .env.example .env   # Windows
+# cp .env.example .env     # macOS/Linux
+```
+
+`.env.example` lists the variables the app reads via `Settings`; add secrets (e.g. `COHERE_API_KEY`) and overrides in `.env`. Common keys:
 
 ```env
 # Embeddings (Week 1)
@@ -273,11 +282,15 @@ python src/scripts/serve_api.py --reload
 - Interactive docs: `http://127.0.0.1:8000/docs`
 - RAG query: `POST http://127.0.0.1:8000/query` with JSON `{"question": "...", "top_k": 3, "method": "dense"}` — `method` may be `dense`, `bm25`, or `hybrid` (default `dense`)
 
-**6. Run tests:**
+**6. Run unit tests:**
 
 ```powershell
 pytest src/tests/unit
+# optional: verbose + stop on first failure
+pytest src/tests/unit -v --tb=short
 ```
+
+All tests are **unit** scope (mocked Qdrant/LLM where needed); integration and qrels-based eval tests are planned for later weeks.
 
 ---
 
@@ -788,7 +801,7 @@ Served by `src/app/api/` (`create_app()`). Local entrypoint: `python src/scripts
 }
 ```
 
-**`GET /ready` failure (503)** includes `qdrant_collection`, `bm25_index`, `retrieval_index_aligned`, `llm_provider`, and `llm_ready` in `detail`. BM25 pickle, `*.manifest.json`, and Qdrant point count must agree (published together by `ingest.py`).
+**`GET /ready` failure (503)** includes `qdrant_collection`, `bm25_index`, `retrieval_index_aligned`, `llm_provider`, and `llm_ready` in `detail`. Readiness requires BM25 + manifest + Qdrant to agree (counts, vector dimension, `ingest_generation_id`) and the manifest to match the API’s embedding method/model/dimension and ingest settings. A destructive ingest (`--recreate`) clears on-disk artifacts first so a partial failed run stays not-ready.
 
 For `LLM_PROVIDER=cohere`, `llm_ready` means `COHERE_API_KEY` is configured (no live Cohere ping on readiness).
 
@@ -895,7 +908,7 @@ RAG/
 │   │   ├── evaluate.py       ⬜ planned (Week 4 qrels runner)
 │   │   └── benchmark.py      ⬜ optional CLI wrapper for `retrieval_benchmark`
 │   └── tests/
-│       └── unit/             ✅ 99 tests (no integration/ eval dirs yet)
+│       └── unit/             ✅ 126 unit tests (no integration/ eval dirs yet)
 │
 ├── data/                     # Local Qdrant path, FiQA artifacts (gitignored as needed)
 ├── notebooks/                # code_dev.ipynb — experiments, not canonical app code
@@ -907,7 +920,8 @@ RAG/
 ├── pyproject.toml
 ├── requirements.txt            # Full workspace freeze (incl. FastAPI, notebooks)
 ├── PROJECT_SPEC.md
-├── .env                        # local only (gitignored)
+├── .env.example                # committed template (copy → .env)
+├── .env                        # local secrets/overrides (gitignored)
 └── README.md
 ```
 
@@ -1368,7 +1382,7 @@ The project will be considered complete when all of the following are true.
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
 - [x] Request validation (Pydantic) + basic HTTP errors (`422`, `503`)
 - [ ] Streaming works (`POST /query/stream` — Week 5)
-- [x] Unit tests exist (99 tests; integration tests later)
+- [x] Unit tests exist (**126** in `src/tests/unit/`; integration tests later)
 - [ ] Structured logging exists (Week 6)
 - [x] Configuration is externalized (`Settings` + `.env`)
 

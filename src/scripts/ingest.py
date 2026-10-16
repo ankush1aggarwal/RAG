@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+import uuid
 
 from dotenv import load_dotenv
 
@@ -15,6 +16,7 @@ from app.ingestion import chunks_from_documents, documents_from_corpus, load_fiq
 from app.ingestion.ingest_manifest import (
     IngestManifest,
     IngestReuseValidationError,
+    invalidate_published_ingest_artifacts,
     load_manifest,
     manifest_path_for_collection,
     publish_ingest_artifacts,
@@ -69,6 +71,11 @@ def main() -> None:
     if qdrant_path is not None and not os.path.isabs(qdrant_path):
         qdrant_path = os.path.join(_REPO_ROOT, qdrant_path)
 
+    bm25_path = settings.resolved_bm25_index_path(args.collection)
+    manifest_path = manifest_path_for_collection(bm25_path)
+    if args.recreate:
+        invalidate_published_ingest_artifacts(bm25_path)
+
     print(f"Loading BEIR FiQA corpus (limit={args.limit})...")
     dataset = load_fiqa_corpus(limit=args.limit)
     documents = documents_from_corpus(dataset)
@@ -97,6 +104,7 @@ def main() -> None:
     validate_chunk_embedding_dimensions(chunks, expected_dim)
 
     manifest = IngestManifest(
+        ingest_generation_id=str(uuid.uuid4()),
         corpus_limit=args.limit,
         chunk_size=args.chunk_size,
         overlap_fraction=args.overlap,
@@ -111,8 +119,6 @@ def main() -> None:
         num_documents=len(documents),
         num_chunks=len(chunks),
     )
-    bm25_path = settings.resolved_bm25_index_path(args.collection)
-    manifest_path = manifest_path_for_collection(bm25_path)
 
     store = QdrantChunkStore.from_path(qdrant_path, args.collection)
     try:
