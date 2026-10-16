@@ -2,6 +2,8 @@
 .venv/
 .cursor/
 data/qdrant_local/
+# BM25 pickles are local build artifacts (regenerate via src/scripts/ingest.py)
+data/bm25_indexes/
 *.egg-info/
 **/__pycache__/
 .ipynb_checkpoints/

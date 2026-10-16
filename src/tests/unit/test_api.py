@@ -7,6 +7,8 @@ from app.api.main import create_app
 from app.api.resources import AppResources
 from app.config.settings import Settings
 from app.ingestion.schemas import SearchHit
+
+
 class _FakeLLM:
     def generate(self, prompt: str, *, system: str | None = None) -> str:
         return "API answer."

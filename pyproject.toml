@@ -12,19 +12,21 @@ readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Ankush" }]
 
-# Core runtime (Weeks 0–2): config, Qdrant client, HTTP clients for Ollama readiness.
-# Embeddings, datasets, Cohere, and FastAPI are optional extras — see [project.optional-dependencies].
+# Core runtime: config, Qdrant, HTTP (Ollama readiness), BM25 (Week 3 hybrid path).
+# Embeddings, datasets, Cohere, and FastAPI remain optional extras.
 dependencies = [
     "qdrant-client>=1.12.0",
     "python-dotenv>=1.0.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "httpx>=0.27.0",
+    "rank-bm25>=0.2.2",
 ]
 
 [project.optional-dependencies]
 embeddings = ["sentence-transformers>=3.0"]
 hosted = ["cohere>=5.0"]
+# Backward-compatible install alias; rank-bm25 is already a core dependency.
 lexical = ["rank-bm25>=0.2.2"]
 
 # Week 2 HTTP service (FastAPI + ASGI server)
@@ -58,3 +60,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# CLI entrypoints adjust sys.path before importing `app.*`
+"src/scripts/*.py" = ["E402"]

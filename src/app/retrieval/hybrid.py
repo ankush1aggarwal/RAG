@@ -9,6 +9,12 @@ from app.retrieval.fusion import DEFAULT_RRF_K, reciprocal_rank_fusion
 from app.retrieval.qdrant_store import QdrantChunkStore
 
 
+def resolve_hybrid_candidate_limit(limit: int, candidate_limit: int | None = None) -> int:
+    if candidate_limit is not None:
+        return candidate_limit
+    return max(limit * 3, limit)
+
+
 def hybrid_search_text(
     query: str,
     *,
@@ -22,7 +28,7 @@ def hybrid_search_text(
     """Retrieve candidates from dense and BM25, fuse with RRF."""
     if limit < 1:
         raise ValueError("limit must be at least 1")
-    per_list = candidate_limit if candidate_limit is not None else max(limit * 3, limit)
+    per_list = resolve_hybrid_candidate_limit(limit, candidate_limit)
 
     dense_hits = store.search_text(query, embedder, limit=per_list)
     bm25_hits = bm25_index.search(query, limit=per_list)

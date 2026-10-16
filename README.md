@@ -130,7 +130,7 @@ BeIR/fiqa corpus → normalize → chunk → embed → Qdrant → dense search
 | Embeddings | `src/app/retrieval/embeddings.py` | `EmbeddingProvider`: Sentence Transformers + Cohere |
 | Vector store | `src/app/retrieval/qdrant_store.py` | Local path or in-memory; `close()` on shutdown; payload includes `doc_id`, `chunk_id`, `doc_title`, `chunk_text` |
 | Settings | `src/app/config/settings.py` | `pydantic-settings` from `.env` |
-| Ingest CLI | `src/scripts/ingest.py` | Default **`--recreate`** (delete/rebuild collection); use `--no-recreate` to upsert into existing index; builds **Qdrant + BM25** from the same chunks; closes Qdrant client after run |
+| Ingest CLI | `src/scripts/ingest.py` | Default **`--recreate`** (delete/rebuild Qdrant + BM25); `--no-recreate` only if manifest + point count match; writes `*.manifest.json`; closes Qdrant client after run |
 | Query CLI | `src/scripts/query.py` | Retrieval-only: dense, `bm25`, or `hybrid` (RRF); prints top-k hits + scores (no LLM) |
 
 **Default embedding model:** `all-MiniLM-L6-v2` (`sentence_transformer`). **Default index:** `data/qdrant_local`, collection `fiqa_sample`, 1k-doc sample (`fiqa_corpus_limit`).
@@ -177,7 +177,7 @@ Question → dense + BM25 candidates → RRF fuse → prompt → LLM → answer 
 | API resources | `src/app/api/resources.py` | Loads BM25 at startup when pickle exists; `bm25_ready()` for readiness |
 | Query CLI | `src/scripts/query.py` | `--method sentence_transformer \| cohere \| bm25 \| hybrid` |
 | Evaluation | `src/app/evaluation/retrieval_benchmark.py` | Fixed query set in `data/benchmarks/fiqa_sample_query_set.json`; latency + overlap metrics |
-| Benchmark notebook | `notebooks/retrieval_benchmark.ipynb` | Writes `docs/reports/week3_retrieval_comparison.md` |
+| Benchmark notebook | `notebooks/retrieval_benchmark.ipynb` | Latency report (warm-up + repeats, p50/p95) + exploratory snapshot |
 
 **Week 3 stretch (optional):** weighted RRF.
 
@@ -238,12 +238,16 @@ BM25_INDEX_DIR=data/bm25_indexes
 **3. Build the index** (Ollama not required for ingest):
 
 ```powershell
-# Default: delete and recreate the collection, then index (safe for dev re-runs):
+# Default: delete and recreate Qdrant + BM25 (recommended when corpus/chunking/embeddings change):
 python src/scripts/ingest.py
 
-# Reuse existing collection and upsert (checks embedding dimension matches):
+# Reuse existing Qdrant collection only when configuration is unchanged:
 python src/scripts/ingest.py --no-recreate
 ```
+
+`--no-recreate` is safe only when **`--limit`**, **chunk size/overlap**, **embedding method/model**, and resulting **document/chunk counts** match the saved `*.manifest.json` next to the BM25 pickle (and Qdrant point count matches). Otherwise use default `--recreate`.
+
+`data/qdrant_local/` and `data/bm25_indexes/` are **gitignored** local indexes. They are not shipped in the repo — run ingest on each machine (same as Qdrant). BM25 files are **pickle**; only load indexes you built locally or otherwise trust (see `Bm25ChunkIndex.load` in `bm25_store.py`).
 
 **4. Retrieval smoke test:**
 
@@ -297,7 +301,7 @@ Environment variables map to fields in `src/app/config/settings.py` (case-insens
 | `CHUNK_OVERLAP_FRACTION` | `0.2` | Overlap as fraction of chunk size |
 | `QDRANT_PATH` | `data/qdrant_local` | Empty string → in-memory Qdrant |
 | `COLLECTION_NAME` | `fiqa_sample` | Qdrant collection name |
-| `BM25_INDEX_DIR` | `data/bm25_indexes` | Directory for `<collection>.pkl` (created by ingest) |
+| `BM25_INDEX_DIR` | `data/bm25_indexes` | Directory for `<collection>.pkl` (created by ingest; **not committed**) |
 
 Full list and design notes: [`PROJECT_SPEC.md`](PROJECT_SPEC.md).
 

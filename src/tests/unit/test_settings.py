@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.config.settings import Settings, _REPO_ROOT
+from app.config.settings import _REPO_ROOT, Settings
 
 
 def test_settings_defaults():
@@ -19,8 +19,13 @@ def test_settings_defaults():
 
 
 def test_resolved_bm25_index_path():
-    settings = Settings(collection_name="fiqa_sample", bm25_index_dir="data/bm25_indexes", _env_file=None)
-    assert settings.resolved_bm25_index_path() == _REPO_ROOT / "data" / "bm25_indexes" / "fiqa_sample.pkl"
+    settings = Settings(
+        collection_name="fiqa_sample",
+        bm25_index_dir="data/bm25_indexes",
+        _env_file=None,
+    )
+    expected = _REPO_ROOT / "data" / "bm25_indexes" / "fiqa_sample.pkl"
+    assert settings.resolved_bm25_index_path() == expected
 
 
 def test_resolved_qdrant_path_relative_to_repo_root():

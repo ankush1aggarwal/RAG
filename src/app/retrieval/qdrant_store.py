@@ -19,7 +19,7 @@ class QdrantChunkStore:
         self._closed = False
 
     @classmethod
-    def from_path(cls, path: str | None, collection_name: str) -> "QdrantChunkStore":
+    def from_path(cls, path: str | None, collection_name: str) -> QdrantChunkStore:
         if path is None:
             client = QdrantClient(":memory:")
         else:
@@ -28,6 +28,15 @@ class QdrantChunkStore:
 
     def collection_exists(self) -> bool:
         return self._client.collection_exists(self._collection_name)
+
+    def point_count(self) -> int:
+        if not self.collection_exists():
+            return 0
+        result = self._client.count(
+            collection_name=self._collection_name,
+            exact=True,
+        )
+        return int(result.count)
 
     def vector_size(self) -> int | None:
         if not self.collection_exists():

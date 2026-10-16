@@ -30,7 +30,7 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | Embeddings (baseline) | **Hugging Face** `sentence-transformers` | Default **`all-MiniLM-L6-v2`** |
 | Embeddings (hosted) | **Cohere** `embed-v4.0` | Optional via `EMBEDDING_METHOD=cohere` |
 | Vector store | **Qdrant** | `qdrant-client`; local path or `:memory:` |
-| Lexical | **BM25** | `rank-bm25`; pickle aligned with chunk IDs |
+| Lexical | **BM25** | `rank-bm25` (**core** dep); pickle aligned with chunk IDs |
 | Hybrid fusion | **RRF** (equal-weight lists) | `reciprocal_rank_fusion`; weighted RRF optional stretch |
 | Reranking | Cross-encoder and/or **Cohere Rerank** | **Week 4** |
 | Local LLM | **Ollama** (`/api/chat`) | `LLMProvider` interface |
@@ -102,7 +102,7 @@ Factory functions:
 
 | Capability | This repo implementation | Week | Status |
 |------------|-------------------------|------|--------|
-| Ingest + chunk | `ingestion/*`, `scripts/ingest.py` (`--recreate` default **true**; `--no-recreate` to reuse) | 1 | ✅ |
+| Ingest + chunk | `ingestion/*`, `scripts/ingest.py` (`--recreate` default **true**; `--no-recreate` validates manifest) | 1 | ✅ |
 | Dense retrieval | `QdrantChunkStore.search_text`, `scripts/query.py` | 1 | ✅ |
 | BM25 + RRF + hybrid | `bm25_store.py`, `fusion.py`, `hybrid.py`, `retrieve_hits` | 3 | ✅ |
 | Prompt + grounded generation | `generation/prompt.py`, `pipeline/rag.py` | 2 | ✅ |
@@ -153,7 +153,25 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 | `CHUNK_OVERLAP_FRACTION` | `0.2` | Overlap fraction |
 | `QDRANT_PATH` | `data/qdrant_local` | Empty → in-memory Qdrant |
 | `COLLECTION_NAME` | `fiqa_sample` | Collection name |
-| `BM25_INDEX_DIR` | `data/bm25_indexes` | Pickle path: `<dir>/<collection>.pkl` |
+| `BM25_INDEX_DIR` | `data/bm25_indexes` | Pickle path: `<dir>/<collection>.pkl` (gitignored; build via `ingest.py`) |
+
+### Local index artifacts (not in git)
+
+| Path | Produced by | In repo? |
+|------|-------------|----------|
+| `data/qdrant_local/` | `ingest.py` | No (`.gitignore`) |
+| `data/bm25_indexes/*.pkl` | `ingest.py` | No (`.gitignore`) |
+| `data/bm25_indexes/*.manifest.json` | `ingest.py` | No (same directory) |
+
+**`ingest.py --recreate` (default):** deletes and rebuilds the Qdrant collection and replaces BM25 + manifest. Use after changing corpus limit, chunking, or embeddings.
+
+**`ingest.py --no-recreate`:** re-embeds and upserts only if the new run matches the saved manifest (corpus limit, chunking, embedding method/model/dimension, document/chunk counts) and Qdrant `point_count` equals `num_chunks`. Otherwise ingest exits with an error — run with `--recreate`.
+
+Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, embedding model) and `python src/scripts/ingest.py`, not from committing binary indexes. This project does **not** ship a demo BM25 pickle in git.
+
+### BM25 pickle security
+
+`Bm25ChunkIndex.save` / `load` use Python **pickle**. Pickle can execute arbitrary code when loading malicious files. Only load indexes you created with this project's ingest pipeline (or other sources you fully trust). Do not point `BM25_INDEX_DIR` at user-uploaded or untrusted paths in production without a safer serialization format.
 
 ### API retrieval (Week 3)
 
@@ -224,11 +242,11 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 
 | Extra | Packages | When to install |
 |-------|----------|-----------------|
-| (core) | qdrant-client, pydantic, httpx, dotenv | Always |
+| (core) | qdrant-client, pydantic, httpx, dotenv, **rank-bm25** | Always (`app.retrieval` imports BM25) |
 | `embeddings` | sentence-transformers | Ingest + ST query |
 | `hosted` | cohere | Cohere embed or chat |
 | `ingestion` | datasets | `BeIR/fiqa` load in ingest |
-| `lexical` | rank-bm25 | BM25 index + hybrid |
+| `lexical` | rank-bm25 (alias) | Optional extra name; same package as core since Week 3 |
 | `api` | fastapi, uvicorn | `serve_api.py` |
 | `dev` | pytest, ruff, fastapi (TestClient) | Development |
 | `notebooks` | jupyter, pandas | `notebooks/` |

@@ -12,7 +12,20 @@ if _REPO_ROOT not in sys.path:
 
 from app.config import get_settings
 from app.ingestion import chunks_from_documents, documents_from_corpus, load_fiqa_corpus
-from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, attach_embeddings, create_embedding_provider
+from app.ingestion.ingest_manifest import (
+    IngestManifest,
+    IngestReuseValidationError,
+    load_manifest,
+    manifest_path_for_collection,
+    save_manifest,
+    validate_reuse,
+)
+from app.retrieval import (
+    Bm25ChunkIndex,
+    QdrantChunkStore,
+    attach_embeddings,
+    create_embedding_provider,
+)
 from app.retrieval.embeddings import embedding_dimension, validate_chunk_embedding_dimensions
 
 
@@ -42,7 +55,9 @@ def main() -> None:
         "--recreate",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Delete and rebuild the collection if it already exists (default: True). "
+        help="Delete and rebuild Qdrant + BM25 if the collection exists (default: True). "
+        "With --no-recreate, reuse only when corpus/chunking/embedding settings match "
+        "the saved ingest manifest and point count.",
     )
     args = parser.parse_args()
 
@@ -77,20 +92,45 @@ def main() -> None:
     attach_embeddings(chunks, embedder)
     validate_chunk_embedding_dimensions(chunks, expected_dim)
 
+    manifest = IngestManifest(
+        corpus_limit=args.limit,
+        chunk_size=args.chunk_size,
+        overlap_fraction=args.overlap,
+        embedding_method=args.method,
+        embedding_model=settings.embedding_model,
+        embedding_dimension=expected_dim,
+        collection_name=args.collection,
+        num_documents=len(documents),
+        num_chunks=len(chunks),
+    )
     bm25_path = settings.resolved_bm25_index_path(args.collection)
-    print(f"Building BM25 index for {len(chunks)} chunks...")
-    bm25_index = Bm25ChunkIndex.from_chunks(chunks)
-    bm25_index.save(bm25_path)
-    print(f"BM25 index saved to {bm25_path}")
+    manifest_path = manifest_path_for_collection(bm25_path)
 
     store = QdrantChunkStore.from_path(qdrant_path, args.collection)
     try:
-        if store.collection_exists() and not args.recreate:
-            print(f"Using existing collection '{args.collection}'.")
+        if not args.recreate and store.collection_exists():
+            print(f"Validating existing collection '{args.collection}' for --no-recreate...")
+            try:
+                validate_reuse(
+                    load_manifest(manifest_path),
+                    manifest,
+                    indexed_point_count=store.point_count(),
+                )
+            except IngestReuseValidationError as exc:
+                raise SystemExit(str(exc)) from exc
+            print("Configuration matches saved ingest manifest.")
+
+        print(f"Building BM25 index for {len(chunks)} chunks...")
+        bm25_index = Bm25ChunkIndex.from_chunks(chunks)
+        bm25_index.save(bm25_path)
+        print(f"BM25 index saved to {bm25_path}")
+
         store.prepare_collection(expected_dim, recreate=args.recreate)
         store.assert_collection_vector_size(expected_dim)
         print(f"Indexing {len(chunks)} chunks into '{args.collection}' (dim={expected_dim})...")
         store.upsert_chunks(chunks)
+        save_manifest(manifest_path, manifest)
+        print(f"Ingest manifest saved to {manifest_path}")
         print("Ingest complete.")
     finally:
         store.close()
