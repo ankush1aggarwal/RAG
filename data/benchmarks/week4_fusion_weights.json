@@ -1,0 +1,8 @@
+{
+  "dense": 0.95,
+  "bm25": 0.050000000000000044,
+  "metric_optimized": "ndcg@10",
+  "qrels_split": "validation",
+  "num_queries": 500,
+  "score_at_selection": 0.38492059632318393
+}

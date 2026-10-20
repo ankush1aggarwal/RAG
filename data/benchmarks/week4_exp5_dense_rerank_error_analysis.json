@@ -1,0 +1,2556 @@
+{
+  "summary": {
+    "baseline_artifact": "D:\\Repos\\RAG\\RAG\\data\\benchmarks\\week4_exp4_dense_test.json",
+    "rerank_artifact": "D:\\Repos\\RAG\\RAG\\data\\benchmarks\\week4_exp5_dense_test.json",
+    "candidate_limit": 50,
+    "top_k": 10,
+    "num_queries": 648,
+    "num_helped": 181,
+    "num_hurt": 178,
+    "num_unchanged": 289,
+    "helped_by_cause": {
+      "irrelevant_candidate_ordering": 180,
+      "query_wording_chunk_mismatch": 1
+    },
+    "hurt_by_cause": {
+      "irrelevant_candidate_ordering": 128,
+      "duplicate_chunks": 48,
+      "query_wording_chunk_mismatch": 2
+    },
+    "top_helped": [
+      "5155",
+      "7096",
+      "9643",
+      "10558",
+      "549",
+      "7754",
+      "9556",
+      "4464"
+    ],
+    "top_hurt": [
+      "106",
+      "18",
+      "5585",
+      "6625",
+      "945",
+      "9644",
+      "5343",
+      "9929"
+    ]
+  },
+  "queries": [
+    {
+      "query_id": "10034",
+      "direction": "helped",
+      "delta_ndcg10": 0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "10039",
+      "direction": "helped",
+      "delta_ndcg10": 0.13092975357145753,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "10109",
+      "direction": "helped",
+      "delta_ndcg10": 0.031077874720450094,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['156029', '506374', '499849', '406974'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "10122",
+      "direction": "helped",
+      "delta_ndcg10": 0.3903800499921017,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "10136",
+      "direction": "hurt",
+      "delta_ndcg10": -0.18154179253735267,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 5 for dense)."
+    },
+    {
+      "query_id": "10137",
+      "direction": "hurt",
+      "delta_ndcg10": -0.14379281289197782,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "10183",
+      "direction": "hurt",
+      "delta_ndcg10": -0.20438239758848611,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 7 for dense)."
+    },
+    {
+      "query_id": "10267",
+      "direction": "hurt",
+      "delta_ndcg10": -0.03837502512446628,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 5 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "10414",
+      "direction": "hurt",
+      "delta_ndcg10": -0.04250547381013825,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "10447",
+      "direction": "helped",
+      "delta_ndcg10": 0.0205655539631949,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-8) to 4 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "10497",
+      "direction": "helped",
+      "delta_ndcg10": 0.16340035939894826,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "10526",
+      "direction": "hurt",
+      "delta_ndcg10": -0.01879027595113203,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 5 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "10558",
+      "direction": "helped",
+      "delta_ndcg10": 0.8315546295836225,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "10596",
+      "direction": "helped",
+      "delta_ndcg10": 0.2772734273550481,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "106",
+      "direction": "hurt",
+      "delta_ndcg10": -1.0,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "10601",
+      "direction": "helped",
+      "delta_ndcg10": 0.2440769463369159,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "10628",
+      "direction": "hurt",
+      "delta_ndcg10": -0.5,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 3 for dense)."
+    },
+    {
+      "query_id": "10645",
+      "direction": "helped",
+      "delta_ndcg10": 0.38685280723454163,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "10674",
+      "direction": "hurt",
+      "delta_ndcg10": -0.051112363744679146,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "10710",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "10734",
+      "direction": "helped",
+      "delta_ndcg10": 0.13724544926861038,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "10792",
+      "direction": "hurt",
+      "delta_ndcg10": -0.21095084422651578,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "10808",
+      "direction": "helped",
+      "delta_ndcg10": 0.1200992445828657,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "10812",
+      "direction": "helped",
+      "delta_ndcg10": 0.2552318849208052,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "10827",
+      "direction": "hurt",
+      "delta_ndcg10": -0.05652670087893602,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 7 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "10994",
+      "direction": "hurt",
+      "delta_ndcg10": -0.21840743681816416,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "11039",
+      "direction": "hurt",
+      "delta_ndcg10": -0.5185542680662162,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "11054",
+      "direction": "hurt",
+      "delta_ndcg10": -0.032815315180810156,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 4 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "11088",
+      "direction": "helped",
+      "delta_ndcg10": 0.5,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-6) to 1 (reranked top-7) within the candidate pool."
+    },
+    {
+      "query_id": "1157",
+      "direction": "hurt",
+      "delta_ndcg10": -0.0328153151808101,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-9) to 7 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "1230",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2890648263178879,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 10 for dense)."
+    },
+    {
+      "query_id": "1281",
+      "direction": "hurt",
+      "delta_ndcg10": -0.13092975357145753,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "1306",
+      "direction": "helped",
+      "delta_ndcg10": 0.19519002499605084,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-8) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "1322",
+      "direction": "hurt",
+      "delta_ndcg10": -0.11751610475642714,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 9 for dense)."
+    },
+    {
+      "query_id": "1391",
+      "direction": "hurt",
+      "delta_ndcg10": -0.20210734650054757,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 4 for dense)."
+    },
+    {
+      "query_id": "1393",
+      "direction": "hurt",
+      "delta_ndcg10": -0.07296834696899529,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "1415",
+      "direction": "hurt",
+      "delta_ndcg10": -0.01710791804331213,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "1441",
+      "direction": "hurt",
+      "delta_ndcg10": -0.05613384548527511,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "1451",
+      "direction": "helped",
+      "delta_ndcg10": 0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "1530",
+      "direction": "helped",
+      "delta_ndcg10": 0.06747890804517592,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "1676",
+      "direction": "helped",
+      "delta_ndcg10": 0.22292098240999508,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "1736",
+      "direction": "helped",
+      "delta_ndcg10": 0.158188888623923,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "18",
+      "direction": "hurt",
+      "delta_ndcg10": -1.0,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 4 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "1819",
+      "direction": "helped",
+      "delta_ndcg10": 0.18553982036084993,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-8) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "1824",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3010299956639812,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-7 after rerank (was rank 9 for dense)."
+    },
+    {
+      "query_id": "1832",
+      "direction": "helped",
+      "delta_ndcg10": 0.43067655807339306,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "1871",
+      "direction": "hurt",
+      "delta_ndcg10": -0.008963028163977094,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "1915",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6241031867366736,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "1994",
+      "direction": "hurt",
+      "delta_ndcg10": -0.04387306269296182,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2010",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2938982339535252,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 2 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "2075",
+      "direction": "hurt",
+      "delta_ndcg10": -0.06877221775737624,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "2076",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "2183",
+      "direction": "helped",
+      "delta_ndcg10": 0.013261172772407126,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['24994', '571625', '124427'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "2204",
+      "direction": "hurt",
+      "delta_ndcg10": -0.01805705607271224,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "2264",
+      "direction": "helped",
+      "delta_ndcg10": 0.18457569677956817,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "2306",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08027921085181244,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2318",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6666666666666667,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 7 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "2334",
+      "direction": "helped",
+      "delta_ndcg10": 0.03494689153434538,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "2348",
+      "direction": "helped",
+      "delta_ndcg10": 0.2739089797024923,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "2376",
+      "direction": "hurt",
+      "delta_ndcg10": -0.37541655576468785,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 4 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "2384",
+      "direction": "hurt",
+      "delta_ndcg10": -0.026400050467840885,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "2388",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2395",
+      "direction": "helped",
+      "delta_ndcg10": 0.3562071871080222,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "2398",
+      "direction": "helped",
+      "delta_ndcg10": 0.16958010263680806,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "2400",
+      "direction": "helped",
+      "delta_ndcg10": 0.2960819109658652,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['564271'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "2423",
+      "direction": "hurt",
+      "delta_ndcg10": -0.38121301394452073,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "2460",
+      "direction": "hurt",
+      "delta_ndcg10": -0.4273926024436836,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "2513",
+      "direction": "helped",
+      "delta_ndcg10": 0.31546487678572877,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "2516",
+      "direction": "hurt",
+      "delta_ndcg10": -0.0511123637446792,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "2549",
+      "direction": "hurt",
+      "delta_ndcg10": -0.37594947999616213,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 5 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2568",
+      "direction": "hurt",
+      "delta_ndcg10": -0.358054410832327,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "2579",
+      "direction": "hurt",
+      "delta_ndcg10": -0.17227864758844283,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "2587",
+      "direction": "helped",
+      "delta_ndcg10": 0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-8) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2589",
+      "direction": "helped",
+      "delta_ndcg10": 0.11454011842851253,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "2593",
+      "direction": "helped",
+      "delta_ndcg10": 0.28930792834276164,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-10) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2598",
+      "direction": "helped",
+      "delta_ndcg10": 0.4087647951769723,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 7 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "2676",
+      "direction": "hurt",
+      "delta_ndcg10": -0.5,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 3 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "2685",
+      "direction": "hurt",
+      "delta_ndcg10": -0.09010000865236768,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 6 for dense)."
+    },
+    {
+      "query_id": "2713",
+      "direction": "helped",
+      "delta_ndcg10": 0.17723928678404774,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "2724",
+      "direction": "hurt",
+      "delta_ndcg10": -0.042505473810138306,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 4 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "2747",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2440769463369159,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "2749",
+      "direction": "helped",
+      "delta_ndcg10": 0.08027921085181244,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "2856",
+      "direction": "hurt",
+      "delta_ndcg10": -0.07203883062568595,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2857",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2672288556217367,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 8 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "2923",
+      "direction": "helped",
+      "delta_ndcg10": 0.07831168970466884,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['390089'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "2968",
+      "direction": "helped",
+      "delta_ndcg10": 0.5336547669724356,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "2994",
+      "direction": "helped",
+      "delta_ndcg10": 0.061442547954487,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3006",
+      "direction": "helped",
+      "delta_ndcg10": 0.19092086617893467,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "3008",
+      "direction": "helped",
+      "delta_ndcg10": 0.22225251372098423,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3014",
+      "direction": "hurt",
+      "delta_ndcg10": -0.14965509446524541,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 5 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3033",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08027921085181244,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3049",
+      "direction": "helped",
+      "delta_ndcg10": 0.175069493247551,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-8) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "3085",
+      "direction": "helped",
+      "delta_ndcg10": 0.06937588361343297,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3091",
+      "direction": "helped",
+      "delta_ndcg10": 0.1806589466552878,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "3103",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "3115",
+      "direction": "helped",
+      "delta_ndcg10": 0.020977440839036188,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['234950', '389028', '316794'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "3148",
+      "direction": "helped",
+      "delta_ndcg10": 0.09317496203503334,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['178127', '92888', '438000'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "3179",
+      "direction": "helped",
+      "delta_ndcg10": 0.1021911987942431,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-8) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "3189",
+      "direction": "hurt",
+      "delta_ndcg10": -0.02498103320089337,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 8 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3264",
+      "direction": "helped",
+      "delta_ndcg10": 0.011963438717029762,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['134764'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "3394",
+      "direction": "hurt",
+      "delta_ndcg10": -0.5855700749881525,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "3404",
+      "direction": "helped",
+      "delta_ndcg10": 0.08671382849411972,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "3405",
+      "direction": "helped",
+      "delta_ndcg10": 0.3333333333333333,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "3451",
+      "direction": "helped",
+      "delta_ndcg10": 0.07034719049913582,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3453",
+      "direction": "helped",
+      "delta_ndcg10": 0.44470182234908084,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-6) to 1 (reranked top-7) within the candidate pool."
+    },
+    {
+      "query_id": "3500",
+      "direction": "helped",
+      "delta_ndcg10": 0.47254583883871204,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 1 (reranked top-7) within the candidate pool."
+    },
+    {
+      "query_id": "3503",
+      "direction": "helped",
+      "delta_ndcg10": 0.31974524644482855,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "3528",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2440769463369159,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 5 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "3530",
+      "direction": "helped",
+      "delta_ndcg10": 0.23463936301137822,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3566",
+      "direction": "helped",
+      "delta_ndcg10": 0.03150848153375449,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 10 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3594",
+      "direction": "helped",
+      "delta_ndcg10": 0.3122051975224892,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3612",
+      "direction": "hurt",
+      "delta_ndcg10": -0.123151194370365,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 8 for dense)."
+    },
+    {
+      "query_id": "3615",
+      "direction": "helped",
+      "delta_ndcg10": 0.20438239758848611,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "3625",
+      "direction": "hurt",
+      "delta_ndcg10": -0.17319681505689122,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3683",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2933289748853608,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 4 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "3724",
+      "direction": "hurt",
+      "delta_ndcg10": -0.009645246727929796,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 5 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "3771",
+      "direction": "hurt",
+      "delta_ndcg10": -0.4103915680233244,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "3781",
+      "direction": "helped",
+      "delta_ndcg10": 0.037773737041674194,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-7) to 2 (reranked top-5) within the candidate pool."
+    },
+    {
+      "query_id": "3791",
+      "direction": "hurt",
+      "delta_ndcg10": -0.020565553963194927,
+      "primary_cause": "query_wording_chunk_mismatch",
+      "detail": "Top-hit lexical overlap with query shifted (dense top-1 Jaccard=0.137 \u2192 rerank top-1 Jaccard=0.273); CE may favor wording over dense geometry."
+    },
+    {
+      "query_id": "3801",
+      "direction": "helped",
+      "delta_ndcg10": 0.38685280723454163,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "3822",
+      "direction": "helped",
+      "delta_ndcg10": 0.015904985140410624,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "3830",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3010299956639812,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 9 for dense)."
+    },
+    {
+      "query_id": "3837",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "3875",
+      "direction": "helped",
+      "delta_ndcg10": 0.08027921085181244,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "3888",
+      "direction": "helped",
+      "delta_ndcg10": 0.15642624200758548,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "3909",
+      "direction": "hurt",
+      "delta_ndcg10": -0.04379165969465104,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "3932",
+      "direction": "helped",
+      "delta_ndcg10": 0.12278468466195075,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-9) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "3934",
+      "direction": "hurt",
+      "delta_ndcg10": -0.24630238874073,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4007",
+      "direction": "helped",
+      "delta_ndcg10": 0.13965566895827974,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['521657'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "4011",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2671713795222088,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4037",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-8 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "4047",
+      "direction": "helped",
+      "delta_ndcg10": 0.23936043176429644,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-8) to 1 (reranked top-6) within the candidate pool."
+    },
+    {
+      "query_id": "4084",
+      "direction": "helped",
+      "delta_ndcg10": 0.05995842598524842,
+      "primary_cause": "query_wording_chunk_mismatch",
+      "detail": "Top-hit lexical overlap with query shifted (dense top-1 Jaccard=0.133 \u2192 rerank top-1 Jaccard=0.045); CE may favor wording over dense geometry."
+    },
+    {
+      "query_id": "4102",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3973220069685352,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 2 for dense)."
+    },
+    {
+      "query_id": "4105",
+      "direction": "helped",
+      "delta_ndcg10": 0.06937588361343297,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "4116",
+      "direction": "helped",
+      "delta_ndcg10": 0.22629438553091674,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "4142",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2532778777010656,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "4205",
+      "direction": "hurt",
+      "delta_ndcg10": -0.10776613580540895,
+      "primary_cause": "query_wording_chunk_mismatch",
+      "detail": "Top-hit lexical overlap with query shifted (dense top-1 Jaccard=0.141 \u2192 rerank top-1 Jaccard=0.058); CE may favor wording over dense geometry."
+    },
+    {
+      "query_id": "4233",
+      "direction": "helped",
+      "delta_ndcg10": 0.16958010263680812,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "4265",
+      "direction": "helped",
+      "delta_ndcg10": 0.2820132694023927,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['392163', '349710'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "4286",
+      "direction": "helped",
+      "delta_ndcg10": 0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4289",
+      "direction": "hurt",
+      "delta_ndcg10": -0.22629438553091674,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "4312",
+      "direction": "helped",
+      "delta_ndcg10": 0.035636771650042864,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['116647', '135845', '507284', '399149'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "4335",
+      "direction": "hurt",
+      "delta_ndcg10": -0.0776739202396236,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "4339",
+      "direction": "hurt",
+      "delta_ndcg10": -0.1227846846619507,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 5 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "4409",
+      "direction": "helped",
+      "delta_ndcg10": 0.08514311764162102,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['147439', '100306', '245903', '499128', '97925'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "4414",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08027921085181244,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "4415",
+      "direction": "hurt",
+      "delta_ndcg10": -0.16812753627111746,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 4 for dense)."
+    },
+    {
+      "query_id": "4447",
+      "direction": "helped",
+      "delta_ndcg10": 0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4464",
+      "direction": "helped",
+      "delta_ndcg10": 0.6309297535714575,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "4465",
+      "direction": "helped",
+      "delta_ndcg10": 0.14126697285982898,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "4499",
+      "direction": "helped",
+      "delta_ndcg10": 0.5307212739772434,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "4514",
+      "direction": "hurt",
+      "delta_ndcg10": -0.15130120674940672,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "4523",
+      "direction": "hurt",
+      "delta_ndcg10": -0.0444061620977195,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4539",
+      "direction": "hurt",
+      "delta_ndcg10": -0.0328153151808101,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 7 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4605",
+      "direction": "helped",
+      "delta_ndcg10": 0.07469132727545208,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4615",
+      "direction": "helped",
+      "delta_ndcg10": 0.1281584091607556,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['262934'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "4640",
+      "direction": "hurt",
+      "delta_ndcg10": -0.20210734650054757,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 4 for dense)."
+    },
+    {
+      "query_id": "4641",
+      "direction": "hurt",
+      "delta_ndcg10": -0.018713907576582478,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "4714",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08234488364711567,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "475",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4756",
+      "direction": "helped",
+      "delta_ndcg10": 0.43067655807339306,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "4804",
+      "direction": "helped",
+      "delta_ndcg10": 0.3619244407664841,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-8) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "4863",
+      "direction": "helped",
+      "delta_ndcg10": 0.12747540151973769,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "4865",
+      "direction": "hurt",
+      "delta_ndcg10": -0.43067655807339306,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 4 for dense)."
+    },
+    {
+      "query_id": "4920",
+      "direction": "hurt",
+      "delta_ndcg10": -0.053097570474025524,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "4962",
+      "direction": "helped",
+      "delta_ndcg10": 0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "4968",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "4981",
+      "direction": "helped",
+      "delta_ndcg10": 0.11454011842851253,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['247894'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "503",
+      "direction": "helped",
+      "delta_ndcg10": 0.3333333333333333,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "5045",
+      "direction": "helped",
+      "delta_ndcg10": 0.026400050467840885,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 10 (dense top-10) to 8 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5064",
+      "direction": "helped",
+      "delta_ndcg10": 0.04250547381013825,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "5067",
+      "direction": "hurt",
+      "delta_ndcg10": -0.14379281289197782,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5083",
+      "direction": "helped",
+      "delta_ndcg10": 0.38685280723454163,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "5085",
+      "direction": "helped",
+      "delta_ndcg10": 0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "5090",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5134",
+      "direction": "helped",
+      "delta_ndcg10": 0.3490790701928675,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "515",
+      "direction": "helped",
+      "delta_ndcg10": 0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5150",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6309297535714575,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 2 for dense)."
+    },
+    {
+      "query_id": "5155",
+      "direction": "helped",
+      "delta_ndcg10": 1.0,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "5178",
+      "direction": "hurt",
+      "delta_ndcg10": -0.21760916664815744,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5241",
+      "direction": "helped",
+      "delta_ndcg10": 0.3835663673713356,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "5254",
+      "direction": "helped",
+      "delta_ndcg10": 0.2640681225725909,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "5264",
+      "direction": "hurt",
+      "delta_ndcg10": -0.10699313236726382,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "5271",
+      "direction": "hurt",
+      "delta_ndcg10": -0.14126697285982903,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "5331",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "5343",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6989700043360187,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 9 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5356",
+      "direction": "helped",
+      "delta_ndcg10": 0.023511752794101615,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5402",
+      "direction": "helped",
+      "delta_ndcg10": 0.11314719276545837,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-10) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5410",
+      "direction": "helped",
+      "delta_ndcg10": 0.03350083705442006,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-9) to 5 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "5460",
+      "direction": "hurt",
+      "delta_ndcg10": -0.16958010263680806,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 3 for dense)."
+    },
+    {
+      "query_id": "5464",
+      "direction": "hurt",
+      "delta_ndcg10": -0.14126697285982898,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-8 after rerank (was rank 9 for dense)."
+    },
+    {
+      "query_id": "549",
+      "direction": "helped",
+      "delta_ndcg10": 0.6845351232142712,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5503",
+      "direction": "helped",
+      "delta_ndcg10": 0.22629438553091674,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "5505",
+      "direction": "helped",
+      "delta_ndcg10": 0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "5585",
+      "direction": "hurt",
+      "delta_ndcg10": -1.0,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "5616",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08582281157056043,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 9 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5646",
+      "direction": "hurt",
+      "delta_ndcg10": -0.14707213493934335,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "5683",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5741",
+      "direction": "hurt",
+      "delta_ndcg10": -0.21840743681816419,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 6 for dense)."
+    },
+    {
+      "query_id": "5763",
+      "direction": "helped",
+      "delta_ndcg10": 0.12892145599966295,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5782",
+      "direction": "helped",
+      "delta_ndcg10": 0.12517394053908856,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "585",
+      "direction": "helped",
+      "delta_ndcg10": 0.18457569677956817,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "5853",
+      "direction": "helped",
+      "delta_ndcg10": 0.2802746541122429,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5862",
+      "direction": "helped",
+      "delta_ndcg10": 0.1301266833307006,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-9) to 7 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "588",
+      "direction": "helped",
+      "delta_ndcg10": 0.014025039229678071,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 7 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "5888",
+      "direction": "helped",
+      "delta_ndcg10": 0.19342640361727081,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "5906",
+      "direction": "hurt",
+      "delta_ndcg10": -0.18457569677956817,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-8 after rerank (was rank 9 for dense)."
+    },
+    {
+      "query_id": "5951",
+      "direction": "helped",
+      "delta_ndcg10": 0.006717867780823561,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "5970",
+      "direction": "hurt",
+      "delta_ndcg10": -0.01911949948326966,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 4 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "5981",
+      "direction": "hurt",
+      "delta_ndcg10": -0.16422002559717608,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "5993",
+      "direction": "hurt",
+      "delta_ndcg10": -0.024902765507419072,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6002",
+      "direction": "hurt",
+      "delta_ndcg10": -0.046879471875442724,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "6005",
+      "direction": "hurt",
+      "delta_ndcg10": -0.028470615687976486,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "603",
+      "direction": "helped",
+      "delta_ndcg10": 0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "604",
+      "direction": "helped",
+      "delta_ndcg10": 0.20669765211131125,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "6041",
+      "direction": "hurt",
+      "delta_ndcg10": -0.07817485246961253,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6110",
+      "direction": "hurt",
+      "delta_ndcg10": -0.10841429531111635,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6121",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "6122",
+      "direction": "helped",
+      "delta_ndcg10": 0.1815417925373527,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['44344'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "6131",
+      "direction": "hurt",
+      "delta_ndcg10": -0.11395967836613546,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "6133",
+      "direction": "helped",
+      "delta_ndcg10": 0.088166159564565,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 3 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "6142",
+      "direction": "helped",
+      "delta_ndcg10": 0.22629438553091674,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "6146",
+      "direction": "hurt",
+      "delta_ndcg10": -0.16844537041637753,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6199",
+      "direction": "hurt",
+      "delta_ndcg10": -0.06506334166535033,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "620",
+      "direction": "helped",
+      "delta_ndcg10": 0.033014948084834406,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 7 (dense top-10) to 4 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "6219",
+      "direction": "helped",
+      "delta_ndcg10": 0.04250547381013825,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6262",
+      "direction": "hurt",
+      "delta_ndcg10": -0.13969597800247113,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "6278",
+      "direction": "hurt",
+      "delta_ndcg10": -0.30736038144151895,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 4 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "6420",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08027921085181244,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6441",
+      "direction": "hurt",
+      "delta_ndcg10": -0.27472256646343535,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 6 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "6525",
+      "direction": "helped",
+      "delta_ndcg10": 0.2671713795222088,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-7) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "6562",
+      "direction": "helped",
+      "delta_ndcg10": 0.15101961822780524,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "659",
+      "direction": "hurt",
+      "delta_ndcg10": -0.14457499043890154,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "6611",
+      "direction": "hurt",
+      "delta_ndcg10": -0.024981033200893177,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6625",
+      "direction": "hurt",
+      "delta_ndcg10": -1.0,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "6635",
+      "direction": "helped",
+      "delta_ndcg10": 0.27336487746566335,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "6668",
+      "direction": "helped",
+      "delta_ndcg10": 0.21840743681816419,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "6679",
+      "direction": "helped",
+      "delta_ndcg10": 0.3021182710565542,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "6715",
+      "direction": "helped",
+      "delta_ndcg10": 0.2184074368181641,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "672",
+      "direction": "hurt",
+      "delta_ndcg10": -0.23719771276929622,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 5 for dense)."
+    },
+    {
+      "query_id": "6746",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "6803",
+      "direction": "hurt",
+      "delta_ndcg10": -0.22225251372098423,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "6832",
+      "direction": "helped",
+      "delta_ndcg10": 0.019806700808917832,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "6835",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "6849",
+      "direction": "helped",
+      "delta_ndcg10": 0.5,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-7 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "6862",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "6867",
+      "direction": "helped",
+      "delta_ndcg10": 0.14621464101845863,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "6890",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3728277680048635,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "6891",
+      "direction": "helped",
+      "delta_ndcg10": 0.3021182710565542,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "6901",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 3 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "691",
+      "direction": "helped",
+      "delta_ndcg10": 0.43067655807339306,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "6959",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "699",
+      "direction": "helped",
+      "delta_ndcg10": 0.13092975357145753,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "7080",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08027921085181244,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "7096",
+      "direction": "helped",
+      "delta_ndcg10": 1.0,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "7105",
+      "direction": "hurt",
+      "delta_ndcg10": -0.06932344192660694,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "7109",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2021073465005476,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "7124",
+      "direction": "helped",
+      "delta_ndcg10": 0.07203883062568583,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['74615'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "7145",
+      "direction": "hurt",
+      "delta_ndcg10": -0.18154179253735267,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "7178",
+      "direction": "hurt",
+      "delta_ndcg10": -0.055177191444040985,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-10) to 9 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "7188",
+      "direction": "helped",
+      "delta_ndcg10": 0.43067655807339306,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "7218",
+      "direction": "hurt",
+      "delta_ndcg10": -0.31546487678572877,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 8 for dense)."
+    },
+    {
+      "query_id": "7269",
+      "direction": "hurt",
+      "delta_ndcg10": -0.07138793044881286,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 8 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "7279",
+      "direction": "hurt",
+      "delta_ndcg10": -0.28926986260607385,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "7329",
+      "direction": "hurt",
+      "delta_ndcg10": -0.12278468466195075,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "7344",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3065735963827292,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "7345",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2920782154400332,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 7 for dense)."
+    },
+    {
+      "query_id": "7377",
+      "direction": "helped",
+      "delta_ndcg10": 0.21093517368211212,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 10 (dense top-10) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "7441",
+      "direction": "hurt",
+      "delta_ndcg10": -0.11454011842851256,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 5 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "7463",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3391602052736161,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "7467",
+      "direction": "helped",
+      "delta_ndcg10": 0.5693234419266069,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "750",
+      "direction": "helped",
+      "delta_ndcg10": 0.5425054738101385,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "7529",
+      "direction": "helped",
+      "delta_ndcg10": 0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "753",
+      "direction": "helped",
+      "delta_ndcg10": 0.22629438553091674,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "7534",
+      "direction": "helped",
+      "delta_ndcg10": 0.17319681505689122,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "7590",
+      "direction": "helped",
+      "delta_ndcg10": 0.032815315180810156,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "766",
+      "direction": "helped",
+      "delta_ndcg10": 0.09397456446531766,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-9) to 2 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "7674",
+      "direction": "hurt",
+      "delta_ndcg10": -0.18154179253735267,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 5 for dense)."
+    },
+    {
+      "query_id": "7702",
+      "direction": "hurt",
+      "delta_ndcg10": -0.18247040964605551,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "7705",
+      "direction": "helped",
+      "delta_ndcg10": 0.20210734650054757,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "7747",
+      "direction": "hurt",
+      "delta_ndcg10": -0.23719771276929622,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 5 for dense)."
+    },
+    {
+      "query_id": "7754",
+      "direction": "helped",
+      "delta_ndcg10": 0.6845351232142712,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-8) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "7758",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "7801",
+      "direction": "helped",
+      "delta_ndcg10": 0.1227846846619507,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "7803",
+      "direction": "helped",
+      "delta_ndcg10": 0.2640681225725909,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "7823",
+      "direction": "helped",
+      "delta_ndcg10": 0.20470529659064568,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "7876",
+      "direction": "hurt",
+      "delta_ndcg10": -0.04382375083885143,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "7879",
+      "direction": "hurt",
+      "delta_ndcg10": -0.18154179253735267,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 5 for dense)."
+    },
+    {
+      "query_id": "7880",
+      "direction": "helped",
+      "delta_ndcg10": 0.38685280723454163,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "7928",
+      "direction": "helped",
+      "delta_ndcg10": 0.04080631072324942,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-10) to 8 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "7936",
+      "direction": "hurt",
+      "delta_ndcg10": -0.07821312100379274,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 4 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "7992",
+      "direction": "helped",
+      "delta_ndcg10": 0.2640681225725909,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "8002",
+      "direction": "helped",
+      "delta_ndcg10": 0.09337239015154919,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "8017",
+      "direction": "helped",
+      "delta_ndcg10": 0.14379281289197782,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "8072",
+      "direction": "helped",
+      "delta_ndcg10": 0.15642624200758548,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "8079",
+      "direction": "hurt",
+      "delta_ndcg10": -0.1480409554829326,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 8 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "8102",
+      "direction": "helped",
+      "delta_ndcg10": 0.11284514134893527,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "8116",
+      "direction": "hurt",
+      "delta_ndcg10": -0.38685280723454163,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-8 after rerank (was rank 2 for dense)."
+    },
+    {
+      "query_id": "8121",
+      "direction": "helped",
+      "delta_ndcg10": 0.06932344192660694,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-8) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "813",
+      "direction": "hurt",
+      "delta_ndcg10": -0.23719771276929622,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 5 for dense)."
+    },
+    {
+      "query_id": "8202",
+      "direction": "hurt",
+      "delta_ndcg10": -0.17723928678404774,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 10 for dense)."
+    },
+    {
+      "query_id": "8230",
+      "direction": "helped",
+      "delta_ndcg10": 0.3065735963827292,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "8247",
+      "direction": "hurt",
+      "delta_ndcg10": -0.13012668333070054,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 7 for dense)."
+    },
+    {
+      "query_id": "8332",
+      "direction": "helped",
+      "delta_ndcg10": 0.6039071644781281,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-8 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "8351",
+      "direction": "helped",
+      "delta_ndcg10": 0.37594947999616213,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-8) to 1 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "8378",
+      "direction": "hurt",
+      "delta_ndcg10": -0.46927872602275644,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "8456",
+      "direction": "helped",
+      "delta_ndcg10": 0.33362675259030866,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 10 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "849",
+      "direction": "hurt",
+      "delta_ndcg10": -0.11521168128766429,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-9) to 8 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "8507",
+      "direction": "helped",
+      "delta_ndcg10": 0.2960819109658652,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "8512",
+      "direction": "hurt",
+      "delta_ndcg10": -0.3562071871080222,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 6 for dense)."
+    },
+    {
+      "query_id": "852",
+      "direction": "helped",
+      "delta_ndcg10": 0.15642624200758548,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['531288'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "8532",
+      "direction": "helped",
+      "delta_ndcg10": 0.16716045496620227,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "8537",
+      "direction": "helped",
+      "delta_ndcg10": 0.38685280723454163,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "8544",
+      "direction": "hurt",
+      "delta_ndcg10": -0.37594947999616213,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "858",
+      "direction": "helped",
+      "delta_ndcg10": 0.123151194370365,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "8592",
+      "direction": "hurt",
+      "delta_ndcg10": -0.01073421295861679,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 6 (dense top-9) to 7 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "8632",
+      "direction": "helped",
+      "delta_ndcg10": 0.08027921085181244,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-8) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "864",
+      "direction": "hurt",
+      "delta_ndcg10": -0.10778915452451099,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "8702",
+      "direction": "helped",
+      "delta_ndcg10": 0.2960819109658652,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "879",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 2 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "8832",
+      "direction": "hurt",
+      "delta_ndcg10": -0.36907024642854247,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 2 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "8834",
+      "direction": "hurt",
+      "delta_ndcg10": -0.022534611385859715,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "8874",
+      "direction": "helped",
+      "delta_ndcg10": 0.5,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "89",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08219926031706024,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-9) to 4 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "8934",
+      "direction": "helped",
+      "delta_ndcg10": 0.11314719276545837,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-9) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "8947",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "895",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6309297535714575,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-8 after rerank (was rank 2 for dense)."
+    },
+    {
+      "query_id": "8959",
+      "direction": "helped",
+      "delta_ndcg10": 0.3562071871080222,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "8970",
+      "direction": "hurt",
+      "delta_ndcg10": -0.08027921085181244,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 3 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "8974",
+      "direction": "helped",
+      "delta_ndcg10": 0.028619756748668124,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Metric improved but some relevant docs ['523331', '478242', '356595', '140738', '170625'] still missing from top-50 pool; gain from reordering among retrieved candidates."
+    },
+    {
+      "query_id": "9115",
+      "direction": "helped",
+      "delta_ndcg10": 0.03253201651083065,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 4 (dense top-10) to 3 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "9164",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2960819109658652,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 2 for dense)."
+    },
+    {
+      "query_id": "9174",
+      "direction": "hurt",
+      "delta_ndcg10": -0.10699313236726378,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-8 after rerank (was rank 8 for dense)."
+    },
+    {
+      "query_id": "928",
+      "direction": "hurt",
+      "delta_ndcg10": -0.39473975594729416,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 6 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "9296",
+      "direction": "hurt",
+      "delta_ndcg10": -0.38685280723454163,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 2 for dense)."
+    },
+    {
+      "query_id": "932",
+      "direction": "helped",
+      "delta_ndcg10": 0.19342640361727081,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-10 doc ranking)."
+    },
+    {
+      "query_id": "9329",
+      "direction": "helped",
+      "delta_ndcg10": 0.22629438553091674,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "9332",
+      "direction": "hurt",
+      "delta_ndcg10": -0.31546487678572877,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "9381",
+      "direction": "helped",
+      "delta_ndcg10": 0.07949242579302271,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 9 (dense top-10) to 4 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "9385",
+      "direction": "helped",
+      "delta_ndcg10": 0.055177191444040985,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 9 (dense top-10) to 6 (reranked top-8) within the candidate pool."
+    },
+    {
+      "query_id": "939",
+      "direction": "hurt",
+      "delta_ndcg10": -0.5693234419266069,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-10) to 4 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "9391",
+      "direction": "helped",
+      "delta_ndcg10": 0.02786842385744026,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-9) to 3 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "94",
+      "direction": "hurt",
+      "delta_ndcg10": -0.5693234419266069,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 4 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "945",
+      "direction": "hurt",
+      "delta_ndcg10": -1.0,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "9481",
+      "direction": "helped",
+      "delta_ndcg10": 0.08682883578854311,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 5 (dense top-10) to 4 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "9556",
+      "direction": "helped",
+      "delta_ndcg10": 0.6666666666666667,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 7 (dense top-10) to 1 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "9598",
+      "direction": "helped",
+      "delta_ndcg10": 0.31546487678572877,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-10 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "9633",
+      "direction": "helped",
+      "delta_ndcg10": 0.41972078914818756,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 8 (dense top-10) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "9643",
+      "direction": "helped",
+      "delta_ndcg10": 1.0,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-6 after rerank (was outside dense top-8 doc ranking)."
+    },
+    {
+      "query_id": "9644",
+      "direction": "hurt",
+      "delta_ndcg10": -1.0,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-9 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "9646",
+      "direction": "hurt",
+      "delta_ndcg10": -0.2043823975884861,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Ranking changed without candidate-pool or duplicate-chunk dominance."
+    },
+    {
+      "query_id": "9668",
+      "direction": "hurt",
+      "delta_ndcg10": -0.11913042403927626,
+      "primary_cause": "duplicate_chunks",
+      "detail": "Dense top-10 chunk slots include 2 duplicate doc_id slot(s) (same document repeated), shrinking candidate diversity before rerank."
+    },
+    {
+      "query_id": "9737",
+      "direction": "helped",
+      "delta_ndcg10": 0.5626511161743057,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 9 (dense top-9) to 1 (reranked top-9) within the candidate pool."
+    },
+    {
+      "query_id": "98",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6131471927654584,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc dropped out of top-10 after rerank (was rank 1 for dense)."
+    },
+    {
+      "query_id": "9925",
+      "direction": "helped",
+      "delta_ndcg10": 0.44470182234908084,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 2 (dense top-5) to 1 (reranked top-6) within the candidate pool."
+    },
+    {
+      "query_id": "9929",
+      "direction": "hurt",
+      "delta_ndcg10": -0.6731056187507068,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 1 (dense top-9) to 10 (reranked top-10) within the candidate pool."
+    },
+    {
+      "query_id": "9961",
+      "direction": "helped",
+      "delta_ndcg10": 0.3010299956639812,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc entered top-9 after rerank (was outside dense top-9 doc ranking)."
+    },
+    {
+      "query_id": "9979",
+      "direction": "helped",
+      "delta_ndcg10": 0.19519002499605084,
+      "primary_cause": "irrelevant_candidate_ordering",
+      "detail": "Relevant doc best rank moved from 3 (dense top-9) to 1 (reranked top-9) within the candidate pool."
+    }
+  ]
+}

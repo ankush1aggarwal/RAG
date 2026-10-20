@@ -63,6 +63,11 @@ def query(body: QueryRequest, request: Request) -> QueryResponse:
     """RAG: retrieve chunks, generate an answer, return citations."""
     resources = _resources(request)
     try:
+        if body.use_rerank and resources.reranker is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Reranking requested but RERANKER_PROVIDER=none",
+            )
         result = answer_query(
             body.question,
             store=resources.store,
@@ -71,6 +76,9 @@ def query(body: QueryRequest, request: Request) -> QueryResponse:
             top_k=body.top_k,
             retrieval_method=body.method,
             bm25_index=resources.bm25_index,
+            use_rerank=body.use_rerank,
+            reranker=resources.reranker,
+            rerank_candidate_limit=resources.settings.rerank_candidate_limit,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -78,5 +86,10 @@ def query(body: QueryRequest, request: Request) -> QueryResponse:
     return QueryResponse(
         answer=result.answer,
         citations=result.citations,
-        retrieval=RetrievalMeta(method=result.retrieval_method, top_k=body.top_k),
+        retrieval=RetrievalMeta(
+            method=result.retrieval_method,
+            top_k=body.top_k,
+            reranker=result.reranker,
+            candidates_retrieved=result.retrieval_candidate_count,
+        ),
     )

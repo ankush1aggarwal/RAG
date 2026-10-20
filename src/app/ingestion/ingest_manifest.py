@@ -31,7 +31,7 @@ class IngestManifest(BaseModel):
     version: int = MANIFEST_VERSION
     ingest_generation_id: str = ""
     corpus_id: str = FIQA_HF_ID
-    corpus_limit: int
+    corpus_limit: int | None
     chunk_size: int
     overlap_fraction: float
     embedding_method: str
@@ -75,7 +75,7 @@ def invalidate_published_ingest_artifacts(bm25_path: Path) -> None:
 def runtime_config_mismatches(
     manifest: IngestManifest,
     *,
-    corpus_limit: int,
+    corpus_limit: int | None,
     chunk_size: int,
     overlap_fraction: float,
     embedding_method: str,
@@ -109,7 +109,7 @@ def runtime_config_mismatches(
 def validate_manifest_runtime_config(
     manifest: IngestManifest,
     *,
-    corpus_limit: int,
+    corpus_limit: int | None,
     chunk_size: int,
     overlap_fraction: float,
     embedding_method: str,

@@ -11,6 +11,11 @@ from app.retrieval.embeddings import (
 from app.retrieval.fusion import DEFAULT_RRF_K, reciprocal_rank_fusion
 from app.retrieval.hybrid import hybrid_search_text
 from app.retrieval.qdrant_store import QdrantChunkStore, VectorDimensionMismatchError
+from app.retrieval.reranker import (
+    RerankerProvider,
+    create_reranker_provider,
+    resolve_rerank_candidate_limit,
+)
 
 __all__ = [
     "Bm25ChunkIndex",
@@ -18,7 +23,10 @@ __all__ = [
     "CohereEmbedding",
     "EmbeddingProvider",
     "QdrantChunkStore",
+    "RerankerProvider",
     "SentenceTransformerEmbedding",
+    "create_reranker_provider",
+    "resolve_rerank_candidate_limit",
     "VectorDimensionMismatchError",
     "attach_embeddings",
     "create_embedding_provider",

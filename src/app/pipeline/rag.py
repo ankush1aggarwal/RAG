@@ -13,8 +13,9 @@ from app.retrieval.bm25_store import Bm25ChunkIndex
 from app.retrieval.embeddings import EmbeddingProvider
 from app.retrieval.hybrid import hybrid_search_text
 from app.retrieval.qdrant_store import QdrantChunkStore
+from app.retrieval.reranker import RerankerProvider, resolve_rerank_candidate_limit
 
-RetrievalMethod = Literal["dense", "bm25", "hybrid"]
+RetrievalMethod = Literal["dense", "bm25", "hybrid", "weighted_hybrid"]
 
 
 class SourceCitation(BaseModel):
@@ -30,6 +31,8 @@ class RagAnswer(BaseModel):
     citations: list[SourceCitation] = Field(default_factory=list)
     hits: list[SearchHit] = Field(default_factory=list)
     retrieval_method: RetrievalMethod = "dense"
+    reranker: str | None = None
+    retrieval_candidate_count: int | None = None
 
 
 def citations_from_hits(hits: list[SearchHit]) -> list[SourceCitation]:
@@ -51,22 +54,70 @@ def retrieve_hits(
     embedder: EmbeddingProvider,
     bm25_index: Bm25ChunkIndex | None,
     top_k: int,
+    fusion_weights: tuple[float, float] | None = None,
+    candidate_limit: int | None = None,
 ) -> list[SearchHit]:
+    retrieve_k = candidate_limit if candidate_limit is not None else top_k
     if retrieval_method == "dense":
-        return store.search_text(question, embedder, limit=top_k)
+        return store.search_text(question, embedder, limit=retrieve_k)
     if bm25_index is None:
         raise ValueError("BM25 index is not available; run ingest or check bm25_index_dir")
     if retrieval_method == "bm25":
-        return bm25_index.search(question, limit=top_k)
-    if retrieval_method == "hybrid":
+        return bm25_index.search(question, limit=retrieve_k)
+    if retrieval_method in ("hybrid", "weighted_hybrid"):
+        weights = fusion_weights if retrieval_method == "weighted_hybrid" else None
+        if retrieval_method == "weighted_hybrid" and fusion_weights is None:
+            raise ValueError("fusion_weights are required for weighted_hybrid retrieval")
         return hybrid_search_text(
             question,
             store=store,
             bm25_index=bm25_index,
             embedder=embedder,
-            limit=top_k,
+            limit=retrieve_k,
+            fusion_weights=weights,
         )
     raise ValueError(f"Unsupported retrieval method: {retrieval_method}")
+
+
+def retrieve_with_optional_rerank(
+    question: str,
+    *,
+    retrieval_method: RetrievalMethod,
+    store: QdrantChunkStore,
+    embedder: EmbeddingProvider,
+    bm25_index: Bm25ChunkIndex | None,
+    top_k: int,
+    use_rerank: bool = False,
+    reranker: RerankerProvider | None = None,
+    rerank_candidate_limit: int | None = None,
+    fusion_weights: tuple[float, float] | None = None,
+) -> tuple[list[SearchHit], str | None, int | None]:
+    candidate_limit = None
+    if use_rerank:
+        if reranker is None:
+            raise ValueError("reranker is required when use_rerank is True")
+        candidate_limit = resolve_rerank_candidate_limit(
+            top_k,
+            candidate_limit=rerank_candidate_limit,
+        )
+
+    hits = retrieve_hits(
+        question,
+        retrieval_method=retrieval_method,
+        store=store,
+        embedder=embedder,
+        bm25_index=bm25_index,
+        top_k=top_k,
+        fusion_weights=fusion_weights,
+        candidate_limit=candidate_limit,
+    )
+    candidate_count: int | None = None
+    reranker_name: str | None = None
+    if use_rerank and reranker is not None:
+        candidate_count = len(hits)
+        hits = reranker.rerank(question, hits, top_k=top_k)
+        reranker_name = reranker.name
+    return hits, reranker_name, candidate_count
 
 
 def answer_query(
@@ -78,6 +129,9 @@ def answer_query(
     top_k: int = 3,
     retrieval_method: RetrievalMethod = "dense",
     bm25_index: Bm25ChunkIndex | None = None,
+    use_rerank: bool = False,
+    reranker: RerankerProvider | None = None,
+    rerank_candidate_limit: int | None = None,
 ) -> RagAnswer:
     """Retrieve context, build a grounded prompt, and generate an answer."""
     if top_k < 1:
@@ -87,14 +141,18 @@ def answer_query(
     if not question:
         raise ValueError("question must be non-empty")
 
-    hits = retrieve_hits(
+    hits, reranker_name, candidate_count = retrieve_with_optional_rerank(
         question,
         retrieval_method=retrieval_method,
         store=store,
         embedder=embedder,
         bm25_index=bm25_index,
         top_k=top_k,
+        use_rerank=use_rerank,
+        reranker=reranker,
+        rerank_candidate_limit=rerank_candidate_limit,
     )
+
     prompt = build_rag_prompt(question, hits)
     answer = llm.generate(prompt.user, system=prompt.system)
 
@@ -103,4 +161,6 @@ def answer_query(
         citations=citations_from_hits(hits),
         hits=hits,
         retrieval_method=retrieval_method,
+        reranker=reranker_name,
+        retrieval_candidate_count=candidate_count if use_rerank else None,
     )

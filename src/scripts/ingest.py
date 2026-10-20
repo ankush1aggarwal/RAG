@@ -43,7 +43,17 @@ def main() -> None:
         os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
     parser = argparse.ArgumentParser(description="Ingest FiQA corpus into Qdrant")
-    parser.add_argument("--limit", type=int, default=settings.fiqa_corpus_limit)
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Max corpus documents (default: FIQA_CORPUS_LIMIT from settings; 0 = full corpus)",
+    )
+    parser.add_argument(
+        "--full-corpus",
+        action="store_true",
+        help="Ingest the full BEIR FiQA corpus (~57k docs). Same as --limit 0.",
+    )
     parser.add_argument("--collection", default=settings.collection_name)
     parser.add_argument(
         "--method",
@@ -76,8 +86,16 @@ def main() -> None:
     if args.recreate:
         invalidate_published_ingest_artifacts(bm25_path)
 
-    print(f"Loading BEIR FiQA corpus (limit={args.limit})...")
-    dataset = load_fiqa_corpus(limit=args.limit)
+    if args.full_corpus:
+        corpus_limit: int | None = None
+    elif args.limit is not None:
+        corpus_limit = None if args.limit <= 0 else args.limit
+    else:
+        corpus_limit = settings.resolved_fiqa_corpus_limit()
+
+    limit_label = "full" if corpus_limit is None else str(corpus_limit)
+    print(f"Loading BEIR FiQA corpus (limit={limit_label})...")
+    dataset = load_fiqa_corpus(limit=corpus_limit)
     documents = documents_from_corpus(dataset)
     chunks = chunks_from_documents(
         documents,
@@ -105,7 +123,7 @@ def main() -> None:
 
     manifest = IngestManifest(
         ingest_generation_id=str(uuid.uuid4()),
-        corpus_limit=args.limit,
+        corpus_limit=corpus_limit,
         chunk_size=args.chunk_size,
         overlap_fraction=args.overlap,
         embedding_method=args.method,
