@@ -5,7 +5,7 @@
 **Dense encoder:** `sentence_transformer` / `all-MiniLM-L6-v2`  
 **Corpus / index:** `BeIR/fiqa` **full corpus** (~57k documents)  
 **Qrels split:** `test`  
-**Eval dataset:** `D:\Repos\RAG\RAG\data\benchmarks\fiqa_qrels_test.json`  
+**Eval dataset:** `data/benchmarks/fiqa_qrels_test.json`  
 **Retrieval depth (top-k):** `10`  
 **Queries evaluated:** `648`  
 

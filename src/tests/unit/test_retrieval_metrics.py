@@ -54,3 +54,18 @@ def test_compute_and_aggregate_query_metrics():
     assert agg.num_queries == 2
     assert "ndcg@1" in agg.values
     assert "recall@5" in agg.values
+
+
+def test_candidate_recall_at_k_on_pool_ranking():
+    ranked_final = ["noise", "a"]
+    pool = ["a", "b", "noise"]
+    metrics = compute_query_metrics(
+        ranked_final,
+        {"a": 1, "b": 1},
+        k_values=(10,),
+        candidate_ranked_doc_ids=pool,
+        candidate_recall_k=50,
+    )
+    assert metrics.candidate_recall[50] == 1.0
+    agg = aggregate_query_metrics([metrics], k_values=(10,))
+    assert agg.values["candidate_recall@50"] == 1.0

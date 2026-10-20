@@ -47,7 +47,7 @@ Use document-level qrels consistently. If retrieval returns chunks, define how c
 **Generation/citations:** answer relevance, evidence support, citation correctness and unsupported-claim rate using the documented rubric.  
 **Resources/cost:** index build time/size, model footprint, token usage and estimated cost where available.
 
-**Selection rule:** meet the agreed retrieval/generation quality floor first. Among configurations with comparable quality, prefer lower p95 latency, lower cost and lower operational complexity. Record the thresholds/decision rule before looking at final-test results.
+**Selection rule:** **NDCG@10 on test** is the primary metric to justify adoption. A treatment must improve NDCG@10 materially vs the previous baseline **and** justify added p95 latency, hosting cost, and operational complexity. Tune on **validation** only; reserve **test** for final reporting. Record thresholds before peeking at test.
 
 ## 4. Baseline comparison (E0–E2)
 

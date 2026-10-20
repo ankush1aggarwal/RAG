@@ -10,10 +10,12 @@ from typing import Any
 from app.evaluation.retrieval_eval import (
     RETRIEVAL_METHODS,
     RetrievalEvalResult,
+    format_candidate_recall_summary,
     format_comparison_table,
     format_latency_table,
     render_query_examples,
 )
+from app.evaluation.repro import try_git_commit_short
 from app.pipeline.rag import RetrievalMethod
 from app.retrieval.fusion_weights import FusionWeights, load_fusion_weights
 
@@ -41,10 +43,12 @@ def render_labeled_eval_report(
 ) -> str:
     when = generated_at or datetime.now(UTC)
     any_result = next(iter(results.values()))
+    commit = any_result.protocol.git_commit or try_git_commit_short()
     lines: list[str] = [
         f"# {title}",
         "",
         f"**Generated:** {when.strftime('%Y-%m-%d %H:%M UTC')}  ",
+        f"**Git commit:** `{commit or 'unknown'}`  ",
         f"**Index collection:** `{collection_name}`  ",
         f"**Dense encoder:** `{embedding_method}` / `{embedding_model}`  ",
         f"**Corpus / index:** {corpus_note}  ",
@@ -52,6 +56,13 @@ def render_labeled_eval_report(
         f"**Eval dataset:** `{any_result.eval_dataset_path}`  ",
         f"**Retrieval depth (top-k):** `{any_result.top_k}`  ",
         f"**Queries evaluated:** `{any_result.aggregates.num_queries}`  ",
+        "",
+        "### Timing labels",
+        "",
+        "- **First-stage retrieval:** dense/BM25/hybrid search only; **embedding model load excluded** "
+        "(construct embedder before timed region).",
+        "- **Rerank:** cross-encoder or hosted reranker scoring (when `use_rerank` is true).",
+        "- **Retrieve + rerank:** sum of the two stages; **excludes** stub LLM generation time.",
         "",
         "### Reproducibility protocol",
         "",
@@ -67,7 +78,9 @@ def render_labeled_eval_report(
             "",
             format_comparison_table(results, any_result.k_values),
             "",
-            "## Retrieval latency (milliseconds)",
+            format_candidate_recall_summary(results),
+            "",
+            "## Stage latency (milliseconds)",
             "",
             format_latency_table(results),
             "",
@@ -245,6 +258,8 @@ def load_saved_result(path: Path) -> RetrievalEvalResult:
     fw = proto_raw.get("fusion_weights")
     if fw is not None:
         proto_raw["fusion_weights"] = tuple(fw)
+    proto_raw.setdefault("candidate_recall_k", 50)
+    proto_raw.setdefault("git_commit", None)
     protocol = EvalProtocol(**proto_raw)
     rows = []
     for item in payload["per_query"]:
@@ -260,7 +275,18 @@ def load_saved_result(path: Path) -> RetrievalEvalResult:
                     map_score={int(k): v for k, v in item["metrics"]["map"].items()},
                     precision={int(k): v for k, v in item["metrics"]["precision"].items()},
                     recall={int(k): v for k, v in item["metrics"]["recall"].items()},
+                    candidate_recall={
+                        int(k): v
+                        for k, v in item["metrics"].get("candidate_recall", {}).items()
+                    },
                 ),
+                first_stage_latency_ms=float(
+                    item.get(
+                        "first_stage_latency_ms",
+                        item.get("retrieval_latency_ms", 0),
+                    )
+                ),
+                rerank_latency_ms=float(item.get("rerank_latency_ms", 0)),
                 retrieval_latency_ms=float(item.get("retrieval_latency_ms", 0)),
                 generation_latency_ms=item.get("generation_latency_ms"),
                 answer=item.get("answer"),

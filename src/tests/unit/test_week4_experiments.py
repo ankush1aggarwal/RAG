@@ -24,6 +24,7 @@ def _minimal_result(method: str = "dense") -> RetrievalEvalResult:
         map_score={10: 0.3},
         precision={10: 0.2},
         recall={10: 0.6},
+        candidate_recall={50: 1.0},
     )
     row = QueryEvalRow(
         query_id="q1",
@@ -31,6 +32,8 @@ def _minimal_result(method: str = "dense") -> RetrievalEvalResult:
         ranked_doc_ids=("doc-a", "doc-b"),
         relevant_doc_ids=("doc-a",),
         metrics=metrics,
+        first_stage_latency_ms=12.5,
+        rerank_latency_ms=0.0,
         retrieval_latency_ms=12.5,
         generation_latency_ms=1.0,
         answer="[eval] stub",
@@ -58,7 +61,11 @@ def _minimal_result(method: str = "dense") -> RetrievalEvalResult:
         per_query=(row,),
         evaluated_at="2026-01-01T00:00:00+00:00",
         protocol=protocol,
-        latency_summary={"mean_ms": 12.5, "p50_ms": 12.5, "p95_ms": 12.5},
+        latency_summary={
+            "first_stage_retrieval": {"mean_ms": 12.5, "p50_ms": 12.5, "p95_ms": 12.5},
+            "rerank": {"mean_ms": 0.0, "p50_ms": 0.0, "p95_ms": 0.0},
+            "retrieve_and_rerank": {"mean_ms": 12.5, "p50_ms": 12.5, "p95_ms": 12.5},
+        },
     )
 
 
@@ -85,7 +92,8 @@ def test_render_experiment4_report_includes_examples_and_latency():
         example_count=1,
     )
     assert "Per-query examples" in text
-    assert "Retrieval latency" in text
+    assert "Stage latency" in text
+    assert "Git commit" in text
     assert "doc-a" in text
     assert "0.700" in text or "dense=0.7" in text
 

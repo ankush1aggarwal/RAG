@@ -16,9 +16,9 @@
 
 - **Question investigated:** Which retrieval (+ optional rerank) configuration gives the best quality/latency trade-off on BEIR FiQA with document-level qrels?
 - **Selected production pipeline (provisional):** **Dense** vector retrieval (`all-MiniLM-L6-v2`), **no** cross-encoder rerank, **`top_k=10`**, full **`fiqa`** index (100-word chunks, 20% overlap).
-- **Why selected:** Test **NDCG@10 ≈ 0.370** with **p50 ≈ 198 ms** retrieval — best among dense, BM25, weighted hybrid, and dense+CE (E1, E1b, E2).
-- **Important rejected alternatives:** BM25 and equal-weight hybrid (lower NDCG); weighted hybrid (matches dense NDCG but ~4× slower); dense+CE rerank (~5.6× latency, flat NDCG@10).
-- **Main limitations:** Candidate Recall@50 not logged in E1/E2; rerank revisit via **E3** → **E4** (Jev ranking) → **E5** (depth); chunking/embedding sweeps (E6–E8) not yet run; generation rubric (**E10**) pending.
+- **Why selected:** Test **NDCG@10 ≈ 0.370** with **p50 ≈ 198 ms** first-stage retrieval — best among dense, BM25, weighted hybrid, and dense+CE (E1, E1b, E2).
+- **Important rejected alternatives:** BM25 and equal-weight hybrid (lower NDCG); weighted hybrid (matches dense NDCG but ~4× slower); dense+CE rerank (flat test NDCG@10, ~5.6× **retrieve+rerank** mean latency vs no rerank).
+- **Main limitations:** Week 4 JSON predates **candidate Recall@50** in code (re-run eval to backfill); rerank revisit via **E3** → **E4** (Jev) → **E5**; API still defaults `top_k=3` until Week 6 code lock.
 
 ---
 
@@ -36,23 +36,22 @@
 | Reranker model and candidate budget | `cross-encoder/ms-marco-MiniLM-L-6-v2`; **50** chunks when enabled (E2) |
 | Final output cutoff | **`top_k=10`** document-level list after chunk→doc dedup (first-seen rank) |
 | Hardware/runtime/dependency versions | Local Windows dev run (Oct 2025); see `pyproject.toml` / lockfile at commit |
-| Timing protocol (warm-up, repeats) | Week 4 eval: per-query retrieval ms in experiment reports; E0: 3 warm-up + 7 repeats |
+| Timing protocol | See [`eval_protocol_reference.md`](eval_protocol_reference.md): first-stage vs rerank vs retrieve+rerank; **no model load** in timed eval; E0 uses warm-up + 7 repeats |
+| Artifact paths | Repo-relative (`data/benchmarks/...`); `git_commit` in protocol JSON on new runs |
 
-Chunk hits are ranked at chunk level; metrics use **document-level** qrels with graded NDCG. Queries without in-index relevant docs are handled by the eval pipeline (see `retrieval_eval.py`).
+Chunk hits are ranked at chunk level; metrics use **document-level** qrels with graded NDCG. **Tune on validation; test for final reporting only.**
 
 ---
 
 ## 3. Metrics and selection rule
 
-**Retrieval quality:** NDCG@10, MRR@10, Recall@5, Recall@10; **Candidate Recall@50** starting in E3/E5.
+**Retrieval quality:** **NDCG@10 (primary)**, MRR@10, Recall@5, Recall@10, **candidate Recall@50** (first-stage pool, document-level).
 
-**Latency:** p50/p95 retrieval (and rerank when on); Jev **E4** also records API concurrency and hosted round-trip; end-to-end API latency in **E11**.
+**Latency:** Report **first-stage**, **rerank**, and **retrieve+rerank** separately (see protocol reference). Jev **E4** also records API concurrency, cost, and data-handling.
 
-**Generation/citations:** Week 4 used **`CitationPreservingEvalLLM`** (deterministic stub) for citation structure only — not human rubric scores (**E10**).
+**Generation/citations:** Week 4 stub LLM — structural citations only (**E10** for real rubric).
 
-**Hosted rerank (E4):** document model/version, instructions, concurrency, cost, and data-handling before running validation.
-
-**Selection rule (applied):** Prefer higher **test** NDCG@10 among first-stage configs; break ties with lower p95 latency and lower ops complexity. Rerank requires **material** NDCG gain, not Recall-only gains at much higher latency. Tuning on **validation** only (E1b weights); test touched once per experiment stage.
+**Selection rule:** A treatment is adopted only if **test NDCG@10** improves **materially** vs the prior baseline **and** the added **p95 latency**, **hosting cost**, and **operational complexity** are acceptable. Hyperparameters and arm choice on **validation** only; **one** test evaluation per frozen candidate config. Rerank is not adopted for recall-only gains at much higher latency.
 
 ---
 

@@ -22,12 +22,14 @@
 |---------|--------|-------------------------------|
 | Retrieval | **`dense`** | NDCG@10 ≈ **0.370**; best quality/latency vs BM25, hybrid, weighted hybrid, dense+CE |
 | Rerank | **off** | Exp 5: flat dense NDCG@10, ~5–6× mean latency |
-| `top_k` | **10** | Week 4 eval protocol |
+| `top_k` | **10** | Week 4 eval protocol (**not** the current API default of 3) |
 | Index | **`fiqa`** full corpus | Week 4 ingest |
 
 Weighted hybrid (dense 0.95 / BM25 0.05) matches dense on test but adds fusion cost — **not** selected for production until a later experiment shows a material gain. BM25 and hybrid remain available for **experiments only**.
 
-Implementation note: production defaults will be enforced via settings + API schema in **Week 6** (after the Week 5 experiment sprint). Until then, the API still accepts all retrieval methods for development.
+**Eval discipline:** validation for tuning; test for final metrics — [`eval_protocol_reference.md`](eval_protocol_reference.md). **Primary metric:** NDCG@10; **candidate Recall@50** on first-stage pools (in eval code from this revision).
+
+Implementation note: **Week 6** must **enforce** this profile on `/query` (`method`, `use_rerank`, `top_k`) in settings/schema, not only in these docs. Until then the API keeps dev defaults (`top_k=3`, all methods).
 
 ---
 

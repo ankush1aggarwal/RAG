@@ -22,7 +22,9 @@ from app.evaluation.retrieval_metrics import (
 )
 from app.generation.llm import LLMProvider
 from app.generation.prompt import build_rag_prompt
-from app.pipeline.rag import RetrievalMethod, citations_from_hits, retrieve_with_optional_rerank
+from app.evaluation.repro import repo_relative_path, try_git_commit_short
+from app.pipeline.rag import RetrievalMethod, citations_from_hits, retrieve_hits
+from app.retrieval.reranker import resolve_rerank_candidate_limit
 from app.retrieval.bm25_store import Bm25ChunkIndex
 from app.retrieval.embeddings import EmbeddingProvider
 from app.retrieval.qdrant_store import QdrantChunkStore
@@ -52,6 +54,8 @@ class EvalProtocol:
     fusion_weights: tuple[float, float] | None
     llm_label: str
     include_rag_responses: bool
+    candidate_recall_k: int = 50
+    git_commit: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -66,6 +70,8 @@ class EvalProtocol:
             ),
             "llm_label": self.llm_label,
             "include_rag_responses": self.include_rag_responses,
+            "candidate_recall_k": self.candidate_recall_k,
+            "git_commit": self.git_commit,
         }
 
 
@@ -76,6 +82,8 @@ class QueryEvalRow:
     ranked_doc_ids: tuple[str, ...]
     relevant_doc_ids: tuple[str, ...]
     metrics: QueryMetrics
+    first_stage_latency_ms: float
+    rerank_latency_ms: float
     retrieval_latency_ms: float
     generation_latency_ms: float | None
     answer: str | None
@@ -114,6 +122,8 @@ class RetrievalEvalResult:
                     "question": row.question,
                     "ranked_doc_ids": list(row.ranked_doc_ids),
                     "relevant_doc_ids": list(row.relevant_doc_ids),
+                    "first_stage_latency_ms": row.first_stage_latency_ms,
+                    "rerank_latency_ms": row.rerank_latency_ms,
                     "retrieval_latency_ms": row.retrieval_latency_ms,
                     "generation_latency_ms": row.generation_latency_ms,
                     "answer": row.answer,
@@ -125,6 +135,7 @@ class RetrievalEvalResult:
                         "map": row.metrics.map_score,
                         "precision": row.metrics.precision,
                         "recall": row.metrics.recall,
+                        "candidate_recall": row.metrics.candidate_recall,
                     },
                 }
                 for row in self.per_query
@@ -161,9 +172,11 @@ def evaluate_retrieval_dataset(
     use_rerank: bool = False,
     reranker: RerankerProvider | None = None,
     rerank_candidate_limit: int = 50,
+    candidate_recall_k: int = 50,
     generation_top_k: int | None = None,
     llm: LLMProvider | None = None,
     include_rag_responses: bool = True,
+    git_commit: str | None = None,
 ) -> RetrievalEvalResult:
     if method in ("bm25", "hybrid", "weighted_hybrid") and bm25_index is None:
         raise ValueError("BM25 index is required for bm25 and hybrid evaluation")
@@ -185,34 +198,57 @@ def evaluate_retrieval_dataset(
         fusion_weights=weights,
         llm_label=getattr(llm, "label", type(llm).__name__) if llm else "none",
         include_rag_responses=include_rag_responses and llm is not None,
+        candidate_recall_k=candidate_recall_k,
+        git_commit=git_commit or try_git_commit_short(),
     )
+
+    if use_rerank:
+        pool_limit = resolve_rerank_candidate_limit(
+            effective_k,
+            candidate_limit=rerank_candidate_limit,
+        )
+    else:
+        pool_limit = max(effective_k, candidate_recall_k)
 
     per_query_metrics: list[QueryMetrics] = []
     rows: list[QueryEvalRow] = []
-    retrieval_latencies: list[float] = []
+    first_stage_latencies: list[float] = []
+    rerank_latencies: list[float] = []
+    retrieve_and_rerank_latencies: list[float] = []
 
     for index, query in enumerate(dataset.queries, start=1):
-        start = time.perf_counter()
-        hits, _, _ = retrieve_with_optional_rerank(
+        stage_start = time.perf_counter()
+        hits = retrieve_hits(
             query.question,
             retrieval_method=method,
             store=store,
             embedder=embedder,
             bm25_index=bm25_index,
             top_k=effective_k,
-            use_rerank=use_rerank,
-            reranker=reranker,
-            rerank_candidate_limit=rerank_candidate_limit,
             fusion_weights=weights,
+            candidate_limit=pool_limit,
         )
-        retrieval_ms = (time.perf_counter() - start) * 1000.0
-        retrieval_latencies.append(retrieval_ms)
+        first_stage_ms = (time.perf_counter() - stage_start) * 1000.0
+        candidate_ranked = doc_ranking_from_hits(hits)
+
+        rerank_ms = 0.0
+        if use_rerank and reranker is not None:
+            rerank_start = time.perf_counter()
+            hits = reranker.rerank(query.question, hits, top_k=effective_k)
+            rerank_ms = (time.perf_counter() - rerank_start) * 1000.0
+
+        total_retrieve_ms = first_stage_ms + rerank_ms
+        first_stage_latencies.append(first_stage_ms)
+        rerank_latencies.append(rerank_ms)
+        retrieve_and_rerank_latencies.append(total_retrieve_ms)
 
         ranked = doc_ranking_from_hits(hits)
         metrics = compute_query_metrics(
             ranked,
             query.relevance_by_doc_id,
             k_values=k_values,
+            candidate_ranked_doc_ids=candidate_ranked,
+            candidate_recall_k=candidate_recall_k,
         )
         per_query_metrics.append(metrics)
 
@@ -245,7 +281,9 @@ def evaluate_retrieval_dataset(
                 ranked_doc_ids=tuple(ranked),
                 relevant_doc_ids=query.relevant_doc_ids,
                 metrics=metrics,
-                retrieval_latency_ms=retrieval_ms,
+                first_stage_latency_ms=first_stage_ms,
+                rerank_latency_ms=rerank_ms,
+                retrieval_latency_ms=total_retrieve_ms,
                 generation_latency_ms=generation_ms,
                 answer=answer,
                 citations=tuple(citation_payloads),
@@ -256,9 +294,16 @@ def evaluate_retrieval_dataset(
             print(f"  evaluated {index}/{dataset.num_queries} queries...")
 
     aggregates = aggregate_query_metrics(per_query_metrics, k_values=k_values)
+    rel_path = repo_relative_path(eval_dataset_path) if eval_dataset_path else ""
+    latency_summary: dict[str, Any] = {
+        "first_stage_retrieval": summarize_latency_ms(first_stage_latencies),
+        "rerank": summarize_latency_ms(rerank_latencies),
+        "retrieve_and_rerank": summarize_latency_ms(retrieve_and_rerank_latencies),
+        "model_load_in_timed_region": False,
+    }
     return RetrievalEvalResult(
         method=method,
-        eval_dataset_path=eval_dataset_path,
+        eval_dataset_path=rel_path,
         qrels_split=dataset.qrels_split,
         top_k=effective_k,
         k_values=k_values,
@@ -266,7 +311,7 @@ def evaluate_retrieval_dataset(
         per_query=tuple(rows),
         evaluated_at=datetime.now(UTC).isoformat(),
         protocol=protocol,
-        latency_summary=summarize_latency_ms(retrieval_latencies),
+        latency_summary=latency_summary,
     )
 
 
@@ -324,16 +369,48 @@ def evaluate_all_methods(
     return results
 
 
+def _latency_block(summary: dict[str, float]) -> tuple[float, float, float]:
+    return summary["mean_ms"], summary["p50_ms"], summary["p95_ms"]
+
+
 def format_latency_table(results: dict[RetrievalMethod, RetrievalEvalResult]) -> str:
+    any_rerank = any(r.protocol.use_rerank for r in results.values())
+    if any_rerank:
+        lines = [
+            "| Method | Stage | mean (ms) | p50 (ms) | p95 (ms) |",
+            "|--------|-------|-----------|----------|----------|",
+        ]
+        for method, result in results.items():
+            lat = result.latency_summary
+            label = METHOD_LABELS.get(method, method)
+            for stage_key, stage_label in (
+                ("first_stage_retrieval", "first-stage retrieval"),
+                ("rerank", "rerank"),
+                ("retrieve_and_rerank", "retrieve + rerank (total)"),
+            ):
+                block = lat.get(stage_key)
+                if not isinstance(block, dict):
+                    continue
+                mean_m, p50, p95 = _latency_block(block)
+                lines.append(
+                    f"| {label} | {stage_label} | {mean_m:.1f} | {p50:.1f} | {p95:.1f} |"
+                )
+        return "\n".join(lines)
+
     lines = [
-        "| Method | mean (ms) | p50 (ms) | p95 (ms) |",
-        "|--------|-----------|----------|----------|",
+        "| Method | Stage | mean (ms) | p50 (ms) | p95 (ms) |",
+        "|--------|-------|-----------|----------|----------|",
     ]
     for method, result in results.items():
         lat = result.latency_summary
         label = METHOD_LABELS.get(method, method)
+        block = lat.get("first_stage_retrieval", lat)
+        if isinstance(block, dict) and "mean_ms" in block:
+            mean_m, p50, p95 = _latency_block(block)
+        else:
+            mean_m, p50, p95 = _latency_block(lat)
         lines.append(
-            f"| {label} | {lat['mean_ms']:.1f} | {lat['p50_ms']:.1f} | {lat['p95_ms']:.1f} |"
+            f"| {label} | first-stage retrieval | {mean_m:.1f} | {p50:.1f} | {p95:.1f} |"
         )
     return "\n".join(lines)
 
@@ -360,7 +437,16 @@ def render_query_examples(
             cite_str = ", ".join(
                 f"[{c['document_id']}:{c['chunk_id']}]" for c in row.citations
             )
-            lines.append(f"**{label}** — retrieval {row.retrieval_latency_ms:.1f} ms, NDCG@10 {ndcg10:.3f}")
+            if row.rerank_latency_ms > 0:
+                lines.append(
+                    f"**{label}** — first-stage {row.first_stage_latency_ms:.1f} ms, "
+                    f"rerank {row.rerank_latency_ms:.1f} ms, NDCG@10 {ndcg10:.3f}"
+                )
+            else:
+                lines.append(
+                    f"**{label}** — first-stage retrieval {row.first_stage_latency_ms:.1f} ms, "
+                    f"NDCG@10 {ndcg10:.3f}"
+                )
             lines.append(f"- Ranked docs (top 5): {', '.join(row.ranked_doc_ids[:5])}")
             lines.append(f"- Citations in response: {cite_str or '_(none)_'}")
             if row.top_hit_snippets:
@@ -392,6 +478,30 @@ def format_comparison_table(
         ):
             cells = [f"{aggregates.get(f'{prefix}@{k}', 0.0):.4f}" for k in k_values]
             lines.append(f"| {label} | {metric_label} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def format_candidate_recall_summary(
+    results: dict[RetrievalMethod, RetrievalEvalResult],
+) -> str:
+    lines = [
+        "### Candidate pool recall (document-level)",
+        "",
+        "Computed on the **first-stage** ranked document list (depth = "
+        "`max(top_k, candidate_recall_k)` or rerank candidate limit). "
+        "Does not use reranked order.",
+        "",
+        "| Method | Candidate Recall@K |",
+        "|--------|-------------------:|",
+    ]
+    for method, result in results.items():
+        k = result.protocol.candidate_recall_k
+        key = f"candidate_recall@{k}"
+        value = result.aggregates.values.get(key)
+        if value is None:
+            continue
+        label = METHOD_LABELS.get(method, method)
+        lines.append(f"| {label} | {value:.4f} (@{k}) |")
     return "\n".join(lines)
 
 

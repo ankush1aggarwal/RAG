@@ -22,7 +22,14 @@ class ReadyResponse(BaseModel):
 
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=1, description="User question for RAG")
-    top_k: int = Field(default=3, ge=1, le=20, description="Number of chunks to retrieve")
+    top_k: int = Field(
+        default=3,
+        ge=1,
+        le=20,
+        description=(
+            "Number of chunks to retrieve (dev default; Week 6 production lock targets top_k=10)"
+        ),
+    )
     method: RetrievalMethod = Field(
         default="dense",
         description="Retrieval: dense (Qdrant), bm25, or hybrid (RRF)",

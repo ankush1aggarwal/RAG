@@ -18,6 +18,7 @@ class QueryMetrics:
     map_score: dict[int, float]
     precision: dict[int, float]
     recall: dict[int, float]
+    candidate_recall: dict[int, float]
 
 
 @dataclass(frozen=True)
@@ -125,6 +126,9 @@ def compute_query_metrics(
     ranked_doc_ids: list[str],
     relevance_by_doc_id: dict[str, int],
     k_values: tuple[int, ...] = DEFAULT_K_VALUES,
+    *,
+    candidate_ranked_doc_ids: list[str] | None = None,
+    candidate_recall_k: int | None = None,
 ) -> QueryMetrics:
     relevant = {doc_id for doc_id, grade in relevance_by_doc_id.items() if grade > 0}
     ndcg: dict[int, float] = {}
@@ -132,18 +136,26 @@ def compute_query_metrics(
     map_score: dict[int, float] = {}
     precision: dict[int, float] = {}
     recall: dict[int, float] = {}
+    candidate_recall: dict[int, float] = {}
     for k in k_values:
         ndcg[k] = ndcg_at_k(ranked_doc_ids, relevance_by_doc_id, k)
         mrr[k] = mrr_at_k(ranked_doc_ids, relevant, k)
         map_score[k] = average_precision_at_k(ranked_doc_ids, relevant, k)
         precision[k] = precision_at_k(ranked_doc_ids, relevant, k)
         recall[k] = recall_at_k(ranked_doc_ids, relevant, k)
+    if candidate_ranked_doc_ids is not None and candidate_recall_k is not None:
+        candidate_recall[candidate_recall_k] = recall_at_k(
+            candidate_ranked_doc_ids,
+            relevant,
+            candidate_recall_k,
+        )
     return QueryMetrics(
         ndcg=ndcg,
         mrr=mrr,
         map_score=map_score,
         precision=precision,
         recall=recall,
+        candidate_recall=candidate_recall,
     )
 
 
@@ -162,4 +174,11 @@ def aggregate_query_metrics(
         totals[f"map@{k}"] = sum(row.map_score[k] for row in per_query) / count
         totals[f"precision@{k}"] = sum(row.precision[k] for row in per_query) / count
         totals[f"recall@{k}"] = sum(row.recall[k] for row in per_query) / count
+    candidate_ks = {
+        k for row in per_query for k in row.candidate_recall
+    }
+    for k in sorted(candidate_ks):
+        totals[f"candidate_recall@{k}"] = (
+            sum(row.candidate_recall.get(k, 0.0) for row in per_query) / count
+        )
     return AggregatedMetrics(values=totals, num_queries=count)

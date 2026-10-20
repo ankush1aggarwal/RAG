@@ -22,13 +22,11 @@ def test_required_top_k_at_least_max_metric_cutoff():
     assert required_top_k((1, 5, 10), 20) == 20
 
 
-@patch("app.evaluation.retrieval_eval.retrieve_with_optional_rerank")
+@patch("app.evaluation.retrieval_eval.retrieve_hits")
 def test_evaluate_retrieval_dataset_aggregates(mock_retrieve: MagicMock):
-    mock_retrieve.return_value = (
-        [SearchHit(doc_id="42", chunk_id=0, chunk_text="hit", score=1.0)],
-        None,
-        None,
-    )
+    mock_retrieve.return_value = [
+        SearchHit(doc_id="42", chunk_id=0, chunk_text="hit", score=1.0),
+    ]
     dataset = FiqaEvalDataset(
         version=1,
         corpus_id="BeIR/fiqa",
@@ -54,24 +52,21 @@ def test_evaluate_retrieval_dataset_aggregates(mock_retrieve: MagicMock):
     assert result.aggregates.num_queries == 1
     assert result.aggregates.values["ndcg@1"] == 1.0
     assert result.aggregates.values["mrr@1"] == 1.0
-    assert result.latency_summary["mean_ms"] >= 0.0
+    assert result.latency_summary["first_stage_retrieval"]["mean_ms"] >= 0.0
+    assert "candidate_recall@50" in result.aggregates.values
 
 
-@patch("app.evaluation.retrieval_eval.retrieve_with_optional_rerank")
+@patch("app.evaluation.retrieval_eval.retrieve_hits")
 def test_evaluate_retrieval_dataset_with_stub_llm_includes_citations(mock_retrieve: MagicMock):
-    mock_retrieve.return_value = (
-        [
-            SearchHit(
-                doc_id="42",
-                doc_title="Fees",
-                chunk_id=3,
-                chunk_text="Broker fees vary.",
-                score=1.0,
-            ),
-        ],
-        None,
-        None,
-    )
+    mock_retrieve.return_value = [
+        SearchHit(
+            doc_id="42",
+            doc_title="Fees",
+            chunk_id=3,
+            chunk_text="Broker fees vary.",
+            score=1.0,
+        ),
+    ]
     dataset = FiqaEvalDataset(
         version=1,
         corpus_id="BeIR/fiqa",
@@ -148,13 +143,11 @@ def test_evaluate_all_methods_weighted_requires_fusion_weights():
         )
 
 
-@patch("app.evaluation.retrieval_eval.retrieve_with_optional_rerank")
+@patch("app.evaluation.retrieval_eval.retrieve_hits")
 def test_save_and_load_eval_result_roundtrip(mock_retrieve: MagicMock, tmp_path):
-    mock_retrieve.return_value = (
-        [SearchHit(doc_id="1", chunk_id=0, chunk_text="x", score=1.0)],
-        None,
-        None,
-    )
+    mock_retrieve.return_value = [
+        SearchHit(doc_id="1", chunk_id=0, chunk_text="x", score=1.0),
+    ]
     dataset = FiqaEvalDataset(
         version=1,
         corpus_id="BeIR/fiqa",
@@ -193,6 +186,7 @@ def test_format_latency_and_query_examples():
         map_score={10: 1.0},
         precision={10: 1.0},
         recall={10: 1.0},
+        candidate_recall={50: 1.0},
     )
     row = QueryEvalRow(
         query_id="1",
@@ -200,6 +194,8 @@ def test_format_latency_and_query_examples():
         ranked_doc_ids=("9",),
         relevant_doc_ids=("9",),
         metrics=metrics,
+        first_stage_latency_ms=5.0,
+        rerank_latency_ms=0.0,
         retrieval_latency_ms=5.0,
         generation_latency_ms=None,
         answer=None,
@@ -227,7 +223,11 @@ def test_format_latency_and_query_examples():
         per_query=(row,),
         evaluated_at="t",
         protocol=protocol,
-        latency_summary={"mean_ms": 5.0, "p50_ms": 5.0, "p95_ms": 5.0},
+        latency_summary={
+            "first_stage_retrieval": {"mean_ms": 5.0, "p50_ms": 5.0, "p95_ms": 5.0},
+            "rerank": {"mean_ms": 0.0, "p50_ms": 0.0, "p95_ms": 0.0},
+            "retrieve_and_rerank": {"mean_ms": 5.0, "p50_ms": 5.0, "p95_ms": 5.0},
+        },
     )
     table = format_latency_table({"dense": res})
     assert "5.0" in table

@@ -193,9 +193,10 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 5. **Strengthen readiness.** Avoid duplicate alignment checks per `/ready` request; turn provider/network failures into controlled not-ready diagnostics. Do not treat a configured API key as proof that the provider is reachable unless that is explicitly the chosen check.
 6. **Add API-level integration tests.** Test success, invalid input, retrieval/provider failure, timeout behavior, streaming termination/errors, and readiness when dependencies are missing or misaligned.
 7. **Update OpenAPI/examples and docs.** Include request/response examples, error semantics and run commands.
+8. **Enforce the frozen production retrieval profile in code** (`method`, `use_rerank`, `top_k` from settings — today target: dense, no rerank, `top_k=10`). Do not rely on documentation alone; client overrides should be rejected or ignored per chosen API policy.
 
 **Deliverables:** hardened routes/schemas, optional stream route, API integration tests, updated API documentation.  
-**Definition of done:** existing `/query` still works; errors are predictable; streaming works if committed to; tests cover critical success/failure paths.
+**Definition of done:** `/query` serves only the frozen profile; errors are predictable; streaming works if committed to; tests cover critical success/failure paths.
 
 ## Week 7 — Observability ⬜
 
