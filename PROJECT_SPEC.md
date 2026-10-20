@@ -20,7 +20,7 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | Vector DB | Production RAG patterns | **Qdrant** (local persistent → Qdrant Cloud later) |
 | Code location | Monorepo / app package | **`src/`** — `src/app/`, `src/scripts/`, `src/tests/` |
 | Learning artifacts | — | **`notebooks/`** — prototypes; **not** the canonical pipeline |
-| Config / secrets | Env-based | **`.env`** at repo root (gitignored); no committed `.env.example` |
+| Config / secrets | Env-based | **`.env`** at repo root (gitignored); committed **`.env.example`** template |
 
 ## Locked implementation decisions
 
@@ -255,10 +255,12 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 |---------|---------------|--------|
 | Method | `dense` | Test NDCG@10 ≈ 0.37; best latency |
 | Rerank | off | CE did not improve dense NDCG@10 |
-| `top_k` | 10 | Week 4 protocol |
+| `top_k` | 10 | Week 4 eval protocol (not the API default today) |
 | Collection | `fiqa` (full corpus) | |
 
-CLI/eval may use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` for **Week 5+ experiments**. Week **6** API will expose only this profile on `/query`. Reports: [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md), per-experiment [`experiments/README.md`](docs/reports/experiments/README.md), catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md).
+**API during Week 5 experimentation:** `QueryRequest.top_k` still defaults to **3** in code for backward compatibility while experiments run. **Week 6 must enforce** the frozen profile in application code (settings + schema defaults / ignored client overrides for `method`, `use_rerank`, and `top_k`), not only in documentation.
+
+CLI/eval may use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` for **Week 5+ experiments**. Reports: [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md), per-experiment [`experiments/README.md`](docs/reports/experiments/README.md), catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md).
 
 ### Week 5 (next) — experimentation sprint
 
@@ -266,12 +268,18 @@ CLI/eval may use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` for **Week 5+
 
 ### Week 6 — production API engineering
 
-- [ ] Streaming, request IDs, errors, integration tests; **single served retrieval design**
+- [ ] Streaming, request IDs, errors, integration tests
+- [ ] **Enforce frozen production profile on `/query`:** `method=dense`, `use_rerank=false`, `top_k=10` (from settings; reject or ignore conflicting request fields per API policy)
 
 ## Evaluation discipline
 
 - **Week 3:** unlabeled comparison — latency, top-k Jaccard overlap, qualitative snippets (`docs/reports/week3_retrieval_comparison.md`).
-- **Week 4+:** use **qrels** (`BeIR/fiqa-qrels`) for retrieval metrics; do not tune repeatedly on the test set.
+- **Week 4+:** use **qrels** (`BeIR/fiqa-qrels`) for retrieval metrics.
+- **Splits:** tune and select on **validation** only; run **test** once per finalized configuration for reporting (no test-driven hyperparameter search).
+- **Primary adoption metric:** **NDCG@10** on test must justify added **p95 latency**, hosting **cost**, and **operational complexity** vs the previous baseline.
+- **Candidate coverage:** report **candidate Recall@50** (document-level, first-stage pool) alongside ranked metrics.
+- **Latency labels:** distinguish **first-stage retrieval**, **rerank**, and **retrieve+rerank**; exclude **embedding model load** from timed eval regions (see `docs/reports/eval_protocol_reference.md`).
+- **Artifacts:** store **repo-relative** dataset paths, `git_commit`, and frozen protocol JSON (`data/benchmarks/week4_eval_protocol.json`).
 - Record every experiment: subset, chunking, embedding model, top-k, fusion, reranker, timestamp.
 - **Separate** retrieval quality from generation quality.
 - Keep a **known-good baseline** before each optimization ([README §19](README.md)).

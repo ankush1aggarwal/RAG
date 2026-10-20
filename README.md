@@ -102,7 +102,7 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 
 **Experiment results:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) (full report); per-experiment [`docs/reports/experiments/`](docs/reports/experiments/README.md); catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md). Week 4 runbook: [`week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md).
 
-**Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. The **deployed API** (Week 6+) will use only the **best** measured configuration (today: dense retrieval, rerank off, `top_k=10`, full `fiqa` index).
+**Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. The **documented production profile** is dense, rerank off, **`top_k=10`** (Week 4 eval). The HTTP API still defaults **`top_k=3`** during experimentation; **Week 6** will enforce the frozen profile in code. Eval rules: [`docs/reports/eval_protocol_reference.md`](docs/reports/eval_protocol_reference.md).
 
 ---
 

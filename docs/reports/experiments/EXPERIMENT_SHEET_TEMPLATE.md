@@ -14,7 +14,7 @@
 
 - **Question:** TBD
 - **Hypothesis:** TBD
-- **Success criteria:** TBD (metrics + latency thresholds decided **before** peeking at test)
+- **Success criteria:** TBD on **validation** (including material **NDCG@10** gain vs baseline); pre-register p95/cost limits. **Test** run once after selection.
 
 ## 2. Control and treatments
 
