@@ -8,7 +8,8 @@
 | **4** | Held-out baseline | Full `fiqa` | **test** | dense, BM25, weighted hybrid (frozen exp 3) | no | `week4_exp4_test_baseline.md` |
 | **5** | Rerank ablation | Full `fiqa` | **test** | same as exp 4 | **local cross-encoder** | `week4_exp5_test_rerank.md` |
 
-**Master report:** `week4_retrieval_program_report.md` (flow, learnings, trade-offs; links all artifacts).
+**Week 4 reports:** `week4_retrieval_program_report.md` (this week's flow).  
+**Full experiment program (E0–E11):** [`rag_experiment_program_report.md`](rag_experiment_program_report.md) · roadmap: [`../RAG_PROJECT_ROADMAP.md`](../RAG_PROJECT_ROADMAP.md).
 
 ## Reproducibility
 
