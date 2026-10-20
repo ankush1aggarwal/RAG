@@ -15,7 +15,9 @@
 | 4 | Exp 4 | test | dense, BM25, weighted hybrid | no | Frozen-weight test baseline |
 | 5 | Exp 5 | test | dense, BM25, weighted hybrid | **local CE** | Rerank vs Exp 4 |
 
-Plan and commands: [`week4_experiment_plan.md`](week4_experiment_plan.md).
+Plan and commands: [`week4_experiment_plan.md`](week4_experiment_plan.md).  
+**All-program view (E0–E11, production profile):** [`rag_experiment_program_report.md`](rag_experiment_program_report.md).  
+**Template-based report:** [`rag_experiment_results.md`](rag_experiment_results.md) · E1/E1b/E2 sheets in [`experiments/`](experiments/README.md).
 
 ## Results summary (mean NDCG@10)
 

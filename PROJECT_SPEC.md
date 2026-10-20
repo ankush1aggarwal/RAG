@@ -1,6 +1,6 @@
 # Project specification
 
-**Status:** Week 4 complete — rerank, qrels eval, full-corpus experiments; Week 5 production API next  
+**Status:** Week 4 complete; **Week 5** = experimentation sprint; **Week 6** = production API (frozen retrieval profile)  
 **Last updated:** 2026-10-20
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -36,9 +36,9 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | Local LLM | **Ollama** (`/api/chat`) | `LLMProvider` interface |
 | Hosted LLM | **Cohere** `ClientV2.chat` | `LLM_PROVIDER=cohere` |
 | API | **FastAPI** + **Uvicorn** | `/health`, `/ready`, `POST /query` with `method`: `dense` \| `bm25` \| `hybrid`; streaming later |
-| Observability | Langfuse / OpenTelemetry | **Week 6** |
-| Packaging / CI | Docker + **GitHub Actions** | **Weeks 7–8** |
-| Hosting | Render + Qdrant Cloud | **Week 8** |
+| Observability | Langfuse / OpenTelemetry | **Week 7** |
+| Packaging / CI | Docker + **GitHub Actions** | **Week 8** |
+| Hosting | Render + Qdrant Cloud | **Week 9** |
 
 ## Repository layout (this repo)
 
@@ -83,7 +83,7 @@ RAG/
 | `pipeline` | `retrieve_hits`, `answer_query` → `RagAnswer` + citations | ✅ |
 | `api` | FastAPI app, `POST /query` retrieval `method`, readiness | ✅ |
 | `evaluation` | Benchmark, qrels metrics, Week 4 experiment runner, rerank error analysis | ✅ |
-| `observability` | Logging, tracing | ⬜ Week 6 |
+| `observability` | Logging, tracing | ⬜ Week 7 |
 
 ## Provider interfaces (design contract)
 
@@ -113,9 +113,10 @@ Factory functions:
 | HTTP API | `api/*`, `scripts/serve_api.py`; `QueryRequest.method` | 2–3 | ✅ |
 | Retrieval benchmark | `evaluation/retrieval_benchmark.py`, notebook + report | 3 | ✅ |
 | Rerank + offline eval (qrels) | `reranker.py`, `retrieval_eval.py`, `run_week4_experiments.py` | 4 | ✅ |
-| SSE, hardening | — | 5 | ⬜ |
-| Observability | — | 6 | ⬜ |
-| Docker + CI + deploy | — | 7–8 | ⬜ |
+| Experiment sprint E3–E9 (E4 Jev) | `docs/RAG_PROJECT_ROADMAP.md` | 5 | ⬜ |
+| SSE, API hardening (frozen retrieval) | — | 6 | ⬜ |
+| Observability | — | 7 | ⬜ |
+| Docker + CI + deploy | — | 8–9 | ⬜ |
 
 ## Environment variables
 
@@ -238,7 +239,7 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] API `method` + `/ready` BM25 check
 - [x] Fixed query set + benchmark notebook + comparison report
 - [x] Weighted RRF + validation weight tuning (Week 4)
-- [x] Unit tests (99+ in `src/tests/unit/`)
+- [x] Unit tests (162+ in `src/tests/unit/`)
 
 ### Week 4 ✅ (reranking + evaluation)
 
@@ -248,10 +249,24 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] Dense rerank error analysis (Exp 4 vs Exp 5 dense; `analyze_rerank_dense.py`)
 - [x] Reports: `docs/reports/week4_retrieval_program_report.md` + per-experiment markdown
 
-### Week 5 (next) — production API engineering
+### Production retrieval profile (frozen after experiments)
 
-- [ ] Streaming (`POST /query/stream`), request IDs, validation and error handling
-- [ ] Auth approach, async ingestion design, security hardening (see README Week 5)
+| Setting | Current value | Notes |
+|---------|---------------|--------|
+| Method | `dense` | Test NDCG@10 ≈ 0.37; best latency |
+| Rerank | off | CE did not improve dense NDCG@10 |
+| `top_k` | 10 | Week 4 protocol |
+| Collection | `fiqa` (full corpus) | |
+
+CLI/eval may use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` for **Week 5+ experiments**. Week **6** API will expose only this profile on `/query`. Reports: [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md), per-experiment [`experiments/README.md`](docs/reports/experiments/README.md), catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md).
+
+### Week 5 (next) — experimentation sprint
+
+- [ ] E3–E9 per [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) (incl. **E4** Jev ranking-only); update experiment report and production profile if a treatment wins.
+
+### Week 6 — production API engineering
+
+- [ ] Streaming, request IDs, errors, integration tests; **single served retrieval design**
 
 ## Evaluation discipline
 
@@ -292,13 +307,13 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 ## Out of scope (for now)
 
 - Copying reference repository source code
-- `POST /query/stream` until Week 5 hardening
+- `POST /query/stream` until Week 6
 - HTTP ingest endpoints (ingest remains CLI)
 - LangChain/LangGraph as core orchestrator
-- Docker/cloud until Week 7–8 (local benchmarks justify design first)
+- Docker/cloud until Weeks 8–9 (experiment + API hardening first)
 
-## Next implementation steps (Week 5)
+## Next implementation steps
 
-1. API hardening: request IDs, consistent error responses, input validation
-2. `POST /query/stream` (SSE) behind same retrieval/generation path as `/query`
-3. Document auth and deployment assumptions for Weeks 7–8
+**Week 5:** Run E3 → **E4** (Jev `rerank()`, no filtering) → optional E4b → E5–E8; fill sheets under `docs/reports/experiments/` and update `rag_experiment_results.md`.
+
+**Week 6:** API hardening; lock `/query` to frozen production retrieval profile.
