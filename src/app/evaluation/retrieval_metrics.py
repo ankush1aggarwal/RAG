@@ -1,0 +1,165 @@
+"""Document-level retrieval metrics (NDCG, MRR, MAP, precision, recall)."""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Iterable
+from dataclasses import dataclass
+
+DEFAULT_K_VALUES: tuple[int, ...] = (1, 5, 10)
+
+
+@dataclass(frozen=True)
+class QueryMetrics:
+    """Per-query metric values keyed by cutoff k."""
+
+    ndcg: dict[int, float]
+    mrr: dict[int, float]
+    map_score: dict[int, float]
+    precision: dict[int, float]
+    recall: dict[int, float]
+
+
+@dataclass(frozen=True)
+class AggregatedMetrics:
+    """Mean metrics across queries; field names like ``ndcg@5``."""
+
+    values: dict[str, float]
+    num_queries: int
+
+
+def doc_ranking_from_hits(hits: Iterable[object]) -> list[str]:
+    """First-seen ``doc_id`` order from chunk hits (retrieval rank)."""
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for hit in hits:
+        doc_id = str(hit.doc_id)
+        if doc_id in seen:
+            continue
+        seen.add(doc_id)
+        ordered.append(doc_id)
+    return ordered
+
+
+def _grades_for_ranking(
+    ranked_doc_ids: list[str],
+    relevance_by_doc_id: dict[str, int],
+    k: int,
+) -> list[float]:
+    return [float(relevance_by_doc_id.get(doc_id, 0)) for doc_id in ranked_doc_ids[:k]]
+
+
+def dcg_at_k(relevances: list[float], k: int) -> float:
+    total = 0.0
+    for index, rel in enumerate(relevances[:k], start=1):
+        total += rel / math.log2(index + 1)
+    return total
+
+
+def ndcg_at_k(
+    ranked_doc_ids: list[str],
+    relevance_by_doc_id: dict[str, int],
+    k: int,
+) -> float:
+    retrieved = _grades_for_ranking(ranked_doc_ids, relevance_by_doc_id, k)
+    ideal = sorted(relevance_by_doc_id.values(), reverse=True)
+    dcg = dcg_at_k(retrieved, k)
+    idcg = dcg_at_k(ideal, k)
+    if idcg <= 0.0:
+        return 0.0
+    return dcg / idcg
+
+
+def precision_at_k(
+    ranked_doc_ids: list[str],
+    relevant_doc_ids: set[str],
+    k: int,
+) -> float:
+    if k <= 0:
+        return 0.0
+    top = ranked_doc_ids[:k]
+    hits = sum(1 for doc_id in top if doc_id in relevant_doc_ids)
+    return hits / k
+
+
+def recall_at_k(
+    ranked_doc_ids: list[str],
+    relevant_doc_ids: set[str],
+    k: int,
+) -> float:
+    if not relevant_doc_ids:
+        return 0.0
+    top = ranked_doc_ids[:k]
+    hits = sum(1 for doc_id in top if doc_id in relevant_doc_ids)
+    return hits / len(relevant_doc_ids)
+
+
+def mrr_at_k(
+    ranked_doc_ids: list[str],
+    relevant_doc_ids: set[str],
+    k: int,
+) -> float:
+    for rank, doc_id in enumerate(ranked_doc_ids[:k], start=1):
+        if doc_id in relevant_doc_ids:
+            return 1.0 / rank
+    return 0.0
+
+
+def average_precision_at_k(
+    ranked_doc_ids: list[str],
+    relevant_doc_ids: set[str],
+    k: int,
+) -> float:
+    if not relevant_doc_ids:
+        return 0.0
+    hits = 0
+    precision_sum = 0.0
+    for rank, doc_id in enumerate(ranked_doc_ids[:k], start=1):
+        if doc_id in relevant_doc_ids:
+            hits += 1
+            precision_sum += hits / rank
+    return precision_sum / len(relevant_doc_ids)
+
+
+def compute_query_metrics(
+    ranked_doc_ids: list[str],
+    relevance_by_doc_id: dict[str, int],
+    k_values: tuple[int, ...] = DEFAULT_K_VALUES,
+) -> QueryMetrics:
+    relevant = {doc_id for doc_id, grade in relevance_by_doc_id.items() if grade > 0}
+    ndcg: dict[int, float] = {}
+    mrr: dict[int, float] = {}
+    map_score: dict[int, float] = {}
+    precision: dict[int, float] = {}
+    recall: dict[int, float] = {}
+    for k in k_values:
+        ndcg[k] = ndcg_at_k(ranked_doc_ids, relevance_by_doc_id, k)
+        mrr[k] = mrr_at_k(ranked_doc_ids, relevant, k)
+        map_score[k] = average_precision_at_k(ranked_doc_ids, relevant, k)
+        precision[k] = precision_at_k(ranked_doc_ids, relevant, k)
+        recall[k] = recall_at_k(ranked_doc_ids, relevant, k)
+    return QueryMetrics(
+        ndcg=ndcg,
+        mrr=mrr,
+        map_score=map_score,
+        precision=precision,
+        recall=recall,
+    )
+
+
+def aggregate_query_metrics(
+    per_query: list[QueryMetrics],
+    k_values: tuple[int, ...] = DEFAULT_K_VALUES,
+) -> AggregatedMetrics:
+    if not per_query:
+        return AggregatedMetrics(values={}, num_queries=0)
+
+    totals: dict[str, float] = {}
+    count = len(per_query)
+    for k in k_values:
+        totals[f"ndcg@{k}"] = sum(row.ndcg[k] for row in per_query) / count
+        totals[f"mrr@{k}"] = sum(row.mrr[k] for row in per_query) / count
+        totals[f"map@{k}"] = sum(row.map_score[k] for row in per_query) / count
+        totals[f"precision@{k}"] = sum(row.precision[k] for row in per_query) / count
+        totals[f"recall@{k}"] = sum(row.recall[k] for row in per_query) / count
+    return AggregatedMetrics(values=totals, num_queries=count)

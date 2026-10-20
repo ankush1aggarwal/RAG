@@ -23,6 +23,7 @@ from app.retrieval.embeddings import (
     embedding_dimension,
     embedding_model_for_method,
 )
+from app.retrieval.reranker import RerankerProvider, create_reranker_provider
 
 
 @dataclass
@@ -33,6 +34,7 @@ class AppResources:
     llm: LLMProvider
     bm25_index: Bm25ChunkIndex | None = None
     ingest_manifest: IngestManifest | None = None
+    reranker: RerankerProvider | None = None
 
 
 def build_resources(settings: Settings) -> AppResources:
@@ -63,6 +65,12 @@ def build_resources(settings: Settings) -> AppResources:
     manifest_path = manifest_path_for_collection(bm25_path)
     bm25_index = Bm25ChunkIndex.load(bm25_path) if bm25_path.is_file() else None
     ingest_manifest = load_manifest(manifest_path)
+    reranker = create_reranker_provider(
+        settings.reranker_provider,  # type: ignore[arg-type]
+        cross_encoder_model=settings.cross_encoder_rerank_model,
+        cohere_api_key=settings.cohere_api_key,
+        cohere_rerank_model=settings.cohere_rerank_model,
+    )
     return AppResources(
         settings=settings,
         store=store,
@@ -70,6 +78,7 @@ def build_resources(settings: Settings) -> AppResources:
         llm=llm,
         bm25_index=bm25_index,
         ingest_manifest=ingest_manifest,
+        reranker=reranker,
     )
 
 
@@ -110,7 +119,7 @@ def retrieval_index_aligned(resources: AppResources) -> bool:
     try:
         validate_manifest_runtime_config(
             resources.ingest_manifest,
-            corpus_limit=settings.fiqa_corpus_limit,
+            corpus_limit=settings.resolved_fiqa_corpus_limit(),
             chunk_size=settings.chunk_size,
             overlap_fraction=settings.chunk_overlap_fraction,
             embedding_method=method,

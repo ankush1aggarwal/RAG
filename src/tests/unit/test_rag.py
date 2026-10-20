@@ -148,3 +148,34 @@ def test_retrieve_hits_bm25_requires_index():
             bm25_index=None,
             top_k=3,
         )
+
+
+def test_retrieve_hits_weighted_hybrid_requires_fusion_weights():
+    with pytest.raises(ValueError, match="fusion_weights are required"):
+        retrieve_hits(
+            "q",
+            retrieval_method="weighted_hybrid",
+            store=MagicMock(),
+            embedder=MagicMock(),
+            bm25_index=MagicMock(),
+            top_k=3,
+        )
+
+
+def test_retrieve_hits_weighted_hybrid_passes_weights_to_hybrid():
+    store = MagicMock()
+    bm25 = MagicMock()
+    embedder = MagicMock()
+    with patch("app.pipeline.rag.hybrid_search_text") as hybrid:
+        hybrid.return_value = [_hit(doc_id="w", chunk_id=0)]
+        hits = retrieve_hits(
+            "q",
+            retrieval_method="weighted_hybrid",
+            store=store,
+            embedder=embedder,
+            bm25_index=bm25,
+            top_k=4,
+            fusion_weights=(0.8, 0.2),
+        )
+    assert hits[0].doc_id == "w"
+    assert hybrid.call_args.kwargs["fusion_weights"] == (0.8, 0.2)

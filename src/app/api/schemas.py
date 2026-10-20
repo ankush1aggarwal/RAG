@@ -27,11 +27,17 @@ class QueryRequest(BaseModel):
         default="dense",
         description="Retrieval: dense (Qdrant), bm25, or hybrid (RRF)",
     )
+    use_rerank: bool = Field(
+        default=False,
+        description="Rerank retrieval candidates before generation (requires configured reranker)",
+    )
 
 
 class RetrievalMeta(BaseModel):
     method: str = "dense"
     top_k: int
+    reranker: str | None = None
+    candidates_retrieved: int | None = None
 
 
 class QueryResponse(BaseModel):

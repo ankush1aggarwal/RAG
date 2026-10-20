@@ -1,5 +1,12 @@
 """Offline evaluation helpers (retrieval benchmarks, metrics runners)."""
 
+from app.evaluation.fiqa_qrels import (
+    FiqaEvalDataset,
+    FiqaEvalQuery,
+    build_fiqa_eval_dataset,
+    load_fiqa_eval_dataset,
+    save_fiqa_eval_dataset,
+)
 from app.evaluation.retrieval_benchmark import (
     BenchmarkTimingConfig,
     QuerySetSpec,
@@ -15,9 +22,40 @@ from app.evaluation.retrieval_benchmark import (
     render_latency_report,
     timed_results_to_records,
 )
+from app.evaluation.retrieval_eval import (
+    RetrievalEvalResult,
+    evaluate_retrieval_dataset,
+    format_metrics_table,
+    load_eval_dataset,
+    save_eval_result,
+)
+from app.evaluation.retrieval_metrics import (
+    DEFAULT_K_VALUES,
+    AggregatedMetrics,
+    QueryMetrics,
+    aggregate_query_metrics,
+    compute_query_metrics,
+    doc_ranking_from_hits,
+)
 
 __all__ = [
+    "FiqaEvalDataset",
+    "FiqaEvalQuery",
     "BenchmarkTimingConfig",
+    "AggregatedMetrics",
+    "DEFAULT_K_VALUES",
+    "QueryMetrics",
+    "RetrievalEvalResult",
+    "aggregate_query_metrics",
+    "build_fiqa_eval_dataset",
+    "compute_query_metrics",
+    "doc_ranking_from_hits",
+    "evaluate_retrieval_dataset",
+    "format_metrics_table",
+    "load_eval_dataset",
+    "load_fiqa_eval_dataset",
+    "save_eval_result",
+    "save_fiqa_eval_dataset",
     "QuerySetSpec",
     "TimedBenchmarkResult",
     "benchmark_query_set",

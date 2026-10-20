@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     ollama_timeout_seconds: float = 120.0
     cohere_chat_model: str = "command-r-08-2024"
 
+    # Use 0 (or negative) for the full BEIR FiQA corpus (~57k documents).
     fiqa_corpus_limit: int = 1000
     chunk_size: int = 100
     chunk_overlap_fraction: float = 0.2
@@ -35,6 +36,18 @@ class Settings(BaseSettings):
     qdrant_path: str = "data/qdrant_local"
     collection_name: str = "fiqa_sample"
     bm25_index_dir: str = "data/bm25_indexes"
+
+    # Reranker (optional at query time; default provider is local cross-encoder)
+    reranker_provider: str = "cross_encoder"  # cross_encoder | cohere | none
+    cross_encoder_rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    cohere_rerank_model: str = "rerank-english-v3.0"
+    rerank_candidate_limit: int = 50
+
+    def resolved_fiqa_corpus_limit(self) -> int | None:
+        """``None`` means load the full FiQA corpus (no document cap)."""
+        if self.fiqa_corpus_limit <= 0:
+            return None
+        return self.fiqa_corpus_limit
 
     def resolved_qdrant_path(self) -> str | None:
         if not self.qdrant_path:

@@ -17,6 +17,7 @@ def chunk_key(hit: SearchHit) -> ChunkKey:
 def reciprocal_rank_fusion(
     ranked_lists: list[list[SearchHit]],
     *,
+    list_weights: list[float] | None = None,
     k: int = DEFAULT_RRF_K,
     limit: int = 10,
 ) -> list[SearchHit]:
@@ -25,14 +26,19 @@ def reciprocal_rank_fusion(
         raise ValueError("limit must be at least 1")
     if k < 1:
         raise ValueError("k must be at least 1")
+    if list_weights is not None and len(list_weights) != len(ranked_lists):
+        raise ValueError("list_weights length must match ranked_lists")
 
     fused_scores: dict[ChunkKey, float] = defaultdict(float)
     metadata: dict[ChunkKey, SearchHit] = {}
 
-    for ranked in ranked_lists:
+    for list_index, ranked in enumerate(ranked_lists):
+        weight = 1.0
+        if list_weights is not None:
+            weight = list_weights[list_index]
         for rank, hit in enumerate(ranked, start=1):
             key = chunk_key(hit)
-            fused_scores[key] += 1.0 / (k + rank)
+            fused_scores[key] += weight * (1.0 / (k + rank))
             if key not in metadata:
                 metadata[key] = hit
             elif not metadata[key].doc_title and hit.doc_title:

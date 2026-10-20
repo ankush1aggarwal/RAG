@@ -78,9 +78,8 @@ By the end of the project, the system should demonstrate:
 
 # 1. Current Project Status
 
-> **Current phase: Week 3 complete — Hybrid retrieval (BM25 + dense + RRF)**  
-> **Next phase: Week 4 — Reranking + labeled evaluation (qrels / NDCG)**  
-> Optional later: weighted RRF (Week 3 stretch).
+> **Current phase: Week 4 complete — Reranking + labeled retrieval evaluation (qrels / NDCG)**  
+> **Next phase: Week 5 — Production API engineering** (streaming, hardening).
 
 Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
@@ -92,9 +91,12 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 1 | Dense retrieval | **Done** | Natural-language query → top-k chunks with IDs and scores from Qdrant |
 | 2 | Generation + API | **Done** | Local HTTP `POST /query` → answer + traceable citations; `/health` + `/ready` |
 | 3 | Hybrid retrieval | **Done** | BM25 + dense + RRF; API/CLI; benchmark notebook + comparison report |
-| 4+ | Rerank, eval, prod | Planned | See §10 roadmap |
+| 4 | Rerank + qrels eval | **Done** | Cross-encoder rerank; full-corpus FiQA index; NDCG/MRR/MAP; experiment program + reports |
+| 5+ | API hardening, ops, deploy | Planned | See §10 roadmap |
 
-**Automated tests:** **126** unit tests under `src/tests/unit/` (ingestion + ingest manifest, chunking, BM25/hybrid/fusion, embeddings, Qdrant store, evaluation benchmarks, generation, pipeline, API, settings). Run: `pytest src/tests/unit` (see §5 step 6).
+**Automated tests:** **162** unit tests under `src/tests/unit/` (ingestion, retrieval, fusion/weight tuning, qrels metrics, reranker, evaluation, generation, pipeline, API, settings). Run: `pytest src/tests/unit` (see §5 step 6).
+
+**Week 4 reports:** [`docs/reports/week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md) (master), [`docs/reports/week4_experiment_plan.md`](docs/reports/week4_experiment_plan.md) (experiments 1–5).
 
 ---
 
@@ -179,11 +181,30 @@ Question → dense + BM25 candidates → RRF fuse → prompt → LLM → answer 
 | Evaluation | `src/app/evaluation/retrieval_benchmark.py` | Fixed query set in `data/benchmarks/fiqa_sample_query_set.json`; latency + overlap metrics |
 | Benchmark notebook | `notebooks/retrieval_benchmark.ipynb` | Latency report (warm-up + repeats, p50/p95) + exploratory snapshot |
 
-**Week 3 stretch (optional):** weighted RRF.
+**Week 3 stretch:** weighted RRF implemented in Week 4 (`fusion_weights.py`, `weighted_hybrid` retrieval path).
 
 ---
 
-### Quick start (Weeks 1–3)
+### Week 4 — implemented (rerank + qrels evaluation)
+
+**Index:** Full BEIR FiQA (`FIQA_CORPUS_LIMIT=0`, collection `fiqa`, ~111k chunks). Development slice remains `fiqa_sample` (1k docs).
+
+| Component | Location | Notes |
+|-----------|----------|--------|
+| Reranker | `src/app/retrieval/reranker.py` | Local cross-encoder (default); optional Cohere Rerank |
+| Optional rerank path | `src/app/pipeline/rag.py` | `retrieve_with_optional_rerank`; API `use_rerank` |
+| Qrels + metrics | `src/app/evaluation/fiqa_qrels.py`, `retrieval_metrics.py`, `retrieval_eval.py` | NDCG, MRR, MAP, P/R @k |
+| Eval runners | `src/scripts/evaluate.py`, `evaluate_compare.py`, `prepare_fiqa_eval.py` | Validation/test JSON under `data/benchmarks/` |
+| Experiment program | `src/scripts/run_week4_experiments.py` | Exp 1–5; artifacts in `data/benchmarks/week4_exp*.json` |
+| Weight tuning | `src/app/evaluation/weight_tuning.py` | Validation grid-search → `week4_fusion_weights.json` |
+| Reproducible RAG eval | `src/app/evaluation/eval_llm.py` | Stub LLM; citations from hits in eval runs |
+| Error analysis | `src/scripts/analyze_rerank_dense.py` | Exp 4 vs Exp 5 **dense** rerank diagnosis |
+
+**Headline (full-corpus test, Exp 4):** **dense** NDCG@10 ≈ **0.37**; weighted hybrid ≈ dense; BM25 ≈ **0.19**. **Exp 5** local CE rerank: large BM25 gains, ~**5–6×** dense latency; net dense NDCG@10 flat vs Exp 4 (see program report).
+
+---
+
+### Quick start (Weeks 1–4)
 
 **1. Install dependencies** (from repo root):
 
@@ -290,7 +311,7 @@ pytest src/tests/unit
 pytest src/tests/unit -v --tb=short
 ```
 
-All tests are **unit** scope (mocked Qdrant/LLM where needed); integration and qrels-based eval tests are planned for later weeks.
+All tests are **unit** scope (mocked Qdrant/LLM where needed); qrels metrics and eval helpers have unit coverage. Full index integration eval runs via scripts, not CI yet.
 
 ---
 
@@ -880,13 +901,13 @@ POST /ingest/async
 GET  /ingest/jobs/{job_id}
 ```
 
-Future `retrieval` metadata may include `reranker`, candidate counts, etc. (Week 4+).
+`POST /query` response `retrieval` includes `method`, `top_k`, optional `reranker` name, and `candidates_retrieved` when `use_rerank=true`.
 
 ---
 
 # 9. Repository Structure
 
-**As of Week 3** (✅ = present in this repo):
+**As of Week 4** (✅ = present in this repo):
 
 ```text
 RAG/
@@ -899,19 +920,23 @@ RAG/
 │   │   ├── retrieval/        ✅ Embeddings, Qdrant, BM25, RRF fusion, hybrid
 │   │   ├── generation/       ✅ LLM providers + prompt builder
 │   │   ├── pipeline/         ✅ answer_query orchestrator
-│   │   ├── evaluation/       ✅ Retrieval benchmark (Week 3); qrels metrics Week 4+
+│   │   ├── evaluation/       ✅ Benchmark (Week 3); qrels metrics, Week 4 experiments, error analysis
 │   │   └── observability/    ⬜ Week 6+
 │   ├── scripts/
-│   │   ├── ingest.py         ✅ Build Qdrant + BM25 indexes
-│   │   ├── query.py          ✅ Dense / BM25 / hybrid retrieval CLI (no LLM)
+│   │   ├── ingest.py         ✅ Build Qdrant + BM25 indexes (`--full-corpus`, `--no-recreate`)
+│   │   ├── query.py          ✅ Dense / BM25 / hybrid CLI; `--rerank`
 │   │   ├── serve_api.py      ✅ Uvicorn entrypoint
-│   │   ├── evaluate.py       ⬜ planned (Week 4 qrels runner)
-│   │   └── benchmark.py      ⬜ optional CLI wrapper for `retrieval_benchmark`
+│   │   ├── evaluate.py       ✅ Single-method qrels eval
+│   │   ├── evaluate_compare.py ✅ Multi-method comparison report
+│   │   ├── prepare_fiqa_eval.py ✅ Build `fiqa_qrels_{split}.json`
+│   │   ├── run_week4_experiments.py ✅ Exp 2–5 runner + reports
+│   │   └── analyze_rerank_dense.py ✅ Dense rerank error analysis (Exp 4 vs 5)
 │   └── tests/
-│       └── unit/             ✅ 126 unit tests (no integration/ eval dirs yet)
+│       └── unit/             ✅ 162 unit tests (no integration eval dirs yet)
 │
 ├── data/                     # Local Qdrant path, FiQA artifacts (gitignored as needed)
 ├── notebooks/                # code_dev.ipynb — experiments, not canonical app code
+├── docs/reports/               ✅ week3–week4 experiment + eval reports
 ├── docs/                       # Playbook PDFs, plans
 ├── configs/                    ⬜ planned
 ├── frontend/                   ⬜ Week 8 demo UI
@@ -1019,16 +1044,16 @@ Deliverables:
 
 ---
 
-## Week 4 — Reranking + Evaluation
+## Week 4 — Reranking + Evaluation ✅
 
 Deliverables:
 
-- Reranker interface
-- Local cross-encoder
-- Optional Cohere reranker
-- Golden evaluation dataset
-- Retrieval evaluation runner
-- Initial generation evaluation
+- [x] Reranker interface
+- [x] Local cross-encoder
+- [x] Optional Cohere reranker
+- [x] FiQA qrels eval datasets + retrieval metrics
+- [x] Retrieval evaluation runner (`evaluate.py`, `run_week4_experiments.py`)
+- [x] Full-corpus experiment program + dense rerank error analysis
 
 ---
 
@@ -1365,24 +1390,24 @@ The project will be considered complete when all of the following are true.
 - [x] Dense retrieval works
 - [x] BM25 works
 - [x] Hybrid retrieval works (API + CLI + benchmark report)
-- [ ] Reranking works
+- [x] Reranking works (cross-encoder + API `use_rerank`; optional Cohere)
 - [x] LLM generation works
 - [x] Citations are returned
 
 ## Evaluation
 
 - [x] Reproducible retrieval benchmark exists (fixed query set + notebook)
-- [ ] Retrieval metrics are implemented (NDCG/MRR with qrels — Week 4)
-- [ ] Generation metrics are implemented
-- [x] Baseline vs improved pipeline is documented (Week 3 dense/BM25/hybrid report; qrels comparison Week 4)
-- [ ] Failure analysis is documented
+- [x] Retrieval metrics are implemented (NDCG/MRR/MAP with qrels — Week 4)
+- [ ] Generation metrics are implemented (stub LLM + citations in retrieval eval only)
+- [x] Baseline vs improved pipeline is documented (Week 3 + Week 4 program report)
+- [x] Failure analysis is documented (dense rerank error analysis in `week4_exp5_test_rerank.md`)
 
 ## Engineering
 
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
 - [x] Request validation (Pydantic) + basic HTTP errors (`422`, `503`)
 - [ ] Streaming works (`POST /query/stream` — Week 5)
-- [x] Unit tests exist (**126** in `src/tests/unit/`; integration tests later)
+- [x] Unit tests exist (**162** in `src/tests/unit/`; integration tests later)
 - [ ] Structured logging exists (Week 6)
 - [x] Configuration is externalized (`Settings` + `.env`)
 
@@ -1400,7 +1425,7 @@ The project will be considered complete when all of the following are true.
 
 - [ ] README polished
 - [ ] Architecture diagram added
-- [ ] Experiment results documented
+- [x] Experiment results documented (Week 4 `docs/reports/week4_*.md`)
 - [ ] Screenshots/demo GIF added
 - [ ] Blog articles published
 - [ ] LinkedIn post published

@@ -55,6 +55,7 @@ def client() -> TestClient:
         llm=_FakeLLM(),
         bm25_index=bm25_index,
         ingest_manifest=manifest,
+        reranker=None,
     )
     app = create_app(resources=resources)
     with TestClient(app) as test_client:
@@ -114,7 +115,12 @@ def test_query_success(client: TestClient):
     body = response.json()
     assert body["answer"] == "API answer."
     assert body["citations"][0]["document_id"] == "1"
-    assert body["retrieval"] == {"method": "dense", "top_k": 2}
+    assert body["retrieval"] == {
+        "method": "dense",
+        "top_k": 2,
+        "reranker": None,
+        "candidates_retrieved": None,
+    }
 
 
 def test_query_validation_empty_question(client: TestClient):
@@ -152,8 +158,44 @@ def test_query_hybrid_uses_bm25_and_reports_method(client: TestClient):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["retrieval"] == {"method": "hybrid", "top_k": 2}
+    assert body["retrieval"] == {
+        "method": "hybrid",
+        "top_k": 2,
+        "reranker": None,
+        "candidates_retrieved": None,
+    }
     hybrid.assert_called_once()
+
+
+def test_query_rerank_422_when_provider_disabled(client: TestClient):
+    client.app.state.resources.reranker = None
+    response = client.post(
+        "/query",
+        json={"question": "fees", "use_rerank": True},
+    )
+    assert response.status_code == 422
+
+
+def test_query_with_rerank(client: TestClient):
+    reranker = MagicMock()
+    reranker.name = "cross_encoder:test"
+    reranker.rerank.return_value = [
+        SearchHit(
+            doc_id="1",
+            doc_title="T",
+            chunk_id=0,
+            chunk_text="ctx",
+            score=9.0,
+        )
+    ]
+    client.app.state.resources.reranker = reranker
+    response = client.post(
+        "/query",
+        json={"question": "What is APR?", "top_k": 1, "use_rerank": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["retrieval"]["reranker"] == "cross_encoder:test"
+    reranker.rerank.assert_called_once()
 
 
 def test_query_bm25_returns_422_when_index_missing(client: TestClient):
