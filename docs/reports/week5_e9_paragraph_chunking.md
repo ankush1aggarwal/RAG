@@ -27,7 +27,7 @@
 | paragraph-aware / max 200w | NDCG | 0.3980 | 0.3845 | 0.4176 | — |
 | paragraph-aware / max 200w | MRR | 0.3980 | 0.4742 | 0.4868 | — |
 | paragraph-aware / max 200w | Recall | 0.2193 | 0.4085 | 0.5064 | — |
-| paragraph-aware / max 200w | Cand. recall | — | — | — | 0.6580 |
+| paragraph-aware / max 200w | Cand. recall | — | — | — | n/a |
 
 ## First-stage retrieval latency
 

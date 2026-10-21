@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Request
 
 from app.config.production_retrieval import resolve_production_query
-from app.api.resources import AppResources, bm25_ready, llm_ready, retrieval_index_aligned
+from app.api.resources import AppResources, api_ready, ready_diagnostics
 from app.api.schemas import (
     HealthResponse,
     QueryRequest,
@@ -30,32 +30,23 @@ def health() -> HealthResponse:
 
 @router.get("/ready", response_model=ReadyResponse)
 def ready(request: Request) -> ReadyResponse:
-    """Readiness: Qdrant, BM25 (hybrid), and configured LLM backend are usable."""
+    """
+    Readiness for ``/query``.
+
+    When the frozen profile is enforced, requires Qdrant + manifest/dense alignment + LLM.
+    BM25 is reported but not required (hybrid/BM25 remain dev/CLI-only). With enforcement
+    off, the full ingest bundle (including BM25) must align.
+    """
     resources = _resources(request)
-    settings = resources.settings
-    qdrant_ok = resources.store.collection_exists()
-    bm25_loaded = resources.bm25_index is not None
-    index_aligned = retrieval_index_aligned(resources)
-    bm25_ok = bm25_ready(resources)
-    llm_ok = llm_ready(settings)
-    if not (qdrant_ok and bm25_ok and llm_ok):
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "status": "not_ready",
-                "qdrant_collection": qdrant_ok,
-                "bm25_index": bm25_loaded,
-                "retrieval_index_aligned": index_aligned,
-                "llm_provider": settings.llm_provider,
-                "llm_ready": llm_ok,
-            },
-        )
+    diag = ready_diagnostics(resources)
+    if not api_ready(resources):
+        raise HTTPException(status_code=503, detail=diag)
     return ReadyResponse(
-        qdrant_collection=qdrant_ok,
-        bm25_index=bm25_ok,
-        retrieval_index_aligned=index_aligned,
-        llm_provider=settings.llm_provider,
-        llm_ready=llm_ok,
+        qdrant_collection=bool(diag["qdrant_collection"]),
+        bm25_index=bool(diag["bm25_index"]),
+        retrieval_index_aligned=bool(diag["retrieval_index_aligned"]),
+        llm_provider=str(diag["llm_provider"]),
+        llm_ready=bool(diag["llm_ready"]),
     )
 
 

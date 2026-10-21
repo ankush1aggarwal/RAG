@@ -18,7 +18,7 @@ The intended outcome is a portfolio-quality RAG application for FiQA financial-i
 | Week 3 — Hybrid retrieval | ✅ Done | BM25, dense + BM25 RRF, CLI/API and timing/overlap report |
 | Week 4 — Reranking + relevance evaluation | ✅ Done | Qrels, IR metrics, reranker, experiment program 1–5, error analysis |
 | Week 5 — **Experimentation sprint** | ✅ Done | E3–E9 complete; frozen retrieval: **200w / BGE / dense** (see lessons report) |
-| Week 6 — Production API engineering | ⬜ | Hardening, streaming, errors, integration tests; **serve frozen retrieval profile only** |
+| Week 6 — Production API engineering | 🟡 In progress | Frozen retrieval **wired** on `/query`; streaming, errors, integration tests remain |
 | Week 7 — Observability | ⬜ | Structured logs, tracing, latency/error/cost visibility |
 | Week 8 — Container + CI | ⬜ | Reproducible Docker runtime and automated checks on GitHub |
 | Week 9 — Deployment + public demo | ⬜ | Hosted API, Qdrant Cloud, smoke tests and demo UI |
@@ -138,7 +138,7 @@ Run the retrieval experiment sprint in **Week 5** (dedicated experimentation wee
 4. Run a small chunk-size sweep (**E6**), then overlap sweep (**E7**) using the best-supported chunk size.
 5. Compare one alternative embedding model (**E8**) only if compute/time budget allows. Rebuild each index with the selected model; never compare models against mismatched embeddings/indexes.
 6. **E9** — paragraph-aware chunking on BGE (vs E8 fixed 200w). Hybrid/RRF sweeps remain optional/deferred (E1).
-7. **Freeze** the production retrieval profile; document in the experiment report. **Week 6** implements API hardening and **locks the served pipeline** to that profile (other methods remain CLI/eval-only).
+7. **Freeze** the production retrieval profile; document in the experiment report. **Week 6** finishes API hardening (streaming, tests); the served pipeline is **already locked** to that profile when enforcement is on (other methods remain CLI/eval-only).
 8. **E10** after retrieval freeze; **E11** uses observability from Week 7 where possible.
 
 For a constrained schedule, the minimum valuable additional experiments are **E3 candidate diversity (done), E6 chunk size, and E8 one alternate embedding model**. **E5** is skipped while rerank stays off; **E7** and **E9** are follow-up/stretch. Do not run a full Cartesian grid across every setting; it multiplies cost and makes the source of improvement hard to explain.
@@ -159,7 +159,7 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 
 **Goal:** Run E3–E9 on full FiQA; adopt/reject with qrels + latency — **done**.
 
-**Frozen retrieval (eval / post–Week 6 target):** dense, no rerank, **`top_k=10`**, **200w / 20% overlap**, **`BAAI/bge-base-en-v1.5`**, index **`fiqa_cs200_bge_base_en_v1_5`** (test NDCG@10 **0.394**). **Served API** still uses legacy **`fiqa`** (100w MiniLM) until Week 6 wiring.
+**Frozen retrieval (eval + served API):** dense, no rerank, **`top_k=10`**, **200w / 20% overlap**, **`BAAI/bge-base-en-v1.5`**, index **`fiqa_cs200_bge_base_en_v1_5`** (test NDCG@10 **0.394**). Enforced when `API_ENFORCE_FROZEN_RETRIEVAL=true` (default).
 
 **Reports:** [`rag_experiment_results.md`](reports/rag_experiment_results.md) · [`rag_retrieval_lessons.md`](reports/rag_retrieval_lessons.md) · [`rag_experiment_program_report.md`](reports/rag_experiment_program_report.md).
 
@@ -180,7 +180,7 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 5. **Strengthen readiness.** Avoid duplicate alignment checks per `/ready` request; turn provider/network failures into controlled not-ready diagnostics. Do not treat a configured API key as proof that the provider is reachable unless that is explicitly the chosen check.
 6. **Add API-level integration tests.** Test success, invalid input, retrieval/provider failure, timeout behavior, streaming termination/errors, and readiness when dependencies are missing or misaligned.
 7. **Update OpenAPI/examples and docs.** Include request/response examples, error semantics and run commands.
-8. **Enforce the frozen production retrieval profile in code** (`method`, `use_rerank`, `top_k` from settings — today target: dense, no rerank, `top_k=10`). Do not rely on documentation alone; client overrides should be rejected or ignored per chosen API policy.
+8. ~~**Enforce the frozen production retrieval profile in code**~~ ✅ Done (`production_retrieval.py`, settings validation, `/query` + startup checks).
 
 **Deliverables:** hardened routes/schemas, optional stream route, API integration tests, updated API documentation.  
 **Definition of done:** `/query` serves only the frozen profile; errors are predictable; streaming works if committed to; tests cover critical success/failure paths.

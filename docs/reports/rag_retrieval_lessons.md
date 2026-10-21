@@ -72,7 +72,7 @@
 
 ---
 
-**Reporting note:** Week 5 markdown sheets briefly showed **Cand. recall = 0** because tables looked up `@1/@5/@10` while the metric lives at **`candidate_recall@50`** in JSON (`CR@50` column after the formatter fix). Use saved benchmarks for pool recall, not the old table cells.
+**Reporting note:** Pool recall is **`CR@50`** from `candidate_recall@50` in benchmark JSON. Markdown shows **`n/a`** when that artifact is missing (not `0`).
 
 **Indexes on disk (intended):** `fiqa` (production API) + `fiqa_cs200_bge_base_en_v1_5` (frozen retrieval eval). Cleanup helper: `python src/scripts/cleanup_local_indexes.py`.
 

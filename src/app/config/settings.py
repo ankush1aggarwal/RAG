@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     bm25_index_dir: str = "data/bm25_indexes"
 
     # Reranker (optional at query time; default provider is local cross-encoder)
-    reranker_provider: str = "cross_encoder"  # cross_encoder | cohere | none
+    reranker_provider: str = "none"  # cross_encoder | cohere | none (dev API / CLI)
     cross_encoder_rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     cohere_rerank_model: str = "rerank-english-v3.0"
     rerank_candidate_limit: int = 50

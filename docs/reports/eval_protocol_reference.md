@@ -53,13 +53,13 @@ Each run should persist:
 
 Regenerate markdown reports via `src/scripts/run_week4_experiments.py` (or Week 5 runners) after protocol changes.
 
-**Candidate recall in markdown tables:** `candidate_recall` is computed only at the protocol pool depth (`candidate_recall_k`, usually **50** for dense-only runs). Report tables expose it in a **`CR@50`** column (with em dashes under `@1`/`@5`/`@10`), not as `Cand. recall @10`. Saved JSON under `metrics.candidate_recall@50` was always authoritative; an older formatter bug looked up `@1/@5/@10` and printed zeros.
+**Candidate recall in markdown tables:** `candidate_recall` is computed only at the protocol pool depth (`candidate_recall_k`, usually **50** for dense-only runs). Report tables expose it in a **`CR@50`** column (with em dashes under `@1`/`@5`/`@10`), not as `Cand. recall @10`. Saved JSON under `metrics.candidate_recall@50` is authoritative. Report tables show **`n/a`** in the **CR@50** column when that key is absent (pruned or never-run arm JSON), not `0.0000`.
 
 Refresh Week 5 tables from JSON without Qdrant: `python -m src.scripts.regenerate_week5_metric_tables`.
 
 ## Production profile vs API defaults
 
-The **production profile** (`dense`, no rerank, `top_k=10`, E8 chunking/encoder/index) is the default in `settings.py` and enforced on `POST /query` when `API_ENFORCE_FROZEN_RETRIEVAL=true`.
+The **production profile** (`dense`, no rerank, `top_k=10`, E8 chunking/encoder/index) is the default in `settings.py`. When `API_ENFORCE_FROZEN_RETRIEVAL=true`, `build_resources` validates settings against `production_retrieval.py` constants and `/query` rejects non-conforming request fields.
 
 ## Incremental experiment insights (how to read results)
 

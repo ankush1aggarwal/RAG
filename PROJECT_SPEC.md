@@ -193,7 +193,7 @@ Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, e
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `RERANKER_PROVIDER` | `cross_encoder` | `cross_encoder`, `cohere`, or `none` |
+| `RERANKER_PROVIDER` | `none` | `cross_encoder`, `cohere`, or `none` (frozen API skips loading a reranker) |
 | `CROSS_ENCODER_RERANK_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Local CE model |
 | `COHERE_RERANK_MODEL` | `rerank-english-v3.0` | Cohere Rerank model |
 | `RERANK_CANDIDATE_LIMIT` | `50` | Chunk candidates before rerank down to `top_k` |
@@ -264,7 +264,7 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 
 **Test NDCG@10:** **0.394** (E8) vs **0.370** (E1 baseline). Teaching summary: [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md).
 
-**HTTP `/query`:** defaults and `api_enforce_frozen_retrieval=true` lock to the table above (`src/app/config/production_retrieval.py`). CLI/eval may still use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` when `API_ENFORCE_FROZEN_RETRIEVAL=false` on a dev API only.
+**HTTP `/query`:** defaults and `api_enforce_frozen_retrieval=true` lock requests **and** startup settings to the table above (`validate_frozen_retrieval_settings` in `src/app/config/production_retrieval.py`). A legacy `.env` (e.g. MiniLM + `fiqa`) fails at `build_resources` instead of silently serving the wrong index. CLI/eval may still use other methods when `API_ENFORCE_FROZEN_RETRIEVAL=false` on a dev API only.
 
 ### Week 5 — experimentation sprint ✅
 

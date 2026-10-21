@@ -70,7 +70,7 @@ def test_health(client: TestClient):
 
 
 def test_ready_success(client: TestClient):
-    with patch("app.api.routes.llm_ready", return_value=True):
+    with patch("app.api.resources.llm_ready", return_value=True):
         response = client.get("/ready")
     assert response.status_code == 200
     body = response.json()
@@ -84,15 +84,15 @@ def test_ready_success(client: TestClient):
 
 def test_ready_returns_503_when_dependencies_down(client: TestClient):
     client.app.state.resources.store.collection_exists.return_value = False
-    with patch("app.api.routes.llm_ready", return_value=False):
+    with patch("app.api.resources.llm_ready", return_value=False):
         response = client.get("/ready")
     assert response.status_code == 503
 
 
-def test_ready_returns_503_when_bm25_missing(client: TestClient):
+def test_ready_returns_503_when_bm25_missing_and_hybrid_dev_mode(client: TestClient):
     client.app.state.resources.bm25_index = None
     client.app.state.resources.ingest_manifest = None
-    with patch("app.api.routes.llm_ready", return_value=True):
+    with patch("app.api.resources.llm_ready", return_value=True):
         response = client.get("/ready")
     assert response.status_code == 503
     detail = response.json()["detail"]
@@ -101,9 +101,46 @@ def test_ready_returns_503_when_bm25_missing(client: TestClient):
     assert detail["qdrant_collection"] is True
 
 
+def test_ready_succeeds_without_bm25_when_frozen_profile_enforced():
+    store = MagicMock()
+    store.collection_exists.return_value = True
+    store.point_count.return_value = 1
+    store.vector_size.return_value = 768
+    settings = Settings(_env_file=None, api_enforce_frozen_retrieval=True)
+    manifest = IngestManifest(
+        ingest_generation_id="gen-api-test",
+        corpus_limit=None,
+        chunk_size=200,
+        overlap_fraction=0.2,
+        embedding_method="sentence_transformer",
+        embedding_model=FROZEN_EMBEDDING_MODEL,
+        embedding_dimension=768,
+        collection_name=FROZEN_COLLECTION_NAME,
+        num_documents=57000,
+        num_chunks=1,
+    )
+    resources = AppResources(
+        settings=settings,
+        store=store,
+        embedder=MagicMock(dimension=768),
+        llm=_FakeLLM(),
+        bm25_index=None,
+        ingest_manifest=manifest,
+        reranker=None,
+    )
+    app = create_app(resources=resources)
+    with patch("app.api.resources.llm_ready", return_value=True):
+        with TestClient(app) as test_client:
+            response = test_client.get("/ready")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["retrieval_index_aligned"] is True
+    assert body["bm25_index"] is False
+
+
 def test_ready_returns_503_when_manifest_misaligned(client: TestClient):
     client.app.state.resources.store.point_count.return_value = 99
-    with patch("app.api.routes.llm_ready", return_value=True):
+    with patch("app.api.resources.llm_ready", return_value=True):
         response = client.get("/ready")
     assert response.status_code == 503
     detail = response.json()["detail"]

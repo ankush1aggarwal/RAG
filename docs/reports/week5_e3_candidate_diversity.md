@@ -15,16 +15,16 @@
 
 ## Retrieval metrics (document-level, after rerank)
 
-| Arm | Metric | @1 | @5 | @10 |
-|-----|--------|------|------|------|
-| control | NDCG | 0.3534 | 0.3438 | 0.3684 |
-| control | MRR | 0.3534 | 0.4290 | 0.4407 |
-| control | Recall | 0.1827 | 0.3618 | 0.4382 |
-| control | Cand. recall | 0.0000 | 0.0000 | 0.0000 |
-| overfetch_cap2 | NDCG | 0.3534 | 0.3431 | 0.3686 |
-| overfetch_cap2 | MRR | 0.3534 | 0.4288 | 0.4405 |
-| overfetch_cap2 | Recall | 0.1827 | 0.3630 | 0.4408 |
-| overfetch_cap2 | Cand. recall | 0.0000 | 0.0000 | 0.0000 |
+| Arm | Metric | @1 | @5 | @10 | CR@50 |
+|---|--------|------|------|------|------|
+| control | NDCG | 0.3534 | 0.3438 | 0.3684 | — |
+| control | MRR | 0.3534 | 0.4290 | 0.4407 | — |
+| control | Recall | 0.1827 | 0.3618 | 0.4382 | — |
+| control | Cand. recall | — | — | — | 0.6069 |
+| overfetch_cap2 | NDCG | 0.3534 | 0.3431 | 0.3686 | — |
+| overfetch_cap2 | MRR | 0.3534 | 0.4288 | 0.4405 | — |
+| overfetch_cap2 | Recall | 0.1827 | 0.3630 | 0.4408 | — |
+| overfetch_cap2 | Cand. recall | — | — | — | n/a |
 
 ## Latency
 

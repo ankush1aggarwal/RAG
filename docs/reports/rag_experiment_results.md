@@ -20,7 +20,7 @@
 - **Why selected:** Test **NDCG@10 0.394** (E8) vs **0.370** Week 4 dense baseline (E1 @100w MiniLM); path **0.370 → 0.376 (E6) → 0.394 (E8)**. Method choice: dense beats BM25/hybrid (E1); fusion not worth latency (E1b); CE flat @50 (E2).
 - **Important rejected alternatives:** BM25, hybrid, weighted hybrid, dense+CE, MiniLM @200w, chunk overlap ≠20%, E3 cap policies (test tied).
 - **Incremental insight:** **Indexing hyperparams (E6/E7)** gave small, stable gains; **encoder (E8)** gave the largest test ΔNDCG — see [`eval_protocol_reference.md`](eval_protocol_reference.md) § Incremental experiment insights and **§5.1** below.
-- **Main limitations:** Served API still uses legacy **`fiqa`** (100w MiniLM) until Week 6; API defaults `top_k=3` until code lock; E9 paragraph index removed from disk after tie with E8.
+- **Main limitations:** E9 paragraph index removed from disk after tie with E8; generation/citation eval (E10) still open.
 
 ---
 
@@ -195,7 +195,7 @@ See [E10_generation_citations.md](experiments/E10_generation_citations.md). **Pl
 | Corpus/split for evaluation | Full `fiqa`; test for final reporting | E1 | Complete coverage vs 1k sample |
 | Chunk size / overlap | **200 w / 20%** | E6, E7, E9 | E9 tied E8 — keep fixed windows |
 | Index (eval / post–Week 6) | **`fiqa_cs200_bge_base_en_v1_5`** | E8 | 72,851 chunks |
-| Index (served until Week 6) | **`fiqa`** (100w MiniLM) | Week 4 | Swap via settings when API locked |
+| Index (served API) | **`fiqa_cs200_bge_base_en_v1_5`** | E8 | Enforced via `API_ENFORCE_FROZEN_RETRIEVAL` |
 | Embedding model | **`BAAI/bge-base-en-v1.5`** | E8 | test NDCG@10 **0.394** |
 | Candidate retrieval / RRF | **Dense only** (no fusion in prod) | E1, E1b | Beats hybrid; weighted hybrid not worth latency |
 | Candidate diversification policy | **Top-50 dense, no cap** (when rerank on in eval) | E3 | Test tied vs cap2 |
@@ -241,7 +241,7 @@ Full JSON: `data/benchmarks/week4_exp5_dense_rerank_error_analysis.json`. Sheet:
 | First-stage retriever | E1 test NDCG@10 | **Dense** | BM25, equal hybrid, weighted hybrid | Hybrid not on full test for equal weights |
 | Default rerank | E2 latency + NDCG | **Off** | dense+CE @50 (E2) | E3 done; E5 skipped |
 | Fusion in production | E1b test | **None** | weighted 0.95/0.05 | Small NDCG tie on test |
-| Chunking / embeddings | E6–E8 test | **200w / 20% / BGE** | 100w, 300w, MiniLM, overlap 10%/30% | API may still serve legacy `fiqa` until Week 6 |
+| Chunking / embeddings | E6–E8 test | **200w / 20% / BGE** | 100w, 300w, MiniLM, overlap 10%/30% | Legacy `fiqa` on disk for smoke tests only |
 
 ---
 

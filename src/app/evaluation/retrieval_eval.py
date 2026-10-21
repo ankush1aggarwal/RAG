@@ -528,10 +528,9 @@ def format_candidate_recall_summary(
         k = result.protocol.candidate_recall_k
         key = f"candidate_recall@{k}"
         value = result.aggregates.values.get(key)
-        if value is None:
-            continue
         label = METHOD_LABELS.get(method, method)
-        lines.append(f"| {label} | {value:.4f} (@{k}) |")
+        cell = f"{value:.4f}" if value is not None else "n/a"
+        lines.append(f"| {label} | {cell} (@{k}) |")
     return "\n".join(lines)
 
 
