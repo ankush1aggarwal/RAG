@@ -11,7 +11,7 @@
 
 ## 1. Question
 
-Does the **frozen retrieval profile** (including optional **E4b** filtered context) plus the production LLM/prompt meet citation and grounding rubrics?
+Does the **frozen retrieval profile** plus the production LLM/prompt meet citation and grounding rubrics?
 
 ## 2. Results
 

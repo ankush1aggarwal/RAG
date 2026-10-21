@@ -4,7 +4,7 @@
 **Evidence:** E0–E9 on BEIR FiQA (document-level qrels); full numbers in [`rag_experiment_results.md`](rag_experiment_results.md).
 
 **Frozen retrieval design (eval):** dense · no rerank · `top_k=10` · **200w / 20%** · **`BAAI/bge-base-en-v1.5`** · index **`fiqa_cs200_bge_base_en_v1_5`** (test NDCG@10 **0.394**).  
-**Served app (until Week 6):** legacy **`fiqa`** (100w MiniLM) — swap settings when you wire the API.
+**Served API:** same frozen index and encoder as eval (`fiqa_cs200_bge_base_en_v1_5`, BGE-base, `top_k=10`, dense, no rerank).
 
 ---
 
@@ -50,7 +50,7 @@
 | Primary metric | NDCG@10 on **held-out test** |
 | Tuning | Validation only; one test run per frozen candidate |
 | Latency | Reject ties that cost multi× p50 (fusion, rerank, bigger encoder trade-offs explicit) |
-| Complexity | No hosted Jev (E4); no depth sweep (E5) while rerank off |
+| Complexity | No rerank depth sweep (E5 skipped) while rerank off |
 
 **Cumulative test path (dense, no rerank):** **0.370** (E1, 100w MiniLM) → **0.376** (E6, 200w) → **0.394** (E8, BGE on 200w).
 
@@ -71,6 +71,8 @@
 7. Document **insights** per experiment, not only tables — see [`eval_protocol_reference.md`](eval_protocol_reference.md).
 
 ---
+
+**Reporting note:** Week 5 markdown sheets briefly showed **Cand. recall = 0** because tables looked up `@1/@5/@10` while the metric lives at **`candidate_recall@50`** in JSON (`CR@50` column after the formatter fix). Use saved benchmarks for pool recall, not the old table cells.
 
 **Indexes on disk (intended):** `fiqa` (production API) + `fiqa_cs200_bge_base_en_v1_5` (frozen retrieval eval). Cleanup helper: `python src/scripts/cleanup_local_indexes.py`.
 

@@ -80,10 +80,6 @@ For each experiment, document: ID, hypothesis, control, single variable changed,
 **Per-query findings:** TBD.  
 **Decision:** TBD.
 
-### E4 / E4b — Hosted Jev reranker (removed from program)
-
-Not run — hosted API cost. Rerank conclusions use **E2** (local CE). Sheets: `experiments/E4_jev_rerank.md`, `E4b_jev_relevance_filtering.md`.
-
 ### E5 — Reranker candidate depth
 
 **Skipped** while production rerank stays off (E2 rejected CE @50). Re-open only if a local reranker beats dense on test.

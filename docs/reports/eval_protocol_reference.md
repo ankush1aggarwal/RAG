@@ -53,9 +53,13 @@ Each run should persist:
 
 Regenerate markdown reports via `src/scripts/run_week4_experiments.py` (or Week 5 runners) after protocol changes.
 
+**Candidate recall in markdown tables:** `candidate_recall` is computed only at the protocol pool depth (`candidate_recall_k`, usually **50** for dense-only runs). Report tables expose it in a **`CR@50`** column (with em dashes under `@1`/`@5`/`@10`), not as `Cand. recall @10`. Saved JSON under `metrics.candidate_recall@50` was always authoritative; an older formatter bug looked up `@1/@5/@10` and printed zeros.
+
+Refresh Week 5 tables from JSON without Qdrant: `python -m src.scripts.regenerate_week5_metric_tables`.
+
 ## Production profile vs API defaults
 
-The **documented production profile** (`dense`, no rerank, `top_k=10`) reflects the Week 4 eval protocol. The HTTP API may still default `top_k=3` until **Week 6** enforces the frozen profile in code.
+The **production profile** (`dense`, no rerank, `top_k=10`, E8 chunking/encoder/index) is the default in `settings.py` and enforced on `POST /query` when `API_ENFORCE_FROZEN_RETRIEVAL=true`.
 
 ## Incremental experiment insights (how to read results)
 

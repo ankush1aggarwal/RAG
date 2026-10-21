@@ -159,6 +159,55 @@ def compute_query_metrics(
     )
 
 
+def candidate_recall_at_pool(
+    aggregate_values: dict[str, float],
+    candidate_recall_k: int,
+) -> float | None:
+    key = f"candidate_recall@{candidate_recall_k}"
+    if key not in aggregate_values:
+        return None
+    return float(aggregate_values[key])
+
+
+def format_retrieval_metrics_markdown_table(
+    first_col_header: str,
+    entries: list[tuple[str, object]],
+    *,
+    k_values: tuple[int, ...] = DEFAULT_K_VALUES,
+    protocol_attr: str = "protocol",
+    aggregates_attr: str = "aggregates",
+) -> str:
+    """Markdown table with @k columns plus CR@{pool} (first-stage candidate recall)."""
+    if not entries:
+        return ""
+    first_result = entries[0][1]
+    protocol = getattr(first_result, protocol_attr)
+    pool_k = int(getattr(protocol, "candidate_recall_k", 50))
+    metric_headers = [f"@{k}" for k in k_values] + [f"CR@{pool_k}"]
+    lines = [
+        f"| {first_col_header} | Metric | " + " | ".join(metric_headers) + " |",
+        "|" + "-" * len(first_col_header) + "|--------|"
+        + "|".join(["------"] * len(metric_headers)) + "|",
+    ]
+    metric_rows = (
+        ("NDCG", "ndcg"),
+        ("MRR", "mrr"),
+        ("Recall", "recall"),
+        ("Cand. recall", "candidate_recall"),
+    )
+    for label, result in entries:
+        aggregates = getattr(result, aggregates_attr).values
+        for metric_label, prefix in metric_rows:
+            if prefix == "candidate_recall":
+                cr = candidate_recall_at_pool(aggregates, pool_k)
+                cr_cell = f"{cr:.4f}" if cr is not None else "n/a"
+                cells = ["—"] * len(k_values) + [cr_cell]
+            else:
+                cells = [f"{aggregates.get(f'{prefix}@{k}', 0.0):.4f}" for k in k_values] + ["—"]
+            lines.append(f"| {label} | {metric_label} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
 def aggregate_query_metrics(
     per_query: list[QueryMetrics],
     k_values: tuple[int, ...] = DEFAULT_K_VALUES,

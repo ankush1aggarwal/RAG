@@ -113,7 +113,7 @@ Factory functions:
 | HTTP API | `api/*`, `scripts/serve_api.py`; `QueryRequest.method` | 2–3 | ✅ |
 | Retrieval benchmark | `evaluation/retrieval_benchmark.py`, notebook + report | 3 | ✅ |
 | Rerank + offline eval (qrels) | `reranker.py`, `retrieval_eval.py`, `run_week4_experiments.py` | 4 | ✅ |
-| Experiment sprint E3–E9 (no hosted Jev) | `docs/RAG_PROJECT_ROADMAP.md` | 5 | ⬜ |
+| Experiment sprint E3–E9 | `docs/RAG_PROJECT_ROADMAP.md` | 5 | ✅ |
 | SSE, API hardening (frozen retrieval) | — | 6 | ⬜ |
 | Observability | — | 7 | ⬜ |
 | Docker + CI + deploy | — | 8–9 | ⬜ |
@@ -156,7 +156,9 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 | `CHUNK_SIZE` | `100` | Chunk size in words |
 | `CHUNK_OVERLAP_FRACTION` | `0.2` | Overlap fraction |
 | `QDRANT_PATH` | `data/qdrant_local` | Empty → in-memory Qdrant |
-| `COLLECTION_NAME` | `fiqa_sample` | Collection name |
+| `COLLECTION_NAME` | `fiqa_cs200_bge_base_en_v1_5` | Production Qdrant collection (E8) |
+| `RETRIEVAL_TOP_K` | `10` | Frozen retrieval depth for enforced API |
+| `API_ENFORCE_FROZEN_RETRIEVAL` | `true` | Reject non-dense / rerank / other `top_k` on `/query` |
 | `BM25_INDEX_DIR` | `data/bm25_indexes` | Pickle path: `<dir>/<collection>.pkl` (gitignored; build via `ingest.py`) |
 
 ### Local index artifacts (not in git)
@@ -251,18 +253,18 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 
 ### Production retrieval profile (frozen — Week 5)
 
-| Setting | Eval / target (Week 6+) | Served API today |
-|---------|-------------------------|------------------|
-| Method | `dense` | `dense` (others in CLI/eval) |
-| Rerank | off | off |
-| `top_k` | 10 | **3** (change in Week 6) |
-| Chunking | 200w / 20% | 100w / 20% (`fiqa`) |
-| Embedding | `BAAI/bge-base-en-v1.5` | `all-MiniLM-L6-v2` |
-| Collection | `fiqa_cs200_bge_base_en_v1_5` | `fiqa` |
+| Setting | Eval / served API (frozen E8) |
+|---------|------------------------------|
+| Method | `dense` |
+| Rerank | off |
+| `top_k` | 10 |
+| Chunking | 200w / 20% |
+| Embedding | `BAAI/bge-base-en-v1.5` |
+| Collection | `fiqa_cs200_bge_base_en_v1_5` |
 
 **Test NDCG@10:** **0.394** (E8) vs **0.370** (E1 baseline). Teaching summary: [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md).
 
-**Week 6 must enforce** the eval column in application code (settings + schema). CLI/eval may still use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` for experiments.
+**HTTP `/query`:** defaults and `api_enforce_frozen_retrieval=true` lock to the table above (`src/app/config/production_retrieval.py`). CLI/eval may still use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` when `API_ENFORCE_FROZEN_RETRIEVAL=false` on a dev API only.
 
 ### Week 5 — experimentation sprint ✅
 
@@ -272,7 +274,7 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 ### Week 6 — production API engineering
 
 - [ ] Streaming, request IDs, errors, integration tests
-- [ ] **Enforce frozen production profile on `/query`:** `method=dense`, `use_rerank=false`, `top_k=10` (from settings; reject or ignore conflicting request fields per API policy)
+- [x] **Enforce frozen production profile on `/query`:** `method=dense`, `use_rerank=false`, `top_k=10` (reject conflicting request fields when `API_ENFORCE_FROZEN_RETRIEVAL=true`)
 
 ## Evaluation discipline
 
@@ -325,4 +327,4 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 
 ## Next implementation steps
 
-**Week 6:** API hardening; lock `/query` to frozen retrieval profile (`fiqa_cs200_bge_base_en_v1_5` + BGE + `top_k=10`).
+**Week 6:** API hardening (streaming, integration tests); frozen retrieval profile is already wired on `/query`.

@@ -18,16 +18,16 @@
 
 ## Retrieval metrics (document-level)
 
-| Arm | Metric | @1 | @5 | @10 |
-|-----|--------|------|------|------|
-| fixed 200w / 20% (E8) | NDCG | 0.3980 | 0.3845 | 0.4176 |
-| fixed 200w / 20% (E8) | MRR | 0.3980 | 0.4742 | 0.4868 |
-| fixed 200w / 20% (E8) | Recall | 0.2193 | 0.4085 | 0.5064 |
-| fixed 200w / 20% (E8) | Cand. recall | 0.0000 | 0.0000 | 0.0000 |
-| paragraph-aware / max 200w | NDCG | 0.3980 | 0.3845 | 0.4176 |
-| paragraph-aware / max 200w | MRR | 0.3980 | 0.4742 | 0.4868 |
-| paragraph-aware / max 200w | Recall | 0.2193 | 0.4085 | 0.5064 |
-| paragraph-aware / max 200w | Cand. recall | 0.0000 | 0.0000 | 0.0000 |
+| Arm | Metric | @1 | @5 | @10 | CR@50 |
+|---|--------|------|------|------|------|
+| fixed 200w / 20% (E8) | NDCG | 0.3980 | 0.3845 | 0.4176 | — |
+| fixed 200w / 20% (E8) | MRR | 0.3980 | 0.4742 | 0.4868 | — |
+| fixed 200w / 20% (E8) | Recall | 0.2193 | 0.4085 | 0.5064 | — |
+| fixed 200w / 20% (E8) | Cand. recall | — | — | — | 0.6580 |
+| paragraph-aware / max 200w | NDCG | 0.3980 | 0.3845 | 0.4176 | — |
+| paragraph-aware / max 200w | MRR | 0.3980 | 0.4742 | 0.4868 | — |
+| paragraph-aware / max 200w | Recall | 0.2193 | 0.4085 | 0.5064 | — |
+| paragraph-aware / max 200w | Cand. recall | — | — | — | 0.6580 |
 
 ## First-stage retrieval latency
 

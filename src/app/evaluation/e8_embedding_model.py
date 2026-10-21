@@ -6,7 +6,10 @@ import re
 
 from app.evaluation.e7_chunk_overlap import BASELINE_OVERLAP_COLLECTION, DEFAULT_E7_CHUNK_SIZE
 from app.evaluation.retrieval_eval import RetrievalEvalResult
-from app.evaluation.retrieval_metrics import DEFAULT_K_VALUES
+from app.evaluation.retrieval_metrics import (
+    DEFAULT_K_VALUES,
+    format_retrieval_metrics_markdown_table,
+)
 
 DEFAULT_OVERLAP_FRACTION: float = 0.2
 BASELINE_EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
@@ -53,22 +56,11 @@ def format_e8_metrics_table(
     model_order: tuple[str, ...],
     k_values: tuple[int, ...] = DEFAULT_K_VALUES,
 ) -> str:
-    lines = [
-        "| Model | Metric | " + " | ".join(f"@{k}" for k in k_values) + " |",
-        "|-------|--------|" + "|".join(["------"] * len(k_values)) + "|",
-    ]
+    entries = []
     for model in model_order:
-        aggregates = results[model].aggregates.values
         short = model.split("/")[-1] if "/" in model else model
-        for metric_label, prefix in (
-            ("NDCG", "ndcg"),
-            ("MRR", "mrr"),
-            ("Recall", "recall"),
-            ("Cand. recall", "candidate_recall"),
-        ):
-            cells = [f"{aggregates.get(f'{prefix}@{k}', 0.0):.4f}" for k in k_values]
-            lines.append(f"| {short} | {metric_label} | " + " | ".join(cells) + " |")
-    return "\n".join(lines)
+        entries.append((short, results[model]))
+    return format_retrieval_metrics_markdown_table("Model", entries, k_values=k_values)
 
 
 def format_e8_latency_table(

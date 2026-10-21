@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,6 +13,10 @@ from app.evaluation.retrieval_eval import (
     required_top_k,
     save_eval_result,
     summarize_latency_ms,
+)
+from app.evaluation.e8_embedding_model import (
+    DEFAULT_ALTERNATIVE_MODEL,
+    format_e8_metrics_table,
 )
 from app.evaluation.week4_experiments import load_saved_result
 from app.ingestion.schemas import SearchHit
@@ -233,3 +238,17 @@ def test_format_latency_and_query_examples():
     assert "5.0" in table
     examples = render_query_examples({"dense": res}, example_count=1)
     assert "fees?" in examples
+
+
+def test_e8_saved_validation_json_surfaces_candidate_recall_in_table():
+    path = Path("data/benchmarks/week5_e8_bge_base_en_v1_5_validation.json")
+    if not path.is_file():
+        pytest.skip("E8 validation artifact not present")
+    result = load_saved_result(path)
+    table = format_e8_metrics_table(
+        {DEFAULT_ALTERNATIVE_MODEL: result},
+        (DEFAULT_ALTERNATIVE_MODEL,),
+    )
+    assert "CR@50" in table
+    cr = result.aggregates.values["candidate_recall@50"]
+    assert f"{cr:.4f}" in table

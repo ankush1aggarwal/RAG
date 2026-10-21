@@ -5,7 +5,10 @@ from __future__ import annotations
 from statistics import mean
 
 from app.evaluation.retrieval_eval import RetrievalEvalResult
-from app.evaluation.retrieval_metrics import DEFAULT_K_VALUES
+from app.evaluation.retrieval_metrics import (
+    DEFAULT_K_VALUES,
+    format_retrieval_metrics_markdown_table,
+)
 from app.retrieval.candidate_diversity import E3_ARMS, E3Arm
 
 
@@ -14,21 +17,8 @@ def format_e3_metrics_table(
     arms: tuple[E3Arm, ...],
     k_values: tuple[int, ...] = DEFAULT_K_VALUES,
 ) -> str:
-    lines = [
-        "| Arm | Metric | " + " | ".join(f"@{k}" for k in k_values) + " |",
-        "|-----|--------|" + "|".join(["------"] * len(k_values)) + "|",
-    ]
-    for arm in arms:
-        aggregates = results[arm.arm_id].aggregates.values
-        for metric_label, prefix in (
-            ("NDCG", "ndcg"),
-            ("MRR", "mrr"),
-            ("Recall", "recall"),
-            ("Cand. recall", "candidate_recall"),
-        ):
-            cells = [f"{aggregates.get(f'{prefix}@{k}', 0.0):.4f}" for k in k_values]
-            lines.append(f"| {arm.arm_id} | {metric_label} | " + " | ".join(cells) + " |")
-    return "\n".join(lines)
+    entries = [(arm.arm_id, results[arm.arm_id]) for arm in arms]
+    return format_retrieval_metrics_markdown_table("Arm", entries, k_values=k_values)
 
 
 def format_e3_latency_table(results: dict[str, RetrievalEvalResult], arms: tuple[E3Arm, ...]) -> str:

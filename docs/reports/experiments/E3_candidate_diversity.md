@@ -55,7 +55,7 @@ Artifacts: `data/benchmarks/week5_e3_control_test.json`, `week5_e3_overfetch_cap
 
 ## 5. Decision
 
-**Adopt: control (top 50 dense chunks, no per-doc cap)** for any future **local** rerank eval (E5 skipped; E4 Jev removed).
+**Adopt: control (top 50 dense chunks, no per-doc cap)** for any future **local** rerank eval (E5 skipped).
 
 **Rationale:** Validation favored `overfetch_cap2` (+0.004 NDCG@10, +0.002 MRR@10), but **test is effectively tied** (NDCG@10 0.3686 vs 0.3684; MRR@10 0.4405 vs 0.4407). Duplicate-slot rate drops with cap2 (~11% vs 13%) without material ranked-metric gain. Dedup/cap1 arms failed validation quality checks — not carried to test.
 

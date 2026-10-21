@@ -71,7 +71,7 @@ def test_answer_query_strips_question_whitespace():
 
     answer_query("  hello  ", store=store, embedder=embedder, llm=llm)
 
-    store.search_text.assert_called_once_with("hello", embedder, limit=3)
+    store.search_text.assert_called_once_with("hello", embedder, limit=10)
 
 
 def test_answer_query_rejects_empty_question():
@@ -107,7 +107,7 @@ def test_answer_query_bm25_uses_index_not_dense():
     )
 
     store.search_text.assert_not_called()
-    bm25.search.assert_called_once_with("broker fees", limit=3)
+    bm25.search.assert_called_once_with("broker fees", limit=10)
     assert result.retrieval_method == "bm25"
     assert result.citations[0].document_id == "9"
 

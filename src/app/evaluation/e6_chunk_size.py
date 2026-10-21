@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from app.evaluation.retrieval_eval import RetrievalEvalResult
-from app.evaluation.retrieval_metrics import DEFAULT_K_VALUES
+from app.evaluation.retrieval_metrics import (
+    DEFAULT_K_VALUES,
+    format_retrieval_metrics_markdown_table,
+)
 
 DEFAULT_CHUNK_SIZES: tuple[int, ...] = (100, 200, 300)
 DEFAULT_OVERLAP_FRACTION: float = 0.2
@@ -40,21 +43,8 @@ def format_e6_metrics_table(
     chunk_sizes: tuple[int, ...],
     k_values: tuple[int, ...] = DEFAULT_K_VALUES,
 ) -> str:
-    lines = [
-        "| Chunk size | Metric | " + " | ".join(f"@{k}" for k in k_values) + " |",
-        "|-----------:|--------|" + "|".join(["------"] * len(k_values)) + "|",
-    ]
-    for size in chunk_sizes:
-        aggregates = results[size].aggregates.values
-        for metric_label, prefix in (
-            ("NDCG", "ndcg"),
-            ("MRR", "mrr"),
-            ("Recall", "recall"),
-            ("Cand. recall", "candidate_recall"),
-        ):
-            cells = [f"{aggregates.get(f'{prefix}@{k}', 0.0):.4f}" for k in k_values]
-            lines.append(f"| {size} | {metric_label} | " + " | ".join(cells) + " |")
-    return "\n".join(lines)
+    entries = [(str(size), results[size]) for size in chunk_sizes]
+    return format_retrieval_metrics_markdown_table("Chunk size", entries, k_values=k_values)
 
 
 def format_e6_latency_table(

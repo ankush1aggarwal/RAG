@@ -54,7 +54,7 @@
 | dense | **0.3698** | 0.4496 | 0.4304 | 197.9 | 204.5 |
 | BM25 | 0.1913 | 0.2386 | 0.2434 | 607.7 | 936.0 |
 
-**Candidate Recall@50:** not logged in Exp 2/4 (planned for E3/E4).
+**Candidate Recall@50:** not logged in Exp 2/4 (added in later eval protocol from E3 onward).
 
 ### Per-query analysis
 

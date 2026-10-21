@@ -101,7 +101,7 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 
 **Experiment results:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) (full report); per-experiment [`docs/reports/experiments/`](docs/reports/experiments/README.md); catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md). Week 4 runbook: [`week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md).
 
-**Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. **Frozen retrieval (Week 5):** dense, rerank off, **`top_k=10`**, **200w / 20%**, **`BAAI/bge-base-en-v1.5`**, collection **`fiqa_cs200_bge_base_en_v1_5`**. The **HTTP API** still serves legacy **`fiqa`** (100w MiniLM) and defaults **`top_k=3`** until **Week 6**. Eval rules: [`docs/reports/eval_protocol_reference.md`](docs/reports/eval_protocol_reference.md). Index cleanup: `python src/scripts/cleanup_local_indexes.py` (dry-run; `--execute` to delete).
+**Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. **Frozen retrieval (Week 5):** dense, rerank off, **`top_k=10`**, **200w / 20%**, **`BAAI/bge-base-en-v1.5`**, collection **`fiqa_cs200_bge_base_en_v1_5`**. The **HTTP API** serves the same frozen profile (BGE + `fiqa_cs200_bge_base_en_v1_5`, **`top_k=10`**, dense only when enforcement is on). Eval rules: [`docs/reports/eval_protocol_reference.md`](docs/reports/eval_protocol_reference.md). Index cleanup: `python src/scripts/cleanup_local_indexes.py` (dry-run; `--execute` to delete).
 
 ---
 
@@ -140,7 +140,7 @@ BeIR/fiqa corpus → normalize → chunk → embed → Qdrant → dense search
 | Ingest CLI | `src/scripts/ingest.py` | Default **`--recreate`** (delete/rebuild Qdrant + BM25); `--no-recreate` only if manifest + point count match; writes `*.manifest.json`; closes Qdrant client after run |
 | Query CLI | `src/scripts/query.py` | Retrieval-only: dense, `bm25`, or `hybrid` (RRF); prints top-k hits + scores (no LLM) |
 
-**Default embedding model:** `all-MiniLM-L6-v2` (`sentence_transformer`). **Default index:** `data/qdrant_local`, collection `fiqa_sample`, 1k-doc sample (`fiqa_corpus_limit`).
+**Default embedding model:** `BAAI/bge-base-en-v1.5` (`sentence_transformer`). **Default index:** `data/qdrant_local`, collection `fiqa_cs200_bge_base_en_v1_5`, full FiQA (`fiqa_corpus_limit=0`). Use `fiqa_sample` / MiniLM only for local smoke tests (override env vars).
 
 ---
 
