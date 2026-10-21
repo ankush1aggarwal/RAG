@@ -59,6 +59,32 @@ def test_compute_and_aggregate_query_metrics():
     assert "recall@5" in agg.values
 
 
+def test_format_metrics_table_shows_na_when_cr_missing_from_aggregates():
+    protocol = EvalProtocol(
+        top_k=10,
+        k_values=(1, 5, 10),
+        generation_top_k=10,
+        use_rerank=False,
+        reranker=None,
+        rerank_candidate_limit=50,
+        fusion_weights=None,
+        llm_label="none",
+        include_rag_responses=False,
+        candidate_recall_k=50,
+    )
+
+    class _Row:
+        def __init__(self, values: dict[str, float]):
+            self.protocol = protocol
+            self.aggregates = AggregatedMetrics(values=values, num_queries=1)
+
+    table = format_retrieval_metrics_markdown_table(
+        "Arm",
+        [("arm", _Row({"ndcg@10": 0.4}))],
+    )
+    assert "| arm | Cand. recall | — | — | — | n/a |" in table
+
+
 def test_format_metrics_table_shows_cr_at_pool_not_at_k():
     protocol = EvalProtocol(
         top_k=10,

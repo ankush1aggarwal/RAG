@@ -248,6 +248,16 @@ def standard_eval_methods(include_weighted: bool = False) -> tuple[RetrievalMeth
     return RETRIEVAL_METHODS
 
 
+def drop_candidate_recall_metric(
+    metrics: dict[str, float],
+    *,
+    candidate_recall_k: int = 50,
+) -> dict[str, float]:
+    """Copy aggregates without pool recall (for report arms with no saved benchmark JSON)."""
+    key = f"candidate_recall@{candidate_recall_k}"
+    return {name: value for name, value in metrics.items() if name != key}
+
+
 def shell_eval_result(
     *,
     method: str,

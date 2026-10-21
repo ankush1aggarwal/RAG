@@ -40,4 +40,4 @@ Test run for validation winner only (fixed 200w).
 
 ## Decision
 
-**Reject** paragraph collection for production/eval default; retain E8 chunking. `fiqa` (100w MiniLM) still served until Week 6.
+**Reject** paragraph collection for production/eval default; retain E8 chunking on `fiqa_cs200_bge_base_en_v1_5`.

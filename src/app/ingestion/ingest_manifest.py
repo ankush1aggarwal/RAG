@@ -185,16 +185,14 @@ def validate_reuse(
         )
 
 
-def validate_retrieval_index_alignment(
+def validate_dense_retrieval_index_alignment(
     manifest: IngestManifest,
     *,
     collection_name: str,
     qdrant_point_count: int,
-    bm25_chunk_count: int,
     qdrant_vector_size: int | None = None,
-    bm25_ingest_generation_id: str | None = None,
 ) -> None:
-    """Ensure manifest, Qdrant collection, and BM25 chunk counts are consistent."""
+    """Manifest + Qdrant only (dense retrieval; BM25 not required)."""
     if manifest.collection_name != collection_name:
         raise IndexAlignmentError(
             f"Manifest collection {manifest.collection_name!r} does not match "
@@ -205,15 +203,33 @@ def validate_retrieval_index_alignment(
             f"Qdrant has {qdrant_point_count} points but manifest expects "
             f"{manifest.num_chunks} chunks."
         )
-    if bm25_chunk_count != manifest.num_chunks:
-        raise IndexAlignmentError(
-            f"BM25 index has {bm25_chunk_count} chunks but manifest expects "
-            f"{manifest.num_chunks}."
-        )
     if qdrant_vector_size is not None and qdrant_vector_size != manifest.embedding_dimension:
         raise IndexAlignmentError(
             f"Qdrant vector size is {qdrant_vector_size} but manifest expects "
             f"{manifest.embedding_dimension}."
+        )
+
+
+def validate_retrieval_index_alignment(
+    manifest: IngestManifest,
+    *,
+    collection_name: str,
+    qdrant_point_count: int,
+    bm25_chunk_count: int,
+    qdrant_vector_size: int | None = None,
+    bm25_ingest_generation_id: str | None = None,
+) -> None:
+    """Ensure manifest, Qdrant collection, and BM25 chunk counts are consistent."""
+    validate_dense_retrieval_index_alignment(
+        manifest,
+        collection_name=collection_name,
+        qdrant_point_count=qdrant_point_count,
+        qdrant_vector_size=qdrant_vector_size,
+    )
+    if bm25_chunk_count != manifest.num_chunks:
+        raise IndexAlignmentError(
+            f"BM25 index has {bm25_chunk_count} chunks but manifest expects "
+            f"{manifest.num_chunks}."
         )
     if manifest.ingest_generation_id:
         if bm25_ingest_generation_id != manifest.ingest_generation_id:
