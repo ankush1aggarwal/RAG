@@ -37,7 +37,7 @@
 | overfetch_cap2 | rerank | 926.7 | 883.3 | 1318.1 |
 | overfetch_cap2 | retrieve + rerank | 1141.9 | 1099.5 | 1533.1 |
 
-**Decision (test, n=648):** **Control** — NDCG@10/MRR@10 effectively tied with `overfetch_cap2`; validation-only gain did not hold on test. Frozen pool policy: top-50 dense, no per-doc cap (for any local rerank eval). Week 5 continues with **E6–E8**; E4 Jev removed from program.
+**Decision (test, n=648):** **Control** — NDCG@10/MRR@10 effectively tied with `overfetch_cap2`; validation-only gain did not hold on test. Frozen pool policy: top-50 dense, no per-doc cap (for any local rerank eval). Week 5 continues with **E6–E8**.
 
 ## Insights
 

@@ -58,7 +58,7 @@
 | Outcome | **Reject** default production rerank |
 | **Rationale** | No meaningful NDCG@10 gain on dense; large latency increase. BM25+CE improves BM25 but remains below dense. |
 | **Production impact** | `use_rerank=false` in frozen profile; CE remains optional in scripts/API during dev. |
-| **Limitations** | Single CE model and 50-candidate budget; E3 pool policy neutral on test; hosted Jev (E4) not pursued. |
+| **Limitations** | Single CE model and 50-candidate budget; E3 pool policy neutral on test. |
 
 ## 7. Artifacts
 

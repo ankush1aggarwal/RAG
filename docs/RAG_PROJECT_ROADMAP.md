@@ -88,8 +88,6 @@ The project should demonstrate not only a working RAG system, but also disciplin
 | E1 | Dense vs BM25 vs hybrid using FiQA qrels | Week 4 | Core | ✅ [`week4_exp2`](reports/week4_exp2_full_corpus_validation.md), Exp 4 test |
 | E2 | Methods + **local CE rerank** | Week 4 | Core | ✅ [`week4_exp5`](reports/week4_exp5_test_rerank.md) + error analysis |
 | E3 | **Candidate diversity / duplicate-chunk crowding** | **Week 5** | **High** | ✅ Complete — control pool frozen |
-| E4 | ~~Jev reranker (hosted)~~ | — | — | **Removed** — cost; not in program |
-| E4b | ~~Jev relevance filtering~~ | — | — | **Removed** — depended on E4 |
 | E5 | Reranker candidate depth (10 / 20 / 30 / 50) | Week 5 | Core | **Skipped** — E2 rejected CE; no new reranker |
 | E6 | Chunk size sensitivity | Week 5 | High | ✅ 200w adopted |
 | E7 | Chunk overlap sensitivity | Week 5 | High | ✅ 20% @ 200w |
@@ -118,10 +116,6 @@ If the deeper pool cannot fill the intended budget, record the actual candidate 
 **Report:** unique documents and duplicate-slot fraction entering the reranker; relevant-document candidate Recall@50; NDCG@10, MRR@10 and Recall@10 after reranking; reranking latency; per-query gains/losses and whether lost queries reflect candidate coverage or ordering. Include both the no-backfill diagnostic and overfetch treatments so the report distinguishes “removing duplicates” from “replacing duplicate slots with candidates from deeper ranks.”
 
 **Decision rule:** select the policy on development data using quality and latency together. Do not pick a cap just because it increases the number of unique documents; confirm that ranked relevance improves and that no material regression is hidden by the aggregate. Save the chosen policy, exact fetch depth, cap, metrics and commit in the experiment log. Use the frozen pool for any **local** rerank eval (E2/E5); production remains dense-only unless a reranker beats dense on **test**.
-
-### Hosted Jev reranker (E4 / E4b) — removed from program
-
-**E4** (Jev `rerank()`) and **E4b** (relevance filtering) were planned as optional hosted-API trials. They are **out of scope** due to API cost. Rerank evidence stays **Week 4 E2** (local cross-encoder). Sheets retained for history: [`E4_jev_rerank.md`](reports/experiments/E4_jev_rerank.md), [`E4b_jev_relevance_filtering.md`](reports/experiments/E4b_jev_relevance_filtering.md).
 
 ### How to run each experiment
 
@@ -274,7 +268,7 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 ### Immediate next action — Week 5 experimentation
 - [x] Week 4 artifacts and [`rag_experiment_program_report.md`](reports/rag_experiment_program_report.md).
 - [x] E3 (candidate diversity) — control pool frozen.
-- [ ] **E6–E8** (E7 after E6); optional **E9**. E4/E4b removed; **E5** skipped.
+- [ ] **E6–E8** (E7 after E6); optional **E9**. **E5** skipped.
 - [ ] Update experiment report with decisions; confirm or revise production profile.
 
 ### Week 6 (API)

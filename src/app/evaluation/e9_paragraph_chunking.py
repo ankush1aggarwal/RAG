@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from app.evaluation.e8_embedding_model import DEFAULT_ALTERNATIVE_MODEL as BGE_MODEL
 from app.evaluation.retrieval_eval import RetrievalEvalResult
-from app.evaluation.retrieval_metrics import DEFAULT_K_VALUES
+from app.evaluation.retrieval_metrics import (
+    DEFAULT_K_VALUES,
+    format_retrieval_metrics_markdown_table,
+)
 
 DEFAULT_MAX_WORDS: int = 200
 DEFAULT_OVERLAP_FRACTION: float = 0.2
@@ -51,22 +54,8 @@ def format_e9_metrics_table(
     arm_order: tuple[str, ...],
     k_values: tuple[int, ...] = DEFAULT_K_VALUES,
 ) -> str:
-    lines = [
-        "| Arm | Metric | " + " | ".join(f"@{k}" for k in k_values) + " |",
-        "|-----|--------|" + "|".join(["------"] * len(k_values)) + "|",
-    ]
-    for arm in arm_order:
-        aggregates = results[arm].aggregates.values
-        label = ARM_LABELS.get(arm, arm)
-        for metric_label, prefix in (
-            ("NDCG", "ndcg"),
-            ("MRR", "mrr"),
-            ("Recall", "recall"),
-            ("Cand. recall", "candidate_recall"),
-        ):
-            cells = [f"{aggregates.get(f'{prefix}@{k}', 0.0):.4f}" for k in k_values]
-            lines.append(f"| {label} | {metric_label} | " + " | ".join(cells) + " |")
-    return "\n".join(lines)
+    entries = [(ARM_LABELS.get(arm, arm), results[arm]) for arm in arm_order]
+    return format_retrieval_metrics_markdown_table("Arm", entries, k_values=k_values)
 
 
 def format_e9_latency_table(

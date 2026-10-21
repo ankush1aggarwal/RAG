@@ -248,6 +248,35 @@ def standard_eval_methods(include_weighted: bool = False) -> tuple[RetrievalMeth
     return RETRIEVAL_METHODS
 
 
+def shell_eval_result(
+    *,
+    method: str,
+    metrics: dict[str, float],
+    protocol: object,
+    latency_summary: dict[str, object],
+    eval_dataset_path: str = "",
+    qrels_split: str = "validation",
+    top_k: int = 10,
+    k_values: tuple[int, ...] = (1, 5, 10),
+    evaluated_at: str = "",
+) -> RetrievalEvalResult:
+    """Lightweight result for report rendering when only aggregates + latency survive."""
+    from app.evaluation.retrieval_metrics import AggregatedMetrics
+
+    return RetrievalEvalResult(
+        method=method,
+        eval_dataset_path=eval_dataset_path,
+        qrels_split=qrels_split,
+        top_k=top_k,
+        k_values=k_values,
+        aggregates=AggregatedMetrics(values=metrics, num_queries=0),
+        per_query=(),
+        evaluated_at=evaluated_at,
+        protocol=protocol,
+        latency_summary=latency_summary,
+    )
+
+
 def load_saved_result(path: Path) -> RetrievalEvalResult:
     payload = json.loads(path.read_text(encoding="utf-8"))
     from app.evaluation.retrieval_eval import EvalProtocol, QueryEvalRow

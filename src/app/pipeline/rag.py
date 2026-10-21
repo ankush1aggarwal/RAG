@@ -126,7 +126,7 @@ def answer_query(
     store: QdrantChunkStore,
     embedder: EmbeddingProvider,
     llm: LLMProvider,
-    top_k: int = 3,
+    top_k: int = 10,
     retrieval_method: RetrievalMethod = "dense",
     bm25_index: Bm25ChunkIndex | None = None,
     use_rerank: bool = False,

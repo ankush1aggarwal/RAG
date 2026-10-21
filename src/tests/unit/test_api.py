@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.api.main import create_app
 from app.api.resources import AppResources
+from app.config.production_retrieval import FROZEN_COLLECTION_NAME, FROZEN_EMBEDDING_MODEL
 from app.config.settings import Settings
 from app.ingestion.ingest_manifest import IngestManifest
 from app.ingestion.schemas import SearchHit
@@ -20,7 +21,7 @@ def client() -> TestClient:
     store = MagicMock()
     store.collection_exists.return_value = True
     store.point_count.return_value = 1
-    store.vector_size.return_value = 384
+    store.vector_size.return_value = 768
     store.search_text.return_value = [
         SearchHit(
             doc_id="1",
@@ -30,24 +31,24 @@ def client() -> TestClient:
             score=0.5,
         )
     ]
-    settings = Settings(_env_file=None)
+    settings = Settings(_env_file=None, api_enforce_frozen_retrieval=False)
     manifest = IngestManifest(
         ingest_generation_id="gen-api-test",
-        corpus_limit=1000,
-        chunk_size=100,
+        corpus_limit=None,
+        chunk_size=200,
         overlap_fraction=0.2,
         embedding_method="sentence_transformer",
-        embedding_model="all-MiniLM-L6-v2",
-        embedding_dimension=384,
-        collection_name="fiqa_sample",
-        num_documents=1000,
+        embedding_model=FROZEN_EMBEDDING_MODEL,
+        embedding_dimension=768,
+        collection_name=FROZEN_COLLECTION_NAME,
+        num_documents=57000,
         num_chunks=1,
     )
     bm25_index = MagicMock()
     bm25_index.num_chunks = 1
     bm25_index.ingest_generation_id = "gen-api-test"
     embedder = MagicMock()
-    embedder.dimension = 384
+    embedder.dimension = 768
     resources = AppResources(
         settings=settings,
         store=store,
@@ -206,3 +207,57 @@ def test_query_bm25_returns_422_when_index_missing(client: TestClient):
     )
     assert response.status_code == 422
     assert "BM25 index is not available" in response.json()["detail"]
+
+
+def test_query_rejects_hybrid_when_frozen_profile_enforced():
+    store = MagicMock()
+    store.collection_exists.return_value = True
+    settings = Settings(_env_file=None, api_enforce_frozen_retrieval=True)
+    resources = AppResources(
+        settings=settings,
+        store=store,
+        embedder=MagicMock(),
+        llm=_FakeLLM(),
+        bm25_index=MagicMock(),
+        ingest_manifest=MagicMock(),
+        reranker=None,
+    )
+    app = create_app(resources=resources)
+    with TestClient(app) as test_client:
+        response = test_client.post(
+            "/query",
+            json={"question": "fees", "method": "hybrid", "top_k": 10},
+        )
+    assert response.status_code == 422
+    assert "dense" in response.json()["detail"]
+
+
+def test_query_default_top_k_is_frozen_when_enforced():
+    store = MagicMock()
+    store.collection_exists.return_value = True
+    settings = Settings(_env_file=None, api_enforce_frozen_retrieval=True)
+    resources = AppResources(
+        settings=settings,
+        store=store,
+        embedder=MagicMock(),
+        llm=_FakeLLM(),
+        bm25_index=MagicMock(),
+        ingest_manifest=MagicMock(),
+        reranker=None,
+    )
+    app = create_app(resources=resources)
+    with patch("app.api.routes.answer_query") as answer:
+        from app.pipeline.rag import RagAnswer
+
+        answer.return_value = RagAnswer(
+            answer="ok",
+            citations=[],
+            retrieval_method="dense",
+            reranker=None,
+            retrieval_candidate_count=None,
+        )
+        with TestClient(app) as test_client:
+            response = test_client.post("/query", json={"question": "APR?"})
+    assert response.status_code == 200
+    assert response.json()["retrieval"]["top_k"] == 10
+    assert answer.call_args.kwargs["top_k"] == 10

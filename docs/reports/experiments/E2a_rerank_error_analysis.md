@@ -44,7 +44,7 @@ Compare per-query metrics: **Exp 4** (no rerank) vs **Exp 5** (dense + CE), same
 
 | Outcome | **Inform E3** — test per-document candidate caps before another rerank production decision |
 | **Rationale** | Aggregate flat NDCG masks symmetric help/hurt; duplicate crowding is a fixable candidate-policy issue. |
-| **Production impact** | None — E3 complete (control pool); rerank stays off (E2); E4 Jev removed; E5 skipped. |
+| **Production impact** | None — E3 complete (control pool); rerank stays off (E2); E5 skipped. |
 
 ## 6. Artifacts
 

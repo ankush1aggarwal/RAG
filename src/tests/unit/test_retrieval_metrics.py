@@ -1,16 +1,19 @@
 import math
 
 from app.evaluation.retrieval_metrics import (
+    AggregatedMetrics,
     aggregate_query_metrics,
     average_precision_at_k,
     compute_query_metrics,
     dcg_at_k,
     doc_ranking_from_hits,
+    format_retrieval_metrics_markdown_table,
     mrr_at_k,
     ndcg_at_k,
     precision_at_k,
     recall_at_k,
 )
+from app.evaluation.retrieval_eval import EvalProtocol
 from app.ingestion.schemas import SearchHit
 
 
@@ -54,6 +57,44 @@ def test_compute_and_aggregate_query_metrics():
     assert agg.num_queries == 2
     assert "ndcg@1" in agg.values
     assert "recall@5" in agg.values
+
+
+def test_format_metrics_table_shows_cr_at_pool_not_at_k():
+    protocol = EvalProtocol(
+        top_k=10,
+        k_values=(1, 5, 10),
+        generation_top_k=10,
+        use_rerank=False,
+        reranker=None,
+        rerank_candidate_limit=50,
+        fusion_weights=None,
+        llm_label="none",
+        include_rag_responses=False,
+        candidate_recall_k=50,
+    )
+
+    class _Row:
+        def __init__(self, values: dict[str, float]):
+            self.protocol = protocol
+            self.aggregates = AggregatedMetrics(values=values, num_queries=1)
+
+    table = format_retrieval_metrics_markdown_table(
+        "Arm",
+        [
+            (
+                "dense",
+                _Row(
+                    {
+                        "ndcg@10": 0.4,
+                        "candidate_recall@50": 0.658,
+                    }
+                ),
+            )
+        ],
+    )
+    assert "CR@50" in table
+    assert "0.6580" in table
+    assert "| dense | Cand. recall | — | — | — | 0.6580 |" in table
 
 
 def test_candidate_recall_at_k_on_pool_ranking():

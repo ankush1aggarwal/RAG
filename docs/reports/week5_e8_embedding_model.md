@@ -14,16 +14,16 @@
 
 ## Retrieval metrics (document-level)
 
-| Model | Metric | @1 | @5 | @10 |
-|-------|--------|------|------|------|
-| all-MiniLM-L6-v2 | NDCG | 0.3720 | 0.3645 | 0.3925 |
-| all-MiniLM-L6-v2 | MRR | 0.3720 | 0.4491 | 0.4602 |
-| all-MiniLM-L6-v2 | Recall | 0.2070 | 0.3825 | 0.4680 |
-| all-MiniLM-L6-v2 | Cand. recall | 0.0000 | 0.0000 | 0.0000 |
-| bge-base-en-v1.5 | NDCG | 0.3980 | 0.3845 | 0.4176 |
-| bge-base-en-v1.5 | MRR | 0.3980 | 0.4742 | 0.4868 |
-| bge-base-en-v1.5 | Recall | 0.2193 | 0.4085 | 0.5064 |
-| bge-base-en-v1.5 | Cand. recall | 0.0000 | 0.0000 | 0.0000 |
+| Model | Metric | @1 | @5 | @10 | CR@50 |
+|-----|--------|------|------|------|------|
+| all-MiniLM-L6-v2 | NDCG | 0.3720 | 0.3645 | 0.3925 | — |
+| all-MiniLM-L6-v2 | MRR | 0.3720 | 0.4491 | 0.4602 | — |
+| all-MiniLM-L6-v2 | Recall | 0.2070 | 0.3825 | 0.4680 | — |
+| all-MiniLM-L6-v2 | Cand. recall | — | — | — | n/a |
+| bge-base-en-v1.5 | NDCG | 0.3980 | 0.3845 | 0.4176 | — |
+| bge-base-en-v1.5 | MRR | 0.3980 | 0.4742 | 0.4868 | — |
+| bge-base-en-v1.5 | Recall | 0.2193 | 0.4085 | 0.5064 | — |
+| bge-base-en-v1.5 | Cand. recall | — | — | — | 0.6580 |
 
 ## First-stage retrieval latency
 

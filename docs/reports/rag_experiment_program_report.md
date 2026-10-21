@@ -46,8 +46,6 @@ Implementation note: **Week 6** must **enforce** this profile on `/query` (`meth
 | **E2** | Retrieval + **local CE rerank** | Week 4 | ✅ Done | [`experiments/E2_cross_encoder_rerank.md`](experiments/E2_cross_encoder_rerank.md) |
 | **E2a** | Dense rerank **error analysis** | Week 4 | ✅ Done | [`experiments/E2a_rerank_error_analysis.md`](experiments/E2a_rerank_error_analysis.md) |
 | **E3** | Candidate diversity / duplicate-chunk crowding before rerank | **Week 5** | ✅ Done | [`experiments/E3_candidate_diversity.md`](experiments/E3_candidate_diversity.md) |
-| **E4** | ~~Jev reranker (hosted API)~~ | — | **Removed** | Cost — sheet archived |
-| **E4b** | ~~Jev relevance filtering~~ | — | **Removed** | Depended on E4 |
 | **E5** | Rerank candidate depth (10 / 20 / 30 / 50) | Week 5 | **Skipped** | E2 rejected CE; no new reranker |
 | **E6** | Chunk size sweep | Week 5 | ✅ Done | [`experiments/E6_chunk_size.md`](experiments/E6_chunk_size.md) |
 | **E7** | Chunk overlap sweep | Week 5 | ✅ Done | [`experiments/E7_chunk_overlap.md`](experiments/E7_chunk_overlap.md) |
@@ -111,11 +109,10 @@ Implementation note: **Week 6** must **enforce** this profile on `/query` (`meth
 ## 4. Week 5 experiment sprint — complete
 
 1. **E3** — control pool frozen (test tied vs cap2).  
-2. **E4 / E4b** — removed (cost).  
-3. **E5** — skipped.  
-4. **E6 → E7** — **200w / 20%** chunking.  
-5. **E8** — **BGE-base** adopted on test.  
-6. **E9** — paragraph-aware chunking vs E8 fixed 200w (BGE).
+2. **E5** — skipped.  
+3. **E6 → E7** — **200w / 20%** chunking.  
+4. **E8** — **BGE-base** adopted on test.  
+5. **E9** — paragraph-aware chunking vs E8 fixed 200w (BGE).
 
 **Incremental insights (test NDCG@10 path, dense, no rerank):** E1 **0.370** → E6 **0.376** (+0.006, segmentation) → E8 **0.394** (+0.018 vs 200w MiniLM, encoder). Chunk overlap (E7) confirms defaults without a separate test lift. Full ladder: [`eval_protocol_reference.md`](eval_protocol_reference.md).
 

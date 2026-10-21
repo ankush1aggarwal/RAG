@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
+from app.config.production_retrieval import resolve_production_query
 from app.api.resources import AppResources, bm25_ready, llm_ready, retrieval_index_aligned
 from app.api.schemas import (
     HealthResponse,
@@ -62,8 +63,16 @@ def ready(request: Request) -> ReadyResponse:
 def query(body: QueryRequest, request: Request) -> QueryResponse:
     """RAG: retrieve chunks, generate an answer, return citations."""
     resources = _resources(request)
+    settings = resources.settings
     try:
-        if body.use_rerank and resources.reranker is None:
+        resolved = resolve_production_query(
+            method=body.method,
+            top_k=body.top_k,
+            use_rerank=body.use_rerank,
+            enforce_frozen=settings.api_enforce_frozen_retrieval,
+            frozen_top_k=settings.retrieval_top_k,
+        )
+        if resolved.use_rerank and resources.reranker is None:
             raise HTTPException(
                 status_code=422,
                 detail="Reranking requested but RERANKER_PROVIDER=none",
@@ -73,12 +82,12 @@ def query(body: QueryRequest, request: Request) -> QueryResponse:
             store=resources.store,
             embedder=resources.embedder,
             llm=resources.llm,
-            top_k=body.top_k,
-            retrieval_method=body.method,
+            top_k=resolved.top_k,
+            retrieval_method=resolved.method,
             bm25_index=resources.bm25_index,
-            use_rerank=body.use_rerank,
+            use_rerank=resolved.use_rerank,
             reranker=resources.reranker,
-            rerank_candidate_limit=resources.settings.rerank_candidate_limit,
+            rerank_candidate_limit=settings.rerank_candidate_limit,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -88,7 +97,7 @@ def query(body: QueryRequest, request: Request) -> QueryResponse:
         citations=result.citations,
         retrieval=RetrievalMeta(
             method=result.retrieval_method,
-            top_k=body.top_k,
+            top_k=resolved.top_k,
             reranker=result.reranker,
             candidates_retrieved=result.retrieval_candidate_count,
         ),

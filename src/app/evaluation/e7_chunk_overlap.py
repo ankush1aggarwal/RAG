@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from app.evaluation.retrieval_eval import RetrievalEvalResult
-from app.evaluation.retrieval_metrics import DEFAULT_K_VALUES
+from app.evaluation.retrieval_metrics import (
+    DEFAULT_K_VALUES,
+    format_retrieval_metrics_markdown_table,
+)
 
 DEFAULT_E7_CHUNK_SIZE: int = 200
 DEFAULT_OVERLAP_FRACTIONS: tuple[float, ...] = (0.1, 0.2, 0.3)
@@ -43,22 +46,8 @@ def format_e7_metrics_table(
     overlaps: tuple[float, ...],
     k_values: tuple[int, ...] = DEFAULT_K_VALUES,
 ) -> str:
-    lines = [
-        "| Overlap | Metric | " + " | ".join(f"@{k}" for k in k_values) + " |",
-        "|--------:|--------|" + "|".join(["------"] * len(k_values)) + "|",
-    ]
-    for overlap in overlaps:
-        pct = overlap_percent(overlap)
-        aggregates = results[overlap].aggregates.values
-        for metric_label, prefix in (
-            ("NDCG", "ndcg"),
-            ("MRR", "mrr"),
-            ("Recall", "recall"),
-            ("Cand. recall", "candidate_recall"),
-        ):
-            cells = [f"{aggregates.get(f'{prefix}@{k}', 0.0):.4f}" for k in k_values]
-            lines.append(f"| {pct}% | {metric_label} | " + " | ".join(cells) + " |")
-    return "\n".join(lines)
+    entries = [(f"{overlap_percent(overlap)}%", results[overlap]) for overlap in overlaps]
+    return format_retrieval_metrics_markdown_table("Overlap", entries, k_values=k_values)
 
 
 def format_e7_latency_table(

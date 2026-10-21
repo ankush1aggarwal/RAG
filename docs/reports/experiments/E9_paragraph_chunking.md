@@ -20,7 +20,7 @@
 
 **Normalization:** Option A — preserve `\n\n` paragraph boundaries (`normalize_whitespace_preserve_paragraphs`).
 
-**Production:** `fiqa` (100w MiniLM) unchanged until Week 6; E9 is eval-only unless paragraph wins on test.
+**Production:** E8 frozen index (`fiqa_cs200_bge_base_en_v1_5`); paragraph arm rejected.
 
 ## Results
 

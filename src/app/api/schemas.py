@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from app.config.production_retrieval import FROZEN_RETRIEVAL_METHOD, FROZEN_RETRIEVAL_TOP_K
 from app.pipeline.rag import RetrievalMethod, SourceCitation
 
 
@@ -23,20 +24,25 @@ class ReadyResponse(BaseModel):
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=1, description="User question for RAG")
     top_k: int = Field(
-        default=3,
+        default=FROZEN_RETRIEVAL_TOP_K,
         ge=1,
         le=20,
         description=(
-            "Number of chunks to retrieve (dev default; Week 6 production lock targets top_k=10)"
+            "Number of chunks to retrieve (production default matches frozen E8 eval: top_k=10)"
         ),
     )
     method: RetrievalMethod = Field(
-        default="dense",
-        description="Retrieval: dense (Qdrant), bm25, or hybrid (RRF)",
+        default=FROZEN_RETRIEVAL_METHOD,
+        description=(
+            "Retrieval method (production API accepts dense only when frozen profile is enforced)"
+        ),
     )
     use_rerank: bool = Field(
         default=False,
-        description="Rerank retrieval candidates before generation (requires configured reranker)",
+        description=(
+            "Rerank retrieval candidates before generation "
+            "(disabled on production API when frozen profile is enforced)"
+        ),
     )
 
 

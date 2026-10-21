@@ -10,8 +10,6 @@ Each file follows [`EXPERIMENT_SHEET_TEMPLATE.md`](EXPERIMENT_SHEET_TEMPLATE.md)
 | **E2** | [E2_cross_encoder_rerank.md](E2_cross_encoder_rerank.md) | Complete | [`week4_exp5_test_rerank.md`](../week4_exp5_test_rerank.md) |
 | **E2a** | [E2a_rerank_error_analysis.md](E2a_rerank_error_analysis.md) | Complete | Error analysis JSON |
 | **E3** | [E3_candidate_diversity.md](E3_candidate_diversity.md) | Complete | Control pool frozen for rerank evals |
-| **E4** | [E4_jev_rerank.md](E4_jev_rerank.md) | **Removed** | Hosted Jev — out of scope (cost) |
-| **E4b** | [E4b_jev_relevance_filtering.md](E4b_jev_relevance_filtering.md) | **Removed** | Depended on E4 |
 | **E5** | [E5_rerank_candidate_depth.md](E5_rerank_candidate_depth.md) | **Skipped** | E2 rejected CE @50; no new reranker |
 | **E6** | [E6_chunk_size.md](E6_chunk_size.md) | Complete | Winner: 200w (`fiqa_cs200`) |
 | **E7** | [E7_chunk_overlap.md](E7_chunk_overlap.md) | Complete | Keep 20% @ 200w |
@@ -20,7 +18,7 @@ Each file follows [`EXPERIMENT_SHEET_TEMPLATE.md`](EXPERIMENT_SHEET_TEMPLATE.md)
 | **E10** | [E10_generation_citations.md](E10_generation_citations.md) | Planned | Week 6–7 |
 | **E11** | — | Planned | E2E performance / concurrency (Week 8–9); sheet TBD |
 
-**Week 5 order:** E3 → **E6–E8** (E7 after E6); optional **E9**. E4/E4b removed; **E5** skipped (see E2 + E3).
+**Week 5 order:** E3 → **E6–E8** (E7 after E6); optional **E9**. **E5** skipped (see E2 + E3).
 
 **Program overview:** [`rag_experiment_program_report.md`](../rag_experiment_program_report.md)  
 **Teaching summary (E0–E9):** [`rag_retrieval_lessons.md`](../rag_retrieval_lessons.md)

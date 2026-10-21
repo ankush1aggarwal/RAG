@@ -1,7 +1,7 @@
 # Retrieval Experiment Results — Production-Grade RAG
 
 **Repository:** https://github.com/ankush1aggarwal/RAG  
-**Status:** **Retrieval experiment program complete** (E0–E9; E4/E5 out of scope/skipped)  
+**Status:** **Retrieval experiment program complete** (E0–E9; E5 skipped)  
 **Teaching summary:** [`rag_retrieval_lessons.md`](rag_retrieval_lessons.md)  
 **Implementation decision:** **Frozen (retrieval)** — dense, no rerank, `top_k=10`, **200w / 20% / BGE-base** (Week 6 API lock)  
 **Selected production configuration commit:** TBD at Week 6 merge (eval index: `fiqa_cs200_bge_base_en_v1_5`)
@@ -112,16 +112,6 @@ Detail sheets: [`experiments/README.md`](experiments/README.md). **Interpretatio
 **Insights:** Real crowding, weak link to document-level NDCG when rerank is the only consumer of pool policy — validation cap2 edge did not replicate on test.  
 **Decision:** **Control (no cap)** if rerank is used in eval; no production change (rerank remains off).
 
-### E4 — Jev reranker (ranking only)
-
-**Status:** **Removed** from program (hosted API cost). Sheet archived: [E4_jev_rerank.md](experiments/E4_jev_rerank.md). Rerank evidence remains **E2** (local CE).
-
-**Decision:** Not run.
-
-### E4b — Jev relevance filtering (optional)
-
-**Status:** **Removed** (depended on E4). Sheet: [E4b_jev_relevance_filtering.md](experiments/E4b_jev_relevance_filtering.md).
-
 ### E5 — Reranker candidate depth
 
 **Status:** **Skipped** — E2 rejected CE @50; E3 did not change adoption; no new reranker. See [E5_rerank_candidate_depth.md](experiments/E5_rerank_candidate_depth.md).
@@ -209,7 +199,7 @@ See [E10_generation_citations.md](experiments/E10_generation_citations.md). **Pl
 | Embedding model | **`BAAI/bge-base-en-v1.5`** | E8 | test NDCG@10 **0.394** |
 | Candidate retrieval / RRF | **Dense only** (no fusion in prod) | E1, E1b | Beats hybrid; weighted hybrid not worth latency |
 | Candidate diversification policy | **Top-50 dense, no cap** (when rerank on in eval) | E3 | Test tied vs cap2 |
-| Reranker and candidate budget | **Off** | E2, E5 skipped | CE flat @50; E4 Jev removed |
+| Reranker and candidate budget | **Off** | E2, E5 skipped | CE flat @50 on test |
 | Final context/result count | 10 | E1 | Week 4 protocol |
 | LLM / prompt configuration | Ollama/Cohere per settings | E10 pending | Stub used for retrieval eval only |
 
@@ -249,7 +239,7 @@ Full JSON: `data/benchmarks/week4_exp5_dense_rerank_error_analysis.json`. Sheet:
 | Decision | Evidence | Chosen option | Alternatives not chosen | Remaining limitation |
 |---|---|---|---|---|
 | First-stage retriever | E1 test NDCG@10 | **Dense** | BM25, equal hybrid, weighted hybrid | Hybrid not on full test for equal weights |
-| Default rerank | E2 latency + NDCG | **Off** | dense+CE @50 (E2) | E3 done; E4 removed; E5 skipped |
+| Default rerank | E2 latency + NDCG | **Off** | dense+CE @50 (E2) | E3 done; E5 skipped |
 | Fusion in production | E1b test | **None** | weighted 0.95/0.05 | Small NDCG tie on test |
 | Chunking / embeddings | E6–E8 test | **200w / 20% / BGE** | 100w, 300w, MiniLM, overlap 10%/30% | API may still serve legacy `fiqa` until Week 6 |
 
@@ -286,7 +276,7 @@ python src/scripts/analyze_rerank_dense.py --collection fiqa
 | BM25 | 0.19 |
 | Dense + CE | 0.37 |
 
-**Most important experiments:** E1 dense; E2 CE rejected; E3 control; **E6→E7** chunking; **E8** BGE (+0.018 test vs 200w MiniLM); E4/E5 out of scope/skipped.
+**Most important experiments:** E1 dense; E2 CE rejected; E3 control; **E6→E7** chunking; **E8** BGE (+0.018 test vs 200w MiniLM); E5 skipped.
 
 **Full report:** this file. **Lessons (teaching):** [`rag_retrieval_lessons.md`](rag_retrieval_lessons.md). **Sheets:** [`experiments/README.md`](experiments/README.md). **Program catalog:** [`rag_experiment_program_report.md`](rag_experiment_program_report.md).
 

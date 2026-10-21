@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **ID** | E5 |
-| **Status** | **Skipped** (Week 5) — E2 rejected CE @50; E3 pool policy neutral on test; no hosted reranker (E4 removed) |
+| **Status** | **Skipped** (Week 5) — E2 rejected CE @50; E3 pool policy neutral on test |
 | **Primary variable** | `rerank_candidate_limit` |
 | **Consolidated report** | [`rag_experiment_results.md`](../rag_experiment_results.md) §5 |
 
