@@ -1,7 +1,7 @@
 # Project specification
 
-**Status:** Week 4 complete; **Week 5** = experimentation sprint; **Week 6** = production API (frozen retrieval profile)  
-**Last updated:** 2026-10-20
+**Status:** Week 5 complete (retrieval frozen); **Week 6** = production API (wire frozen profile)  
+**Last updated:** 2026-10-21
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
@@ -113,7 +113,7 @@ Factory functions:
 | HTTP API | `api/*`, `scripts/serve_api.py`; `QueryRequest.method` | 2–3 | ✅ |
 | Retrieval benchmark | `evaluation/retrieval_benchmark.py`, notebook + report | 3 | ✅ |
 | Rerank + offline eval (qrels) | `reranker.py`, `retrieval_eval.py`, `run_week4_experiments.py` | 4 | ✅ |
-| Experiment sprint E3–E9 (E4 Jev) | `docs/RAG_PROJECT_ROADMAP.md` | 5 | ⬜ |
+| Experiment sprint E3–E9 (no hosted Jev) | `docs/RAG_PROJECT_ROADMAP.md` | 5 | ⬜ |
 | SSE, API hardening (frozen retrieval) | — | 6 | ⬜ |
 | Observability | — | 7 | ⬜ |
 | Docker + CI + deploy | — | 8–9 | ⬜ |
@@ -249,22 +249,25 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] Dense rerank error analysis (Exp 4 vs Exp 5 dense; `analyze_rerank_dense.py`)
 - [x] Reports: `docs/reports/week4_retrieval_program_report.md` + per-experiment markdown
 
-### Production retrieval profile (frozen after experiments)
+### Production retrieval profile (frozen — Week 5)
 
-| Setting | Current value | Notes |
-|---------|---------------|--------|
-| Method | `dense` | Test NDCG@10 ≈ 0.37; best latency |
-| Rerank | off | CE did not improve dense NDCG@10 |
-| `top_k` | 10 | Week 4 eval protocol (not the API default today) |
-| Collection | `fiqa` (full corpus) | |
+| Setting | Eval / target (Week 6+) | Served API today |
+|---------|-------------------------|------------------|
+| Method | `dense` | `dense` (others in CLI/eval) |
+| Rerank | off | off |
+| `top_k` | 10 | **3** (change in Week 6) |
+| Chunking | 200w / 20% | 100w / 20% (`fiqa`) |
+| Embedding | `BAAI/bge-base-en-v1.5` | `all-MiniLM-L6-v2` |
+| Collection | `fiqa_cs200_bge_base_en_v1_5` | `fiqa` |
 
-**API during Week 5 experimentation:** `QueryRequest.top_k` still defaults to **3** in code for backward compatibility while experiments run. **Week 6 must enforce** the frozen profile in application code (settings + schema defaults / ignored client overrides for `method`, `use_rerank`, and `top_k`), not only in documentation.
+**Test NDCG@10:** **0.394** (E8) vs **0.370** (E1 baseline). Teaching summary: [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md).
 
-CLI/eval may use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` for **Week 5+ experiments**. Reports: [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md), per-experiment [`experiments/README.md`](docs/reports/experiments/README.md), catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md).
+**Week 6 must enforce** the eval column in application code (settings + schema). CLI/eval may still use `bm25`, `hybrid`, `weighted_hybrid`, `use_rerank` for experiments.
 
-### Week 5 (next) — experimentation sprint
+### Week 5 — experimentation sprint ✅
 
-- [ ] E3–E9 per [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) (incl. **E4** Jev ranking-only); update experiment report and production profile if a treatment wins.
+- [x] E3–E9 per [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md); reports in [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md).
+- [x] Local indexes trimmed to **`fiqa`** + **`fiqa_cs200_bge_base_en_v1_5`** (`src/scripts/cleanup_local_indexes.py`).
 
 ### Week 6 — production API engineering
 
@@ -322,6 +325,4 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 
 ## Next implementation steps
 
-**Week 5:** Run E3 → **E4** (Jev `rerank()`, no filtering) → optional E4b → E5–E8; fill sheets under `docs/reports/experiments/` and update `rag_experiment_results.md`.
-
-**Week 6:** API hardening; lock `/query` to frozen production retrieval profile.
+**Week 6:** API hardening; lock `/query` to frozen retrieval profile (`fiqa_cs200_bge_base_en_v1_5` + BGE + `top_k=10`).

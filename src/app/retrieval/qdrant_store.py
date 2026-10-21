@@ -50,6 +50,13 @@ class QdrantChunkStore:
             return int(first.size)
         return int(vectors.size)
 
+    def drop_collection(self) -> bool:
+        """Delete this collection from Qdrant. Returns True if it existed."""
+        if not self.collection_exists():
+            return False
+        self._client.delete_collection(self._collection_name)
+        return True
+
     def prepare_collection(self, vector_size: int, *, recreate: bool = False) -> None:
         if self.collection_exists():
             if recreate:

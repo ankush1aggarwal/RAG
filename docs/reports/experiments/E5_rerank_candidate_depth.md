@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **ID** | E5 |
-| **Status** | **Planned** (Week 5, after **E4**; skip if no rerank beats dense) |
+| **Status** | **Skipped** (Week 5) — E2 rejected CE @50; E3 pool policy neutral on test; no hosted reranker (E4 removed) |
 | **Primary variable** | `rerank_candidate_limit` |
 | **Consolidated report** | [`rag_experiment_results.md`](../rag_experiment_results.md) §5 |
 
@@ -11,20 +11,28 @@
 
 ## 1. Question and hypothesis
 
-- **Question:** What candidate budget (10 / 20 / 30 / 50) balances NDCG@10 and rerank latency for the **E4-winning** reranker (Jev or CE)?
+- **Question:** What candidate budget (10 / 20 / 30 / 50) balances NDCG@10 and rerank latency for the winning **local** reranker?
 - **Hypothesis:** Smaller pools reduce latency and API cost; depth >30 may not help if Recall@50 already saturates under the E3 policy.
 
 ## 2. Results
 
-| Budget | NDCG@10 | MRR@10 | Recall@10 | p50 rerank ms | p95 rerank ms | API cost (if Jev) | Decision |
-|-------:|--------:|-------:|----------:|--------------:|--------------:|------------------:|----------|
-| 10 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| 20 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| 30 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| 50 | TBD | TBD | TBD | TBD | TBD | TBD | E2/E4 reference @50 |
+| Budget | NDCG@10 | MRR@10 | Recall@10 | p50 rerank ms | p95 rerank ms | Decision |
+|-------:|--------:|-------:|----------:|--------------:|--------------:|----------|
+| 10 | — | — | — | — | — | Not run |
+| 20 | — | — | — | — | — | Not run |
+| 30 | — | — | — | — | — | Not run |
+| 50 | 0.368‡ | 0.441‡ | 0.438‡ | — | — | E2 reference @50 |
 
-**Fixed:** E3 candidate policy; reranker = outcome of **E4** (not both CE and Jev in one table).
+‡Week 4 E2 dense+CE under pre-E3 pool; E3 test tied control vs cap2 — no rerank adoption.
 
-## 3. Decision
+**Fixed:** E3 control pool if re-opened; local CE only.
 
-TBD
+## 3. Insights (interpretation)
+
+- **Effect size:** Not measured — only E2 reference @50 (**0.368** dense+CE).
+- **Mechanism:** Depth sweeps matter when rerank **adds** NDCG; with E2 flat @50 and E3 neutral, varying 10–30 cannot change the production decision.
+- **Caveats:** Re-open if a new reranker beats dense on test under E3 control pool.
+
+## 4. Decision
+
+**Skip** — production stays dense-only; depth sweep only relevant if a future reranker beats dense on test.

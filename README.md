@@ -78,10 +78,9 @@ By the end of the project, the system should demonstrate:
 
 # 1. Current Project Status
 
-> **Current phase: Week 4 complete — reranking + labeled evaluation**  
-> **Next phase: Week 5 — Experimentation sprint** (E3–E9 incl. **E4 Jev**; freeze production retrieval design).  
-> **Then:** Week 6 production API (serves **one** frozen design); Weeks 7–9 observability, CI, deploy.  
-> **Roadmap:** [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) · **Experiments:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [sheets](docs/reports/experiments/README.md) · [program](docs/reports/rag_experiment_program_report.md)
+> **Current phase: Week 5 complete — retrieval experiment program (E0–E9)**  
+> **Next phase: Week 6 — Production API** (enforce frozen retrieval on `/query`; streaming, tests).  
+> **Lessons:** [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md) · **Results:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [roadmap](docs/RAG_PROJECT_ROADMAP.md)
 
 Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
@@ -94,15 +93,15 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 2 | Generation + API | **Done** | Local HTTP `POST /query` → answer + traceable citations; `/health` + `/ready` |
 | 3 | Hybrid retrieval | **Done** | BM25 + dense + RRF; API/CLI; benchmark notebook + comparison report |
 | 4 | Rerank + qrels eval | **Done** | Experiments 1–5; production default **dense, no rerank** (see experiment report) |
-| 5 | Experimentation | **Next** | E3–E9 retrieval sweeps (Jev rerank in E4); update frozen profile |
-| 6 | Production API | Planned | Hardening + streaming; API serves frozen design only |
+| 5 | Experimentation | **Done** | E3–E9; frozen eval: **BGE 200w** NDCG@10 **0.394** (test) |
+| 6 | Production API | **Next** | Hardening + streaming; API serves frozen design only |
 | 7–9 | Ops + deploy | Planned | Observability, Docker/CI, public demo |
 
-**Automated tests:** **162** unit tests — `pytest src/tests/unit`.
+**Automated tests:** **185** unit tests — `pytest src/tests/unit` (unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and defaults tests fail).
 
 **Experiment results:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) (full report); per-experiment [`docs/reports/experiments/`](docs/reports/experiments/README.md); catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md). Week 4 runbook: [`week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md).
 
-**Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. The **documented production profile** is dense, rerank off, **`top_k=10`** (Week 4 eval). The HTTP API still defaults **`top_k=3`** during experimentation; **Week 6** will enforce the frozen profile in code. Eval rules: [`docs/reports/eval_protocol_reference.md`](docs/reports/eval_protocol_reference.md).
+**Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. **Frozen retrieval (Week 5):** dense, rerank off, **`top_k=10`**, **200w / 20%**, **`BAAI/bge-base-en-v1.5`**, collection **`fiqa_cs200_bge_base_en_v1_5`**. The **HTTP API** still serves legacy **`fiqa`** (100w MiniLM) and defaults **`top_k=3`** until **Week 6**. Eval rules: [`docs/reports/eval_protocol_reference.md`](docs/reports/eval_protocol_reference.md). Index cleanup: `python src/scripts/cleanup_local_indexes.py` (dry-run; `--execute` to delete).
 
 ---
 
@@ -1063,17 +1062,15 @@ Deliverables:
 
 ---
 
-## Week 5 — Experimentation sprint
+## Week 5 — Experimentation sprint ✅
 
 Deliverables (see [`RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) E3–E9):
 
-- [ ] Candidate diversity / duplicate-chunk policy before rerank (E3)
-- [ ] Jev `rerank()` ranking-only vs CE vs no rerank; API audit (E4); optional filtering (E4b)
-- [ ] Rerank candidate depth sweep (E5) if rerank wins
-- [ ] Chunk size and overlap sweeps (E6–E7)
-- [ ] Optional: embedding model, hybrid/RRF tuning (E8–E9)
-- [ ] Updated [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) and experiment sheets with adopt/reject decisions
-- [ ] Frozen **production retrieval profile** for Week 6 API
+- [x] Candidate diversity / duplicate-chunk policy before rerank (E3)
+- [x] Chunk size and overlap sweeps (E6–E7) → **200w / 20%**
+- [x] Embedding model (E8) → **BGE-base**; paragraph chunking (E9) → reject (tie)
+- [x] [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md), sheets, [`rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md)
+- [x] Frozen **retrieval profile** for Week 6 API wiring (eval index: `fiqa_cs200_bge_base_en_v1_5`)
 
 ---
 

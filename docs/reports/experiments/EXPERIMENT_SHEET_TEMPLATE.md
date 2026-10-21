@@ -51,14 +51,23 @@ Document-level qrels: chunk hits deduplicated to first-seen `doc_id` per ranked 
 
 TBD — link JSON/CSV, summarize failure modes and example query IDs.
 
-## 5. Decision
+## 5. Insights (interpretation)
+
+Record after results are in (required for every completed experiment):
+
+- **Effect size:** ΔNDCG@10 (and Recall@10 if material) vs the **immediate prior baseline** on the same split; note validation vs test.
+- **Mechanism:** coverage (candidate recall), ordering within pool, segmentation/boundary, representation quality, fusion cost, etc.
+- **Interaction:** what earlier step this build **on top of** (e.g. E8 on E6+E7 chunking).
+- **Caveats:** confounds, single split, latency/cost trade-off, arms not run.
+
+## 6. Decision
 
 | Outcome | Adopt / Reject / Defer |
 | **Rationale** | TBD |
 | **Production impact** | TBD |
 | **Limitations** | TBD |
 
-## 6. Artifacts and reproducibility
+## 7. Artifacts and reproducibility
 
 | Artifact | Path |
 |----------|------|

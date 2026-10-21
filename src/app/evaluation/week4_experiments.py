@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from app.evaluation.repro import try_git_commit_short
 from app.evaluation.retrieval_eval import (
     RETRIEVAL_METHODS,
     RetrievalEvalResult,
@@ -15,7 +16,6 @@ from app.evaluation.retrieval_eval import (
     format_latency_table,
     render_query_examples,
 )
-from app.evaluation.repro import try_git_commit_short
 from app.pipeline.rag import RetrievalMethod
 from app.retrieval.fusion_weights import FusionWeights, load_fusion_weights
 

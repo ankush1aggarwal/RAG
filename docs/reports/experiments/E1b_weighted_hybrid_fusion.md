@@ -46,13 +46,19 @@ Same index and splits as E1; `top_k=10`; no rerank.
 | dense | **0.3698** | 0.4496 | 0.4304 | 197.9 | 204.5 |
 | weighted hybrid | 0.3691 | 0.4474 | 0.4308 | 809.2 | 1172.0 |
 
-## 5. Decision
+## 5. Insights (interpretation)
+
+- **Effect size:** Validation NDCG@10 **0.385** weighted vs **0.379** dense (+0.006); test **0.3691** vs **0.3698** dense (~**−0.001**, noise).
+- **Mechanism:** Tuning dense-heavy weights fixes most of the equal-hybrid validation gap by trusting vectors; on test, lexical tail adds **no durable NDCG** but still pays **~4×** dense p50 for second-stage BM25 + fusion.
+- **Caveats:** Single validation grid; weights frozen for test — correct discipline, but marginal test tie was predictable from E1.
+
+## 6. Decision
 
 | Outcome | **Reject** weighted hybrid for production default |
 | **Rationale** | Test NDCG@10 within ~0.0007 of dense but ~4× p50 latency and extra fusion complexity. |
 | **Production impact** | Keep `weighted_hybrid` as **eval/CLI-only**; weights archived for experiments. |
 | **Limitations** | Single grid on validation; no test-time weight search. |
 
-## 6. Artifacts
+## 7. Artifacts
 
 [`week4_exp3_weighted_hybrid_validation.md`](../week4_exp3_weighted_hybrid_validation.md), [`week4_exp4_test_baseline.md`](../week4_exp4_test_baseline.md), `data/benchmarks/week4_fusion_weights.json`.

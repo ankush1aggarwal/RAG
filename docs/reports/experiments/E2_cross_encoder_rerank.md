@@ -46,14 +46,21 @@
 
 **Relative cost (dense):** ~5.6× mean retrieval+rerank latency; flat NDCG@10.
 
-## 5. Decision
+## 5. Insights (interpretation)
+
+- **Effect size:** Dense+CE test NDCG@10 **0.368** vs no rerank **0.370** (~**−0.001**); Recall@10 slightly up (+0.008) but not enough to adopt under the selection rule.
+- **Mechanism:** CE mainly **reorders** within an already strong top-50 pool (see E2a); aggregate gain cancels because helps and hurts are balanced; BM25+CE lifts BM25 but stays far below dense.
+- **Interaction:** Freezes **rerank off** for production; E3/E5 only matter if a future reranker beats dense on test.
+- **Caveats:** One CE model, 50-candidate budget, pre-E3 pool policy.
+
+## 6. Decision
 
 | Outcome | **Reject** default production rerank |
 | **Rationale** | No meaningful NDCG@10 gain on dense; large latency increase. BM25+CE improves BM25 but remains below dense. |
 | **Production impact** | `use_rerank=false` in frozen profile; CE remains optional in scripts/API during dev. |
-| **Limitations** | Single CE model and 50-candidate budget; E3 pool policy and **E4** (Jev) may change conclusion. |
+| **Limitations** | Single CE model and 50-candidate budget; E3 pool policy neutral on test; hosted Jev (E4) not pursued. |
 
-## 6. Artifacts
+## 7. Artifacts
 
 [`week4_exp5_test_rerank.md`](../week4_exp5_test_rerank.md), `data/benchmarks/week4_exp5*.json`.
 

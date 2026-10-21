@@ -62,7 +62,7 @@ Link Week 3 timing report and Week 4 labeled evaluation report here: TBD.
 
 ## 5. Controlled experiment results
 
-For each experiment, document: ID, hypothesis, control, single variable changed, fixed settings, development/test split, result table, per-query analysis, latency/cost, decision and limitations.
+For each experiment, document: ID, hypothesis, control, single variable changed, fixed settings, development/test split, result table, per-query analysis, **insights** (ΔNDCG@10 vs prior step, mechanism, caveats — see [`eval_protocol_reference.md`](reports/eval_protocol_reference.md)), latency/cost, decision and limitations.
 
 ### E3 — Candidate diversity / duplicate-chunk crowding
 
@@ -80,28 +80,20 @@ For each experiment, document: ID, hypothesis, control, single variable changed,
 **Per-query findings:** TBD.  
 **Decision:** TBD.
 
-### E4 — Jev reranker (ranking only, hosted API)
+### E4 / E4b — Hosted Jev reranker (removed from program)
 
-Use Jev **`rerank()`** (`jev-reranker`) with **no score-based filtering**; compare to no rerank and local CE under the E3 candidate policy. Record API model/version, instructions, listwise vs pointwise mode, concurrency, cost, and data-handling. Optional **E4b** tests relevance filtering separately.
-
-| Arm | NDCG@10 | MRR@10 | Recall@10 | p50/p95 | API cost | Notes |
-|-----|--------:|-------:|----------:|---------|----------|-------|
-| No rerank | TBD | TBD | TBD | TBD | TBD | TBD |
-| CE @50 | TBD | TBD | TBD | TBD | TBD | TBD |
-| Jev `rerank()` @50 | TBD | TBD | TBD | TBD | TBD | TBD |
-
-**Decision and rationale:** TBD.
+Not run — hosted API cost. Rerank conclusions use **E2** (local CE). Sheets: `experiments/E4_jev_rerank.md`, `E4b_jev_relevance_filtering.md`.
 
 ### E5 — Reranker candidate depth
 
+**Skipped** while production rerank stays off (E2 rejected CE @50). Re-open only if a local reranker beats dense on test.
+
 | Candidate budget | NDCG@10 | MRR@10 | Recall@10 | p50 rerank ms | p95 rerank ms | Decision |
 |---:|---:|---:|---:|---:|---:|---|
-| 10 | TBD | TBD | TBD | TBD | TBD | TBD |
-| 20 | TBD | TBD | TBD | TBD | TBD | TBD |
-| 30 | TBD | TBD | TBD | TBD | TBD | TBD |
-| 50 | TBD | TBD | TBD | TBD | TBD | TBD |
+| 10–30 | — | — | — | — | — | Not run |
+| 50 | TBD | TBD | TBD | TBD | TBD | E2 reference |
 
-**Decision and rationale:** TBD — E4-winning reranker only.
+**Decision and rationale:** TBD — skip unless rerank re-enabled.
 
 ### E6 — Chunk size sensitivity
 
@@ -132,7 +124,7 @@ Use Jev **`rerank()`** (`jev-reranker`) with **no score-based filtering**; compa
 
 **Decision and rationale:** TBD.
 
-### E9 — Hybrid/RRF sensitivity (optional/stretch)
+### E9 — Paragraph-aware chunking (vs E8 BGE 200w)
 
 Describe one variable at a time (retriever candidate depth or RRF `k`), the control, tested values, result table and decision. If skipped, say so explicitly rather than implying it was tested.
 
@@ -157,7 +149,7 @@ Describe one variable at a time (retriever candidate depth or RRF `k`), the cont
 | Embedding model | TBD | E8 | TBD |
 | Candidate retrieval / RRF | TBD | E1 / E9 | TBD |
 | Candidate diversification policy | TBD | E3 | TBD |
-| Reranker and candidate budget | TBD | E2 / E4 / E5 | TBD |
+| Reranker and candidate budget | TBD | E2; E5 skipped | TBD |
 | Final context/result count | TBD | E5 / E10 | TBD |
 | LLM / prompt configuration | TBD | E10 | TBD |
 
