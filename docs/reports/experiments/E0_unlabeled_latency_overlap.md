@@ -56,14 +56,20 @@
 
 **NDCG/MRR:** not computed (unlabeled query set).
 
-## 5. Decision
+## 5. Insights (interpretation)
+
+- **Effect size:** N/A for NDCG; hybrid p50 ~**2.2×** dense on this slice; dense vs BM25 top-5 Jaccard ~**0.19** (rankings largely disjoint).
+- **Mechanism:** Establishes **cost and diversity priors** only — hybrid fuses two slow stages; overlap is moderate, so methods are not redundant.
+- **Caveats:** 1k-doc index, 10 queries, top-k=5 — **not** comparable to full-corpus E1 numbers; do not cite E0 for quality decisions.
+
+## 6. Decision
 
 | Outcome | **Defer** production choice to E1 (labeled qrels) |
 | **Rationale** | E0 establishes speed and diversity priors only; hybrid ~2.2× dense p50 on this slice. |
 | **Production impact** | None directly. |
 | **Limitations** | 1k-doc index and 10 queries — not comparable to full-corpus Week 4 metrics. |
 
-## 6. Artifacts and reproducibility
+## 7. Artifacts and reproducibility
 
 | Artifact | Path |
 |----------|------|

@@ -1,9 +1,11 @@
 # E4 — Jev reranker (ranking only, hosted API)
 
+> **Removed from program (2026-10-20):** Hosted Jev API is not free; experiment not run. Rerank conclusions remain **E2** (local CE only). Week 5 continues with **E6–E8** per [`README.md`](README.md).
+
 | Field | Value |
 |-------|--------|
 | **ID** | E4 |
-| **Status** | **Planned** (Week 5, after E3) |
+| **Status** | **Removed** — out of scope (hosted cost) |
 | **Primary variable** | Reranker backend: local CE (E2 control) vs **Jev** (`jev-reranker`, ranking-only) |
 | **Consolidated report** | [`rag_experiment_results.md`](../rag_experiment_results.md) §5 |
 

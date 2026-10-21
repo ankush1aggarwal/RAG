@@ -17,7 +17,7 @@ The intended outcome is a portfolio-quality RAG application for FiQA financial-i
 | Week 2 — Generation + API | ✅ Done | Grounded answer generation, citations, FastAPI health/readiness/query |
 | Week 3 — Hybrid retrieval | ✅ Done | BM25, dense + BM25 RRF, CLI/API and timing/overlap report |
 | Week 4 — Reranking + relevance evaluation | ✅ Done | Qrels, IR metrics, reranker, experiment program 1–5, error analysis |
-| Week 5 — **Experimentation sprint** | ⬜ **Next** | E3–E9 retrieval experiments (incl. **E4 Jev**); freeze production design (see experiment report) |
+| Week 5 — **Experimentation sprint** | ✅ Done | E3–E9 complete; frozen retrieval: **200w / BGE / dense** (see lessons report) |
 | Week 6 — Production API engineering | ⬜ | Hardening, streaming, errors, integration tests; **serve frozen retrieval profile only** |
 | Week 7 — Observability | ⬜ | Structured logs, tracing, latency/error/cost visibility |
 | Week 8 — Container + CI | ⬜ | Reproducible Docker runtime and automated checks on GitHub |
@@ -87,14 +87,14 @@ The project should demonstrate not only a working RAG system, but also disciplin
 | E0 | Dense vs BM25 vs hybrid RRF latency and result overlap | Week 3 | Core | ✅ Existing `docs/reports/week3_retrieval_comparison.md`; unlabeled quality proxy only |
 | E1 | Dense vs BM25 vs hybrid using FiQA qrels | Week 4 | Core | ✅ [`week4_exp2`](reports/week4_exp2_full_corpus_validation.md), Exp 4 test |
 | E2 | Methods + **local CE rerank** | Week 4 | Core | ✅ [`week4_exp5`](reports/week4_exp5_test_rerank.md) + error analysis |
-| E3 | **Candidate diversity / duplicate-chunk crowding** | **Week 5** | **High** | ⬜ Protocol below |
-| E4 | **Jev reranker** — `rerank()` ranking only (hosted API; `jev-reranker`) | Week 5 | **High** | ⬜ After E3; vs CE + no rerank |
-| E4b | Jev **relevance filtering** (optional) | Week 5 | Medium | ⬜ After E4 if promising |
-| E5 | Reranker candidate depth (10 / 20 / 30 / 50) | Week 5 | Core | ⬜ After E4; winning reranker only |
-| E6 | Chunk size sensitivity | Week 5 | High | ⬜ |
-| E7 | Chunk overlap sensitivity | Week 5 | High | ⬜ After E6 |
-| E8 | Embedding model comparison | Week 5 | High | ⬜ |
-| E9 | Hybrid depth / RRF `k` | Week 5 stretch | Medium | ⬜ Optional |
+| E3 | **Candidate diversity / duplicate-chunk crowding** | **Week 5** | **High** | ✅ Complete — control pool frozen |
+| E4 | ~~Jev reranker (hosted)~~ | — | — | **Removed** — cost; not in program |
+| E4b | ~~Jev relevance filtering~~ | — | — | **Removed** — depended on E4 |
+| E5 | Reranker candidate depth (10 / 20 / 30 / 50) | Week 5 | Core | **Skipped** — E2 rejected CE; no new reranker |
+| E6 | Chunk size sensitivity | Week 5 | High | ✅ 200w adopted |
+| E7 | Chunk overlap sensitivity | Week 5 | High | ✅ 20% @ 200w |
+| E8 | Embedding model comparison | Week 5 | High | ✅ BGE-base |
+| E9 | **Paragraph-aware chunking** (vs E8 BGE 200w) | Week 5 | Medium | ✅ Complete (tie → keep E8) |
 | E10 | Generation + citation grounding | Week 6–7 | Core | ⬜ After retrieval freeze |
 | E11 | E2E performance / concurrency | Week 8–9 | Core | ⬜ |
 
@@ -117,19 +117,11 @@ If the deeper pool cannot fill the intended budget, record the actual candidate 
 
 **Report:** unique documents and duplicate-slot fraction entering the reranker; relevant-document candidate Recall@50; NDCG@10, MRR@10 and Recall@10 after reranking; reranking latency; per-query gains/losses and whether lost queries reflect candidate coverage or ordering. Include both the no-backfill diagnostic and overfetch treatments so the report distinguishes “removing duplicates” from “replacing duplicate slots with candidates from deeper ranks.”
 
-**Decision rule:** select the policy on development data using quality and latency together. Do not pick a cap just because it increases the number of unique documents; confirm that ranked relevance improves and that no material regression is hidden by the aggregate. Save the chosen policy, exact fetch depth, cap, metrics and commit in the experiment log. Then keep that policy fixed during **E4** (Jev/CE rerank) and **E5** candidate-depth comparisons.
+**Decision rule:** select the policy on development data using quality and latency together. Do not pick a cap just because it increases the number of unique documents; confirm that ranked relevance improves and that no material regression is hidden by the aggregate. Save the chosen policy, exact fetch depth, cap, metrics and commit in the experiment log. Use the frozen pool for any **local** rerank eval (E2/E5); production remains dense-only unless a reranker beats dense on **test**.
 
-### E4 — Jev reranker (ranking only)
+### Hosted Jev reranker (E4 / E4b) — removed from program
 
-**Library:** [`jev-reranker`](https://pypi.org/project/jev-reranker/) — hosted API; supports **reranking** and **relevance filtering**, with **listwise** and **pointwise** scoring modes.
-
-**E4 scope (required):** **Ranking only.** Call Jev **`rerank()`** with **no score-based filtering** so the experiment isolates whether Jev improves **ordering** of the same candidate set (under the E3 policy). Compare to **no rerank** and **local CE** (E2) on validation; report test once. Hold candidate budget at **50** until **E5**.
-
-**E4b (optional):** Test whether **relevance filtering** removes distracting passages without dropping qrels-relevant evidence — only after E4 shows Jev reranking is competitive.
-
-**Hosted API audit (record in experiment sheet):** model name/version, instructions/prompt text, concurrency limits, retries, estimated cost per split, and **data-handling** (what query/passage text is sent, retention, subprocessors).
-
-**Decision rule:** adopt rerank in the frozen profile only if **test** quality gain is material at acceptable p95 latency **and** cost/data policy is acceptable; otherwise remain dense-only and skip **E5** depth sweep for rerankers.
+**E4** (Jev `rerank()`) and **E4b** (relevance filtering) were planned as optional hosted-API trials. They are **out of scope** due to API cost. Rerank evidence stays **Week 4 E2** (local cross-encoder). Sheets retained for history: [`E4_jev_rerank.md`](reports/experiments/E4_jev_rerank.md), [`E4b_jev_relevance_filtering.md`](reports/experiments/E4b_jev_relevance_filtering.md).
 
 ### How to run each experiment
 
@@ -147,16 +139,15 @@ For every run, write down:
 Run the retrieval experiment sprint in **Week 5** (dedicated experimentation week), **before Week 6+ production API and deployment**:
 
 1. E1/E2 baselines are saved in [`rag_experiment_program_report.md`](reports/rag_experiment_program_report.md).
-2. Run E3 candidate-diversity / duplicate-crowding ablation first (Week 4 hurt cases).
-3. Run **E4** Jev `rerank()` (ranking only, no filtering) vs CE vs no rerank; optional **E4b** filtering if E4 is promising.
-4. Sweep reranker candidate depth (**E5**) for the E4-winning reranker only; skip if dense still wins.
-5. Run a small chunk-size sweep (**E6**), then overlap sweep (**E7**) using the best-supported chunk size.
-6. Compare one alternative embedding model (**E8**) only if compute/time budget allows. Rebuild each index with the selected model; never compare models against mismatched embeddings/indexes.
-7. Tune hybrid candidate depth / RRF `k` (**E9**) only after you have a stable qrels evaluation. Treat weighted RRF as optional stretch, not a required deliverable.
-8. **Freeze** the production retrieval profile; document in the experiment report. **Week 6** implements API hardening and **locks the served pipeline** to that profile (other methods remain CLI/eval-only).
-9. **E10** after retrieval freeze; **E11** uses observability from Week 7 where possible.
+2. Run E3 candidate-diversity / duplicate-crowding ablation first (Week 4 hurt cases). ✅
+3. **Skip E5** depth sweep unless a **local** reranker beats dense on test (E2 already rejected CE @50).
+4. Run a small chunk-size sweep (**E6**), then overlap sweep (**E7**) using the best-supported chunk size.
+5. Compare one alternative embedding model (**E8**) only if compute/time budget allows. Rebuild each index with the selected model; never compare models against mismatched embeddings/indexes.
+6. **E9** — paragraph-aware chunking on BGE (vs E8 fixed 200w). Hybrid/RRF sweeps remain optional/deferred (E1).
+7. **Freeze** the production retrieval profile; document in the experiment report. **Week 6** implements API hardening and **locks the served pipeline** to that profile (other methods remain CLI/eval-only).
+8. **E10** after retrieval freeze; **E11** uses observability from Week 7 where possible.
 
-For a constrained schedule, the minimum valuable additional experiments are **E3 candidate diversity, E4 Jev rerank (ranking only), E5 depth (if rerank wins), E6 chunk size, and E8 one alternate embedding model**. E7 and E9 are follow-up/stretch experiments. Do not run a full Cartesian grid across every setting; it multiplies cost and makes the source of improvement hard to explain.
+For a constrained schedule, the minimum valuable additional experiments are **E3 candidate diversity (done), E6 chunk size, and E8 one alternate embedding model**. **E5** is skipped while rerank stays off; **E7** and **E9** are follow-up/stretch. Do not run a full Cartesian grid across every setting; it multiplies cost and makes the source of improvement hard to explain.
 
 ### Data and interpretation guardrails
 
@@ -170,13 +161,15 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 
 ---
 
-## Week 5 — Experimentation sprint ⬜
+## Week 5 — Experimentation sprint ✅
 
-**Goal:** Run E3–E9 (minimum: E3, E4, E5 if rerank wins, E6, E8) on the full `fiqa` index; adopt/reject each change with qrels + latency + API cost where applicable; update [`rag_experiment_program_report.md`](reports/rag_experiment_program_report.md).
+**Goal:** Run E3–E9 on full FiQA; adopt/reject with qrels + latency — **done**.
 
-**Rules:** one main variable per experiment; tune on **validation** only; touch **test** once per final candidate config; CLI/eval may use all methods — **production profile** is updated only when an experiment wins on quality **and** latency budget.
+**Frozen retrieval (eval / post–Week 6 target):** dense, no rerank, **`top_k=10`**, **200w / 20% overlap**, **`BAAI/bge-base-en-v1.5`**, index **`fiqa_cs200_bge_base_en_v1_5`** (test NDCG@10 **0.394**). **Served API** still uses legacy **`fiqa`** (100w MiniLM) until Week 6 wiring.
 
-**Definition of done:** experiment log complete for the sprint; production retrieval profile frozen (currently **dense, no rerank, top_k=10** unless E3–E9 change it).
+**Reports:** [`rag_experiment_results.md`](reports/rag_experiment_results.md) · [`rag_retrieval_lessons.md`](reports/rag_retrieval_lessons.md) · [`rag_experiment_program_report.md`](reports/rag_experiment_program_report.md).
+
+**Indexes on disk:** `fiqa` + `fiqa_cs200_bge_base_en_v1_5` only (`src/scripts/cleanup_local_indexes.py`).
 
 ---
 
@@ -280,7 +273,8 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 
 ### Immediate next action — Week 5 experimentation
 - [x] Week 4 artifacts and [`rag_experiment_program_report.md`](reports/rag_experiment_program_report.md).
-- [ ] Run E3 (candidate diversity), then **E4** (Jev ranking) → optional **E4b** → **E5–E8** per roadmap order.
+- [x] E3 (candidate diversity) — control pool frozen.
+- [ ] **E6–E8** (E7 after E6); optional **E9**. E4/E4b removed; **E5** skipped.
 - [ ] Update experiment report with decisions; confirm or revise production profile.
 
 ### Week 6 (API)

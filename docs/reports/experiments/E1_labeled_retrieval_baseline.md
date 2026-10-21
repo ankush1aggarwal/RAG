@@ -60,14 +60,21 @@
 
 See per-query tables and examples in [`week4_exp2_full_corpus_validation.md`](../week4_exp2_full_corpus_validation.md) and [`week4_exp4_test_baseline.md`](../week4_exp4_test_baseline.md). JSON: `data/benchmarks/week4_exp*.json`.
 
-## 5. Decision
+## 5. Insights (interpretation)
+
+- **Effect size:** Test NDCG@10 dense **0.370** vs BM25 **0.191** (~**+0.18**); hybrid validation **0.336** — below dense despite higher Recall@10 on val.
+- **Mechanism:** FiQA labels are document-level Q&A; **semantic dense** retrieval matches paraphrase and topic better than lexical BM25; equal RRF dilutes dense signal and adds fusion latency without beating dense on NDCG.
+- **Interaction:** Becomes the **Week 4–5 retrieval-method baseline** (100w / 20% / MiniLM) for E2–E8.
+- **Caveats:** Equal-weight hybrid not on full test; candidate Recall@50 not logged in Exp 2/4.
+
+## 6. Decision
 
 | Outcome | **Adopt dense** as first-stage production retriever |
 | **Rationale** | Best NDCG@10 on validation and test; lowest latency. Hybrid below dense on validation; BM25 much weaker. |
 | **Production impact** | Frozen profile: `dense`, `top_k=10`, rerank off (see E2). |
 | **Limitations** | Equal-weight hybrid not re-run on full test set; weighted hybrid covered in E1b. |
 
-## 6. Artifacts and reproducibility
+## 7. Artifacts and reproducibility
 
 ```powershell
 $env:FIQA_CORPUS_LIMIT="0"

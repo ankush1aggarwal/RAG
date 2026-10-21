@@ -33,13 +33,20 @@ Compare per-query metrics: **Exp 4** (no rerank) vs **Exp 5** (dense + CE), same
 
 **Missing candidates:** no cases classified as relevant doc absent from top-50 pool (coverage already strong).
 
-## 4. Decision
+## 4. Insights (interpretation)
+
+- **Effect size:** Aggregate ΔNDCG@10 ≈ 0 masks **181 helped / 178 hurt** — symmetric churn explains E2’s flat headline metric.
+- **Mechanism:** Helps = **ordering** (`irrelevant_candidate_ordering`); hurts = demotions + **duplicate `doc_id` slots** (48 queries) wasting rerank budget at document-level eval.
+- **Interaction:** Motivated **E3**; E3 showed caps do not materially fix test NDCG while rerank remains off.
+- **Caveats:** Classifier is heuristic on Exp 4 vs 5 JSON; not a substitute for re-running with candidate Recall@50 logged.
+
+## 5. Decision
 
 | Outcome | **Inform E3** — test per-document candidate caps before another rerank production decision |
 | **Rationale** | Aggregate flat NDCG masks symmetric help/hurt; duplicate crowding is a fixable candidate-policy issue. |
-| **Production impact** | None until E3 → **E4** (Jev) / **E5** (depth) complete. |
+| **Production impact** | None — E3 complete (control pool); rerank stays off (E2); E4 Jev removed; E5 skipped. |
 
-## 5. Artifacts
+## 6. Artifacts
 
 `data/benchmarks/week4_exp5_dense_rerank_error_analysis.json`; narrative in [`week4_exp5_test_rerank.md`](../week4_exp5_test_rerank.md).
 

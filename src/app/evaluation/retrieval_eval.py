@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from app.evaluation.fiqa_qrels import FiqaEvalDataset, load_fiqa_eval_dataset
+from app.evaluation.repro import repo_relative_path, try_git_commit_short
 from app.evaluation.retrieval_benchmark import percentile
 from app.evaluation.retrieval_metrics import (
     DEFAULT_K_VALUES,
@@ -22,13 +23,12 @@ from app.evaluation.retrieval_metrics import (
 )
 from app.generation.llm import LLMProvider
 from app.generation.prompt import build_rag_prompt
-from app.evaluation.repro import repo_relative_path, try_git_commit_short
 from app.pipeline.rag import RetrievalMethod, citations_from_hits, retrieve_hits
-from app.retrieval.reranker import resolve_rerank_candidate_limit
 from app.retrieval.bm25_store import Bm25ChunkIndex
+from app.retrieval.candidate_diversity import E3Arm, pool_diagnostics, shape_candidate_pool
 from app.retrieval.embeddings import EmbeddingProvider
 from app.retrieval.qdrant_store import QdrantChunkStore
-from app.retrieval.reranker import RerankerProvider
+from app.retrieval.reranker import RerankerProvider, resolve_rerank_candidate_limit
 
 RETRIEVAL_METHODS: tuple[RetrievalMethod, ...] = ("dense", "bm25", "hybrid")
 METHOD_LABELS: dict[RetrievalMethod, str] = {
@@ -56,6 +56,9 @@ class EvalProtocol:
     include_rag_responses: bool
     candidate_recall_k: int = 50
     git_commit: str | None = None
+    e3_arm_id: str | None = None
+    e3_overfetch_limit: int | None = None
+    e3_per_doc_cap: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -72,6 +75,9 @@ class EvalProtocol:
             "include_rag_responses": self.include_rag_responses,
             "candidate_recall_k": self.candidate_recall_k,
             "git_commit": self.git_commit,
+            "e3_arm_id": self.e3_arm_id,
+            "e3_overfetch_limit": self.e3_overfetch_limit,
+            "e3_per_doc_cap": self.e3_per_doc_cap,
         }
 
 
@@ -89,6 +95,10 @@ class QueryEvalRow:
     answer: str | None
     citations: tuple[dict[str, Any], ...]
     top_hit_snippets: tuple[str, ...]
+    candidate_pool_size: int | None = None
+    candidate_pool_unique_docs: int | None = None
+    candidate_pool_duplicate_slots: int | None = None
+    candidate_pool_duplicate_slot_rate: float | None = None
 
 
 @dataclass(frozen=True)
@@ -129,6 +139,10 @@ class RetrievalEvalResult:
                     "answer": row.answer,
                     "citations": list(row.citations),
                     "top_hit_snippets": list(row.top_hit_snippets),
+                    "candidate_pool_size": row.candidate_pool_size,
+                    "candidate_pool_unique_docs": row.candidate_pool_unique_docs,
+                    "candidate_pool_duplicate_slots": row.candidate_pool_duplicate_slots,
+                    "candidate_pool_duplicate_slot_rate": row.candidate_pool_duplicate_slot_rate,
                     "metrics": {
                         "ndcg": row.metrics.ndcg,
                         "mrr": row.metrics.mrr,
@@ -177,6 +191,7 @@ def evaluate_retrieval_dataset(
     llm: LLMProvider | None = None,
     include_rag_responses: bool = True,
     git_commit: str | None = None,
+    e3_arm: E3Arm | None = None,
 ) -> RetrievalEvalResult:
     if method in ("bm25", "hybrid", "weighted_hybrid") and bm25_index is None:
         raise ValueError("BM25 index is required for bm25 and hybrid evaluation")
@@ -200,13 +215,19 @@ def evaluate_retrieval_dataset(
         include_rag_responses=include_rag_responses and llm is not None,
         candidate_recall_k=candidate_recall_k,
         git_commit=git_commit or try_git_commit_short(),
+        e3_arm_id=e3_arm.arm_id if e3_arm is not None else None,
+        e3_overfetch_limit=e3_arm.overfetch_limit if e3_arm is not None else None,
+        e3_per_doc_cap=e3_arm.per_doc_cap if e3_arm is not None else None,
     )
 
     if use_rerank:
-        pool_limit = resolve_rerank_candidate_limit(
-            effective_k,
-            candidate_limit=rerank_candidate_limit,
-        )
+        if e3_arm is not None:
+            pool_limit = e3_arm.first_stage_retrieve_limit()
+        else:
+            pool_limit = resolve_rerank_candidate_limit(
+                effective_k,
+                candidate_limit=rerank_candidate_limit,
+            )
     else:
         pool_limit = max(effective_k, candidate_recall_k)
 
@@ -229,6 +250,9 @@ def evaluate_retrieval_dataset(
             candidate_limit=pool_limit,
         )
         first_stage_ms = (time.perf_counter() - stage_start) * 1000.0
+        if e3_arm is not None:
+            hits = shape_candidate_pool(hits, e3_arm)
+        pool_diag = pool_diagnostics(hits) if use_rerank else None
         candidate_ranked = doc_ranking_from_hits(hits)
 
         rerank_ms = 0.0
@@ -288,6 +312,12 @@ def evaluate_retrieval_dataset(
                 answer=answer,
                 citations=tuple(citation_payloads),
                 top_hit_snippets=snippets,
+                candidate_pool_size=pool_diag.pool_size if pool_diag else None,
+                candidate_pool_unique_docs=pool_diag.unique_doc_count if pool_diag else None,
+                candidate_pool_duplicate_slots=pool_diag.duplicate_slots if pool_diag else None,
+                candidate_pool_duplicate_slot_rate=(
+                    pool_diag.duplicate_slot_rate if pool_diag else None
+                ),
             )
         )
         if progress_every > 0 and index % progress_every == 0:

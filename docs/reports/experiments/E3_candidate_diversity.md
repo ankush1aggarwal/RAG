@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **ID** | E3 |
-| **Status** | **Planned** (Week 5) |
+| **Status** | **Complete** |
 | **Primary variable** | Per-`doc_id` chunk cap before rerank |
 | **Consolidated report** | [`rag_experiment_results.md`](../rag_experiment_results.md) §5 |
 
@@ -30,15 +30,37 @@
 
 | Arm | Unique docs in pool | Duplicate-slot rate | Cand. Recall@50 | NDCG@10 | MRR@10 | Recall@10 | Rerank p50/p95 |
 |-----|-------------------:|--------------------:|----------------:|--------:|-------:|----------:|----------------|
-| Control | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Dedup top 50 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Overfetch cap 1 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
-| Overfetch cap 2 | TBD | TBD | TBD | TBD | TBD | TBD | TBD |
+| Control | 43.8 | 0.123 | 0.627 | 0.378 | 0.457 | 0.442 | 865 / 1295 |
+| Dedup top 50 | 43.8 | 0.000 | 0.627 | 0.375 | 0.443 | 0.454 | 738 / 1099 |
+| Overfetch cap 1 | 50.0 | 0.000 | 0.646 | 0.373 | 0.441 | 0.452 | 816 / 1253 |
+| Overfetch cap 2 | 45.0 | 0.099 | 0.633 | **0.382** | **0.459** | 0.449 | 801 / 1185 |
 
-## 4. Decision
+**Validation** (n=500): artifacts `data/benchmarks/week5_e3_*_validation.json`.
 
-TBD — update after run; freeze chosen policy before **E4** (Jev / CE rerank comparisons).
+### Test — control vs validation winner (n=648)
 
-## 5. Motivation
+| Arm | Unique docs in pool | Duplicate-slot rate | Cand. Recall@50 | NDCG@10 | MRR@10 | Recall@10 | Rerank p50/p95 |
+|-----|-------------------:|--------------------:|----------------:|--------:|-------:|----------:|----------------|
+| Control | 43.4 | 0.132 | 0.607 | 0.368 | 0.441 | 0.438 | 886 / 1296 |
+| Overfetch cap 2 | 44.7 | 0.107 | 0.610 | 0.369 | 0.441 | 0.441 | 883 / 1318 |
+
+Artifacts: `data/benchmarks/week5_e3_control_test.json`, `week5_e3_overfetch_cap2_test.json`; report: [`week5_e3_candidate_diversity.md`](../week5_e3_candidate_diversity.md).
+
+## 4. Insights (interpretation)
+
+- **Effect size:** Test NDCG@10 control **0.368** vs cap2 **0.369** (~**+0.001**, not material); validation cap2 +0.004 did **not** hold on test.
+- **Mechanism:** Duplicate-slot rate ~**12–13%** in control — real crowding, but **replacing** slots with deeper overfetch did not improve document-level ranked metrics; dedup-without-backfill shrinks the pool and hurts val NDCG.
+- **Interaction:** Explains E2a hurt mode; **no production impact** while rerank is off; pool policy frozen to **control** for any future CE eval.
+- **Caveats:** Experiment assumes rerank on; metrics are post-rerank in arms that use CE.
+
+## 5. Decision
+
+**Adopt: control (top 50 dense chunks, no per-doc cap)** for any future **local** rerank eval (E5 skipped; E4 Jev removed).
+
+**Rationale:** Validation favored `overfetch_cap2` (+0.004 NDCG@10, +0.002 MRR@10), but **test is effectively tied** (NDCG@10 0.3686 vs 0.3684; MRR@10 0.4405 vs 0.4407). Duplicate-slot rate drops with cap2 (~11% vs 13%) without material ranked-metric gain. Dedup/cap1 arms failed validation quality checks — not carried to test.
+
+**Production profile:** unchanged — **dense, rerank off, top_k=10** (diversification applies only when rerank is enabled in eval/CLI).
+
+## 6. Motivation
 
 See **E2a** (48 hurt queries with duplicate slots). Full protocol: [`RAG_PROJECT_ROADMAP.md`](../../RAG_PROJECT_ROADMAP.md).

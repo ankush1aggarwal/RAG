@@ -1,0 +1,14 @@
+{
+  "chunk_size": 200,
+  "overlap_fraction": 0.2,
+  "models": [
+    "all-MiniLM-L6-v2",
+    "BAAI/bge-base-en-v1.5"
+  ],
+  "collections": {
+    "all-MiniLM-L6-v2": "fiqa_cs200",
+    "BAAI/bge-base-en-v1.5": "fiqa_cs200_bge_base_en_v1_5"
+  },
+  "split": "validation",
+  "validation_winner_model": "BAAI/bge-base-en-v1.5"
+}

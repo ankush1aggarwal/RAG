@@ -14,49 +14,11 @@ Prerequisites for 2–5:
   python src/scripts/prepare_fiqa_eval.py --split test --collection fiqa
 """
 
-import argparse
-import json
-import os
-import subprocess
-import sys
-from pathlib import Path
-
-from dotenv import load_dotenv
-
-_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+import argparseimport jsonimport osimport subprocessimport sysfrom pathlib import Pathfrom dotenv import load_dotenv_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, os.path.join(_REPO_ROOT, "src"))
 
-from app.config import get_settings
-from app.evaluation.eval_llm import CitationPreservingEvalLLM
-from app.evaluation.retrieval_eval import (
-    RetrievalEvalResult,
-    evaluate_all_methods,
-    load_eval_dataset,
-    save_eval_result,
-)
-from app.evaluation.week4_experiments import (
-    EXPERIMENT2_REPORT,
-    EXPERIMENT3_REPORT,
-    EXPERIMENT4_REPORT,
-    EXPERIMENT5_REPORT,
-    MASTER_REPORT,
-    PROTOCOL_ARTIFACT,
-    TEST_METHODS,
-    render_experiment2_report,
-    render_experiment3_report,
-    render_experiment4_report,
-    render_experiment5_report,
-    render_master_program_report,
-    standard_eval_methods,
-)
-from app.evaluation.weight_tuning import prefetch_hybrid_list_cache, tune_fusion_weights
-from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
-from app.retrieval.embeddings import embedding_model_for_method
-from app.retrieval.fusion_weights import load_fusion_weights, save_fusion_weights
-from app.retrieval.reranker import create_reranker_provider
-
-DEFAULT_COLLECTION = "fiqa"
+from app.config import get_settingsfrom app.evaluation.eval_llm import CitationPreservingEvalLLMfrom app.evaluation.retrieval_eval import (    RetrievalEvalResult,    evaluate_all_methods,    load_eval_dataset,    save_eval_result,)from app.evaluation.week4_experiments import (    EXPERIMENT2_REPORT,    EXPERIMENT3_REPORT,    EXPERIMENT4_REPORT,    EXPERIMENT5_REPORT,    MASTER_REPORT,    PROTOCOL_ARTIFACT,    TEST_METHODS,    render_experiment2_report,    render_experiment3_report,    render_experiment4_report,    render_experiment5_report,    render_master_program_report,    standard_eval_methods,)from app.evaluation.weight_tuning import prefetch_hybrid_list_cache, tune_fusion_weightsfrom app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_providerfrom app.retrieval.embeddings import embedding_model_for_methodfrom app.retrieval.fusion_weights import load_fusion_weights, save_fusion_weightsfrom app.retrieval.reranker import create_reranker_providerDEFAULT_COLLECTION = "fiqa"
 WEIGHTS_PATH = Path(_REPO_ROOT) / "data" / "benchmarks" / "week4_fusion_weights.json"
 BENCHMARK_DIR = Path(_REPO_ROOT) / "data" / "benchmarks"
 REPORT_DIR = Path(_REPO_ROOT) / "docs" / "reports"

@@ -1,0 +1,15 @@
+{
+  "collections": {
+    "100": "fiqa",
+    "200": "fiqa_cs200",
+    "300": "fiqa_cs300"
+  },
+  "chunk_sizes": [
+    100,
+    200,
+    300
+  ],
+  "overlap_fraction": 0.2,
+  "split": "validation",
+  "validation_winner_chunk_size": 200
+}

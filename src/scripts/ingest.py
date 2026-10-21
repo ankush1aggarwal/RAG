@@ -60,6 +60,17 @@ def main() -> None:
         choices=["sentence_transformer", "cohere"],
         default=settings.embedding_method,
     )
+    parser.add_argument(
+        "--embedding-model",
+        default=None,
+        help="Override embedding model id (sentence_transformer model name or Cohere embed model)",
+    )
+    parser.add_argument(
+        "--chunking-strategy",
+        choices=("fixed_words", "paragraph"),
+        default="fixed_words",
+        help="fixed_words: word windows; paragraph: merge paragraphs up to chunk-size",
+    )
     parser.add_argument("--chunk-size", type=int, default=settings.chunk_size)
     parser.add_argument("--overlap", type=float, default=settings.chunk_overlap_fraction)
     parser.add_argument(
@@ -96,21 +107,33 @@ def main() -> None:
     limit_label = "full" if corpus_limit is None else str(corpus_limit)
     print(f"Loading BEIR FiQA corpus (limit={limit_label})...")
     dataset = load_fiqa_corpus(limit=corpus_limit)
-    documents = documents_from_corpus(dataset)
+    preserve_paragraphs = args.chunking_strategy == "paragraph"
+    documents = documents_from_corpus(dataset, preserve_paragraphs=preserve_paragraphs)
     chunks = chunks_from_documents(
         documents,
         chunk_size=args.chunk_size,
         overlap_fraction=args.overlap,
+        chunking_strategy=args.chunking_strategy,
     )
     print(f"Documents: {len(documents)}, chunks: {len(chunks)}")
     if not chunks:
         raise SystemExit("No chunks produced; check corpus sample and chunking settings.")
 
+    st_model = (
+        args.embedding_model
+        if args.embedding_model is not None and args.method == "sentence_transformer"
+        else settings.embedding_model
+    )
+    cohere_model = (
+        args.embedding_model
+        if args.embedding_model is not None and args.method == "cohere"
+        else settings.cohere_embed_model
+    )
     embedder = create_embedding_provider(
         args.method,
-        model_name=settings.embedding_model,
+        model_name=st_model,
         cohere_api_key=settings.cohere_api_key,
-        cohere_embed_model=settings.cohere_embed_model,
+        cohere_embed_model=cohere_model,
         cohere_embed_batch_size=settings.cohere_embed_batch_size,
         cohere_embed_batch_sleep_seconds=settings.cohere_embed_batch_sleep_seconds,
     )
@@ -124,13 +147,14 @@ def main() -> None:
     manifest = IngestManifest(
         ingest_generation_id=str(uuid.uuid4()),
         corpus_limit=corpus_limit,
+        chunking_strategy=args.chunking_strategy,
         chunk_size=args.chunk_size,
         overlap_fraction=args.overlap,
         embedding_method=args.method,
         embedding_model=embedding_model_for_method(
             args.method,
-            sentence_transformer_model=settings.embedding_model,
-            cohere_embed_model=settings.cohere_embed_model,
+            sentence_transformer_model=st_model,
+            cohere_embed_model=cohere_model,
         ),
         embedding_dimension=expected_dim,
         collection_name=args.collection,

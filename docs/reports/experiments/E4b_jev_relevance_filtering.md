@@ -1,9 +1,11 @@
 # E4b — Jev relevance filtering (optional)
 
+> **Removed from program (2026-10-20):** Dependent on E4 (Jev); not pursued.
+
 | Field | Value |
 |-------|--------|
 | **ID** | E4b |
-| **Status** | **Optional** (Week 5, after **E4** if Jev rerank shows promise) |
+| **Status** | **Removed** — E4 not in scope |
 | **Primary variable** | Score-based **filtering** of candidates (not just reordering) |
 | **Consolidated report** | [`rag_experiment_results.md`](../rag_experiment_results.md) §5 |
 

@@ -18,6 +18,7 @@ MANIFEST_VERSION = 1
 RUNTIME_CONFIG_FIELDS = (
     "corpus_id",
     "corpus_limit",
+    "chunking_strategy",
     "chunk_size",
     "overlap_fraction",
     "embedding_method",
@@ -32,6 +33,7 @@ class IngestManifest(BaseModel):
     ingest_generation_id: str = ""
     corpus_id: str = FIQA_HF_ID
     corpus_limit: int | None
+    chunking_strategy: str = "fixed_words"
     chunk_size: int
     overlap_fraction: float
     embedding_method: str
@@ -83,11 +85,13 @@ def runtime_config_mismatches(
     embedding_dimension: int,
     collection_name: str,
     corpus_id: str = FIQA_HF_ID,
+    chunking_strategy: str = "fixed_words",
 ) -> list[str]:
     """Compare manifest to the API / ingest configuration (not chunk counts)."""
     expected = {
         "corpus_id": corpus_id,
         "corpus_limit": corpus_limit,
+        "chunking_strategy": chunking_strategy,
         "chunk_size": chunk_size,
         "overlap_fraction": overlap_fraction,
         "embedding_method": embedding_method,
@@ -117,6 +121,7 @@ def validate_manifest_runtime_config(
     embedding_dimension: int,
     collection_name: str,
     corpus_id: str = FIQA_HF_ID,
+    chunking_strategy: str = "fixed_words",
 ) -> None:
     mismatches = runtime_config_mismatches(
         manifest,
@@ -128,6 +133,7 @@ def validate_manifest_runtime_config(
         embedding_dimension=embedding_dimension,
         collection_name=collection_name,
         corpus_id=corpus_id,
+        chunking_strategy=chunking_strategy,
     )
     if mismatches:
         detail = "; ".join(mismatches)
