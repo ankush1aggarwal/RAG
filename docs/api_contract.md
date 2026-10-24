@@ -69,7 +69,7 @@ Every response includes header **`X-Request-ID`** (client may send one; otherwis
 | `504` | `upstream_timeout` | `/query` wall-clock limit (`QUERY_TIMEOUT_SECONDS`) or LLM HTTP timeout |
 | `500` | `internal_error` | Unhandled server exception (no stack trace in response) |
 
-**Timeouts:** `QUERY_TIMEOUT_SECONDS` (default `120`) bounds the entire `/query` handler (retrieval + generation). Ollama uses `OLLAMA_TIMEOUT_SECONDS` for the HTTP client; either breach maps to `504` / `upstream_timeout`.
+**Timeouts:** `QUERY_TIMEOUT_SECONDS` (default `120`) bounds the entire `/query` handler (retrieval + generation). On expiry the API sets a cooperative cancel flag and closes in-flight Ollama streams; sync work in a thread pool is not force-killed (orphan work may finish briefly). Non-streaming LLM calls also rely on `OLLAMA_TIMEOUT_SECONDS` on the HTTP client. Breaches map to `504` / `upstream_timeout`.
 
 ### Examples
 

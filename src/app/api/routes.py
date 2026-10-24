@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import queue
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 from app.api.errors import (
@@ -22,6 +22,9 @@ from app.api.errors import (
 from app.config.production_retrieval import ResolvedQueryRetrieval, resolve_production_query
 from app.api.resources import AppResources, is_ready_from_diagnostics, ready_diagnostics
 from app.api.sse import format_sse
+from app.cooperative_cancel import QueryCancelledError, QueryScope, invoke_in_scope
+from app.api.streaming import iter_stream_queue, produce_llm_tokens
+from app.api.thread_tasks import run_bounded_sync
 from app.api.schemas import (
     ErrorResponse,
     HealthResponse,
@@ -30,19 +33,18 @@ from app.api.schemas import (
     ReadyResponse,
     RetrievalMeta,
 )
+from app.pipeline.rag import (
+    RagAnswer,
+    RagGenerationContext,
+    answer_query,
+    prepare_rag_generation,
+)
 
 _QUERY_ERROR_RESPONSES: dict[int, dict[str, object]] = {
     422: {"model": ErrorResponse, "description": "Validation, frozen profile, or business rule error"},
     504: {"model": ErrorResponse, "description": "Query or upstream HTTP timeout"},
     500: {"model": ErrorResponse, "description": "Unexpected server error"},
 }
-from app.pipeline.rag import (
-    RagAnswer,
-    RagGenerationContext,
-    answer_query,
-    prepare_rag_generation,
-    stream_answer_tokens,
-)
 
 router = APIRouter()
 
@@ -172,6 +174,12 @@ def ready(request: Request) -> ReadyResponse:
 def _map_query_exception(exc: BaseException, *, timeout: float) -> None:
     if isinstance(exc, HTTPException):
         raise exc
+    if isinstance(exc, QueryCancelledError):
+        api_error(
+            504,
+            error=ERROR_TIMEOUT,
+            message=f"Query exceeded the {timeout:g}s wall-clock limit.",
+        )
     if isinstance(exc, asyncio.TimeoutError):
         api_error(
             504,
@@ -206,24 +214,24 @@ async def query(body: QueryRequest, request: Request) -> QueryResponse:
     timeout = resources.settings.query_timeout_seconds
     resolved: ResolvedQueryRetrieval | None = None
     result: RagAnswer | None = None
+    scope: QueryScope | None = None
     try:
         resolved, timeout = _resolve_query_request(body, resources)
-        result = await asyncio.wait_for(
-            run_in_threadpool(_run_answer_query, resources, body.question, resolved),
-            timeout=timeout,
+        scope = QueryScope(timeout)
+        result = await run_bounded_sync(
+            scope,
+            _run_answer_query,
+            resources,
+            body.question,
+            resolved,
         )
     except BaseException as exc:
+        if scope is not None:
+            scope.cancel()
         _map_query_exception(exc, timeout=timeout)
 
     assert resolved is not None and result is not None
     return _query_response(result, resolved.top_k)
-
-
-def _stream_tokens_in_thread(
-    resources: AppResources,
-    context: RagGenerationContext,
-) -> list[str]:
-    return list(stream_answer_tokens(context, resources.llm))
 
 
 @router.post(
@@ -243,22 +251,46 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
         resolved: ResolvedQueryRetrieval | None = None
         timeout = resources.settings.query_timeout_seconds
         context: RagGenerationContext | None = None
+        token_queue: queue.Queue | None = None
+        producer_task: asyncio.Task[None] | None = None
+        scope: QueryScope | None = None
         try:
             resolved, timeout = _resolve_query_request(body, resources)
-            context = await asyncio.wait_for(
-                run_in_threadpool(
-                    _run_prepare_generation,
+            scope = QueryScope(timeout)
+            context = await run_bounded_sync(
+                scope,
+                _run_prepare_generation,
+                resources,
+                body.question,
+                resolved,
+            )
+            token_queue = queue.Queue()
+            producer_task = asyncio.create_task(
+                asyncio.to_thread(
+                    invoke_in_scope,
+                    scope,
+                    produce_llm_tokens,
                     resources,
-                    body.question,
-                    resolved,
+                    context,
+                    token_queue,
                 ),
-                timeout=timeout,
             )
-            parts = await asyncio.wait_for(
-                run_in_threadpool(_stream_tokens_in_thread, resources, context),
-                timeout=timeout,
-            )
+            parts: list[str] = []
+            async for kind, payload in iter_stream_queue(
+                token_queue,
+                wall_clock_timeout=max(scope.remaining(), 0.001),
+                scope=scope,
+            ):
+                if kind == "token" and isinstance(payload, str):
+                    parts.append(payload)
+                    yield format_sse("token", {"delta": payload})
+            if producer_task is not None:
+                await producer_task
         except BaseException as exc:
+            if scope is not None:
+                scope.cancel()
+            if producer_task is not None and not producer_task.done():
+                producer_task.cancel()
             try:
                 _map_query_exception(exc, timeout=timeout)
             except HTTPException as http_exc:
@@ -285,9 +317,6 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
             ),
             resolved.top_k,
         )
-        for delta in parts:
-            if delta:
-                yield format_sse("token", {"delta": delta})
         yield format_sse("done", done.model_dump())
 
     return StreamingResponse(

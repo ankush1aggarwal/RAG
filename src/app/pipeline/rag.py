@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.cooperative_cancel import cooperative_check
 from app.generation.llm import LLMProvider, iter_llm_tokens
 from app.generation.prompt import build_rag_prompt
 from app.ingestion.schemas import SearchHit
@@ -146,6 +147,7 @@ def prepare_rag_generation(
     rerank_candidate_limit: int | None = None,
 ) -> RagGenerationContext:
     """Retrieve context and build the grounded prompt (no LLM call)."""
+    cooperative_check()
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
 
@@ -165,6 +167,7 @@ def prepare_rag_generation(
         rerank_candidate_limit=rerank_candidate_limit,
     )
 
+    cooperative_check()
     prompt = build_rag_prompt(question, hits)
     return RagGenerationContext(
         prompt_user=prompt.user,
@@ -214,6 +217,7 @@ def answer_query(
         reranker=reranker,
         rerank_candidate_limit=rerank_candidate_limit,
     )
+    cooperative_check()
     answer = llm.generate(context.prompt_user, system=context.prompt_system)
 
     return RagAnswer(

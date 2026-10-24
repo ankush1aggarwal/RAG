@@ -17,7 +17,7 @@ class _FakeLLM:
     def generate(self, prompt: str, *, system: str | None = None) -> str:
         return "API answer."
 
-    def stream_generate(self, prompt: str, *, system: str | None = None):
+    def stream_generate(self, prompt: str, *, system: str | None = None, cancel=None):
         yield "API "
         yield "answer."
 
