@@ -1,5 +1,6 @@
+import asyncio
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -201,6 +202,37 @@ def test_query_stream_emits_sse_token_and_done(client: TestClient):
     assert '"delta": "API "' in body or '"delta":"API "' in body
     assert "event: done" in body
     assert '"answer": "API answer."' in body or '"answer":"API answer."' in body
+
+
+def test_query_async_cancellation_invokes_cleanup_and_reraises(client: TestClient):
+    from app.api.routes import query
+    from app.api.schemas import QueryRequest
+
+    body = QueryRequest(question="fees?", top_k=2)
+    request = MagicMock()
+    request.app.state.resources = client.app.state.resources
+
+    async def _run() -> None:
+        with patch(
+            "app.api.routes.run_bounded_sync",
+            new=AsyncMock(side_effect=asyncio.CancelledError()),
+        ):
+            with patch(
+                "app.api.routes._cleanup_query_cancellation",
+                new_callable=AsyncMock,
+            ) as cleanup:
+                with pytest.raises(asyncio.CancelledError):
+                    await query(body, request)
+                cleanup.assert_awaited_once()
+
+    asyncio.run(_run())
+
+
+def test_query_genuine_failure_still_maps_to_http_error(client: TestClient):
+    with patch("app.api.routes.run_bounded_sync", new=AsyncMock(side_effect=RuntimeError("boom"))):
+        response = client.post("/query", json={"question": "fees?", "top_k": 2})
+    assert response.status_code == 500
+    assert response.json()["error"] == "internal_error"
 
 
 def test_query_stream_validation_error_is_json_not_sse(client: TestClient):

@@ -43,6 +43,9 @@ async def run_bounded_sync(
                 return await asyncio.wait_for(asyncio.shield(task), timeout=wait)
             except asyncio.TimeoutError:
                 continue
+    except asyncio.CancelledError:
+        scope.cancel()
+        raise
     except BaseException:
         scope.cancel()
         raise
