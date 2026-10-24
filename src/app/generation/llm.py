@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from collections.abc import Iterator
 from typing import Any, Literal, Protocol
 
 import httpx
+
+from app.cooperative_cancel import QueryCancelledError, active_cancel_event, cooperative_check
 
 LLMMethod = Literal["ollama", "cohere"]
 
@@ -21,13 +24,17 @@ def iter_llm_tokens(
     prompt: str,
     *,
     system: str | None = None,
+    cancel: threading.Event | None = None,
 ) -> Iterator[str]:
     """Stream token deltas when supported; otherwise one chunk from ``generate``."""
+    cancel = cancel or active_cancel_event()
     stream = getattr(llm, "stream_generate", None)
     if callable(stream):
-        yield from stream(prompt, system=system)
+        yield from stream(prompt, system=system, cancel=cancel)
         return
+    cooperative_check()
     yield llm.generate(prompt, system=system)
+    cooperative_check()
 
 
 class OllamaLLM:
@@ -47,6 +54,7 @@ class OllamaLLM:
         self._owns_client = client is None
 
     def generate(self, prompt: str, *, system: str | None = None) -> str:
+        cooperative_check()
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -68,9 +76,18 @@ class OllamaLLM:
             raise ValueError(f"Unexpected Ollama chat response shape: {data}") from exc
         if not isinstance(content, str):
             raise ValueError(f"Ollama message content must be a string, got {type(content)}")
+        cooperative_check()
         return content
 
-    def stream_generate(self, prompt: str, *, system: str | None = None) -> Iterator[str]:
+    def stream_generate(
+        self,
+        prompt: str,
+        *,
+        system: str | None = None,
+        cancel: threading.Event | None = None,
+    ) -> Iterator[str]:
+        cancel = cancel or active_cancel_event()
+        cooperative_check()
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -87,6 +104,10 @@ class OllamaLLM:
         ) as response:
             response.raise_for_status()
             for line in response.iter_lines():
+                if cancel is not None and cancel.is_set():
+                    response.close()
+                    raise QueryCancelledError()
+                cooperative_check()
                 if not line:
                     continue
                 if line.startswith("data:"):

@@ -19,7 +19,7 @@ class FakeStreamLLM:
     def generate(self, prompt: str, *, system: str | None = None) -> str:
         return "integration answer."
 
-    def stream_generate(self, prompt: str, *, system: str | None = None):
+    def stream_generate(self, prompt: str, *, system: str | None = None, cancel=None):
         yield "integration "
         yield "answer."
 
