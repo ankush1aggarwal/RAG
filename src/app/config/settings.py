@@ -54,6 +54,7 @@ class Settings(BaseSettings):
 
     retrieval_top_k: int = FROZEN_RETRIEVAL_TOP_K
     api_enforce_frozen_retrieval: bool = True
+    query_timeout_seconds: float = 120.0
 
     def resolved_fiqa_corpus_limit(self) -> int | None:
         """``None`` means load the full FiQA corpus (no document cap)."""

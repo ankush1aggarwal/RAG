@@ -79,7 +79,7 @@ By the end of the project, the system should demonstrate:
 # 1. Current Project Status
 
 > **Current phase: Week 5 complete — retrieval experiment program (E0–E9)**  
-> **Next phase: Week 6 — Production API** (enforce frozen retrieval on `/query`; streaming, tests).  
+> **Current phase: Week 7 — Observability** (Week 6 production API complete).  
 > **Lessons:** [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md) · **Results:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [roadmap](docs/RAG_PROJECT_ROADMAP.md)
 
 Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -163,7 +163,7 @@ Question → retrieve (dense | bm25 | hybrid) → prompt builder → LLM → ans
 | FastAPI | `src/app/api/` | `create_app()`, lifespan loads Qdrant + BM25 + embedder + LLM |
 | Serve CLI | `src/scripts/serve_api.py` | Uvicorn wrapper |
 
-**Not in Week 2 scope (later weeks):** `POST /query/stream`, `POST /ingest` over HTTP, structured request logging, Docker, offline generation metrics.
+**Not in Week 2 scope (later weeks):** `POST /ingest` over HTTP, structured request logging, Docker, offline generation metrics. (`POST /query/stream` added Week 6.)
 
 ---
 
@@ -181,7 +181,7 @@ Question → dense + BM25 candidates → RRF fuse → prompt → LLM → answer 
 | RRF fusion | `src/app/retrieval/fusion.py` | `reciprocal_rank_fusion` keyed by `(doc_id, chunk_id)` |
 | Hybrid search | `src/app/retrieval/hybrid.py` | `hybrid_search_text` — dense + BM25 candidate pools, then RRF |
 | Retrieval router | `src/app/pipeline/rag.py` | `retrieve_hits()` + `answer_query(..., retrieval_method=..., bm25_index=...)` |
-| API resources | `src/app/api/resources.py` | Loads BM25 at startup when pickle exists; `bm25_ready()` for readiness |
+| API resources | `src/app/api/resources.py` | Loads BM25 at startup when pickle exists; `ready_diagnostics()` for `/ready` |
 | Query CLI | `src/scripts/query.py` | `--method sentence_transformer \| cohere \| bm25 \| hybrid` |
 | Evaluation | `src/app/evaluation/retrieval_benchmark.py` | Fixed query set in `data/benchmarks/fiqa_sample_query_set.json`; latency + overlap metrics |
 | Benchmark notebook | `notebooks/retrieval_benchmark.ipynb` | Latency report (warm-up + repeats, p50/p95) + exploratory snapshot |
@@ -303,20 +303,37 @@ python src/scripts/query.py "What are broker fees?" --method hybrid --top-k 3
 python src/scripts/serve_api.py --reload
 ```
 
-- Liveness: `GET http://127.0.0.1:8000/health`
-- Readiness: `GET http://127.0.0.1:8000/ready` (Qdrant collection + **BM25 index loaded** + configured LLM backend)
-- Interactive docs: `http://127.0.0.1:8000/docs`
-- RAG query: `POST http://127.0.0.1:8000/query` with JSON `{"question": "...", "top_k": 3, "method": "dense"}` — `method` may be `dense`, `bm25`, or `hybrid` (default `dense`)
+- Liveness: `GET http://127.0.0.1:8000/health` (optional header `X-Request-ID`)
+- Readiness: `GET http://127.0.0.1:8000/ready` — see §8 and `docs/api_contract.md`
+- Interactive docs: `http://127.0.0.1:8000/docs` (includes request/response examples)
+- RAG: `POST /query` or streaming `POST /query/stream` (SSE)
+- Smoke (server running): `python src/scripts/smoke_api.py` or `python src/scripts/smoke_api.py --stream`
 
-**6. Run unit tests:**
+**Example query** (production frozen profile — `top_k=10`, `dense`):
+
+```powershell
+curl -s -X POST http://127.0.0.1:8000/query `
+  -H "Content-Type: application/json" `
+  -H "X-Request-ID: dev-1" `
+  -d '{\"question\": \"What is APR?\"}'
+```
+
+**Example validation error** (`422`, `ErrorResponse`):
+
+```json
+{"error":"validation_error","message":"Request validation failed.","detail":[...],"request_id":"dev-1"}
+```
+
+**6. Run tests:**
 
 ```powershell
 pytest src/tests/unit
-# optional: verbose + stop on first failure
-pytest src/tests/unit -v --tb=short
+pytest src/tests/integration
+# or both
+pytest src/tests
 ```
 
-All tests are **unit** scope (mocked Qdrant/LLM where needed); qrels metrics and eval helpers have unit coverage. Full index integration eval runs via scripts, not CI yet.
+Unit tests mock Qdrant/LLM; integration tests exercise the full FastAPI stack (middleware, handlers, lifespan). Full index eval still runs via scripts.
 
 ---
 
@@ -811,8 +828,11 @@ Served by `src/app/api/` (`create_app()`). Local entrypoint: `python src/scripts
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/health` | **Liveness** — process up; no dependency checks |
-| `GET` | `/ready` | **Readiness** — Qdrant + BM25 index + LLM backend (`503` if any check fails) |
-| `POST` | `/query` | **RAG** — body: `question`, optional `top_k` (1–20, default 3), optional `method` (`dense` \| `bm25` \| `hybrid`, default `dense`) |
+| `GET` | `/ready` | **Readiness** for `/query` (`503` + `not_ready` if dependencies fail) |
+| `POST` | `/query` | **RAG** — `question`, optional `top_k`, `method`, `use_rerank` (frozen profile: dense, `top_k=10`, no rerank) |
+| `POST` | `/query/stream` | **RAG (SSE)** — same body as `/query`; `token` events then `done` with full JSON |
+
+See **`docs/api_contract.md`** for error codes, `X-Request-ID`, and timeouts.
 
 **`GET /ready` response (200):**
 
@@ -827,9 +847,16 @@ Served by `src/app/api/` (`create_app()`). Local entrypoint: `python src/scripts
 }
 ```
 
-**`GET /ready` failure (503)** includes `qdrant_collection`, `bm25_index`, `retrieval_index_aligned`, `llm_provider`, and `llm_ready` in `detail`. Readiness requires BM25 + manifest + Qdrant to agree (counts, vector dimension, `ingest_generation_id`) and the manifest to match the API’s embedding method/model/dimension and ingest settings. A destructive ingest (`--recreate`) clears on-disk artifacts first so a partial failed run stays not-ready.
+| Field | Meaning |
+|--------|---------|
+| `qdrant_collection` | Collection exists in Qdrant |
+| `retrieval_index_aligned` | **Required for `/query`:** with `API_ENFORCE_FROZEN_RETRIEVAL=true` (default), dense index + manifest + embedder settings match; when enforcement is off, BM25 must also load and align |
+| `bm25_index` | Lexical index present **and** aligned with Qdrant/manifest (informational when frozen; hybrid/BM25 are dev/CLI-only on the production API) |
+| `llm_ready` | Ollama reachable (`/api/tags`); or Cohere API key set |
 
-For `LLM_PROVIDER=cohere`, `llm_ready` means `COHERE_API_KEY` is configured (no live Cohere ping on readiness).
+**`GET /ready` failure (503)** returns `ErrorResponse` with a `detail` object that adds `full_ingest_bundle_aligned`, `frozen_retrieval_enforced`, and the same boolean flags above. Manifest must match embedding model/dimension, chunk settings, and Qdrant point counts; a failed or partial ingest stays not-ready until artifacts are consistent.
+
+**`POST /query/stream`:** `Content-Type: text/event-stream`. Events: `token` (`{"delta":"..."}`), then `done` (full `QueryResponse`). Pre-stream validation errors use normal JSON status codes (e.g. `422`).
 
 **`POST /query` response shape (200):**
 
@@ -901,7 +928,6 @@ OpenAPI / Swagger UI: `/docs` (provided by FastAPI).
 
 ```text
 POST /ingest
-POST /query/stream          # SSE — Week 6
 POST /ingest/async
 GET  /ingest/jobs/{job_id}
 ```
@@ -1074,14 +1100,13 @@ Deliverables (see [`RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) E3–E
 
 ---
 
-## Week 6 — Production API Engineering
+## Week 6 — Production API Engineering ✅
 
-Deliverables:
+Sprint tracker: [`docs/week6_sprint.md`](docs/week6_sprint.md). HTTP contract: [`docs/api_contract.md`](docs/api_contract.md). Smoke: `python src/scripts/smoke_api.py [--stream]`.
 
-- Serve **frozen production retrieval** on `/query` (experimental methods CLI/eval-only)
-- Configuration management, error handling, validation, request IDs
-- Authentication approach, streaming (`POST /query/stream`), async ingestion design
-- Security hardening and API integration tests
+- [x] Frozen retrieval on `/query`, structured `ErrorResponse`, `X-Request-ID`, timeouts
+- [x] `POST /query/stream` (SSE), integration tests (`src/tests/integration/`), OpenAPI examples
+- [ ] Auth / HTTP ingest — deferred (ingest remains CLI)
 
 ---
 
@@ -1419,7 +1444,7 @@ The project will be considered complete when all of the following are true.
 
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
 - [x] Request validation (Pydantic) + basic HTTP errors (`422`, `503`)
-- [ ] Streaming works (`POST /query/stream` — Week 6)
+- [x] Streaming works (`POST /query/stream`, SSE)
 - [x] Unit tests exist (**162** in `src/tests/unit/`; integration tests later)
 - [ ] Structured logging exists (Week 7)
 - [x] Configuration is externalized (`Settings` + `.env`)

@@ -174,9 +174,24 @@ def retrieval_index_aligned(resources: AppResources) -> bool:
     return True
 
 
-def bm25_ready(resources: AppResources) -> bool:
-    """True when lexical index is loaded and aligned with Qdrant + manifest."""
-    return retrieval_index_aligned(resources)
+def bm25_index_aligned(resources: AppResources, *, dense_aligned: bool) -> bool:
+    """BM25 + Qdrant + manifest alignment (assumes dense path already checked)."""
+    if not dense_aligned or resources.bm25_index is None:
+        return False
+    if resources.ingest_manifest is None:
+        return False
+    try:
+        validate_retrieval_index_alignment(
+            resources.ingest_manifest,
+            collection_name=resources.settings.collection_name,
+            qdrant_point_count=resources.store.point_count(),
+            bm25_chunk_count=resources.bm25_index.num_chunks,
+            qdrant_vector_size=resources.store.vector_size(),
+            bm25_ingest_generation_id=resources.bm25_index.ingest_generation_id,
+        )
+    except IndexAlignmentError:
+        return False
+    return True
 
 
 def retrieval_ready_for_api(resources: AppResources) -> bool:
@@ -191,24 +206,34 @@ def ready_diagnostics(resources: AppResources) -> dict[str, object]:
     settings = resources.settings
     qdrant_ok = resources.store.collection_exists()
     bm25_loaded = resources.bm25_index is not None
-    index_aligned = retrieval_ready_for_api(resources)
-    full_bundle_aligned = retrieval_index_aligned(resources) if bm25_loaded else False
+    dense_aligned = dense_retrieval_index_aligned(resources) if qdrant_ok else False
+    full_bundle_aligned = (
+        bm25_index_aligned(resources, dense_aligned=dense_aligned) if bm25_loaded else False
+    )
+    if settings.api_enforce_frozen_retrieval:
+        index_aligned = dense_aligned
+    else:
+        index_aligned = full_bundle_aligned
+    llm_ok = llm_ready(settings)
     return {
-        "status": "ready" if (qdrant_ok and index_aligned and llm_ready(settings)) else "not_ready",
+        "status": "ready" if (qdrant_ok and index_aligned and llm_ok) else "not_ready",
         "qdrant_collection": qdrant_ok,
-        "bm25_index": bm25_ready(resources) if bm25_loaded else False,
+        "bm25_index": full_bundle_aligned if bm25_loaded else False,
         "retrieval_index_aligned": index_aligned,
-        "full_ingest_bundle_aligned": full_bundle_aligned,
+        "full_ingest_bundle_aligned": full_bundle_aligned if bm25_loaded else False,
         "frozen_retrieval_enforced": settings.api_enforce_frozen_retrieval,
         "llm_provider": settings.llm_provider,
-        "llm_ready": llm_ready(settings),
+        "llm_ready": llm_ok,
     }
 
 
-def api_ready(resources: AppResources) -> bool:
-    diag = ready_diagnostics(resources)
+def is_ready_from_diagnostics(diag: dict[str, object]) -> bool:
     return (
         bool(diag["qdrant_collection"])
         and bool(diag["retrieval_index_aligned"])
         and bool(diag["llm_ready"])
     )
+
+
+def api_ready(resources: AppResources) -> bool:
+    return is_ready_from_diagnostics(ready_diagnostics(resources))

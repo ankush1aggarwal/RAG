@@ -18,7 +18,7 @@ The intended outcome is a portfolio-quality RAG application for FiQA financial-i
 | Week 3 — Hybrid retrieval | ✅ Done | BM25, dense + BM25 RRF, CLI/API and timing/overlap report |
 | Week 4 — Reranking + relevance evaluation | ✅ Done | Qrels, IR metrics, reranker, experiment program 1–5, error analysis |
 | Week 5 — **Experimentation sprint** | ✅ Done | E3–E9 complete; frozen retrieval: **200w / BGE / dense** (see lessons report) |
-| Week 6 — Production API engineering | 🟡 In progress | Frozen retrieval **wired** on `/query`; streaming, errors, integration tests remain |
+| Week 6 — Production API engineering | ✅ Complete | Frozen profile, errors, streaming, integration tests, docs |
 | Week 7 — Observability | ⬜ | Structured logs, tracing, latency/error/cost visibility |
 | Week 8 — Container + CI | ⬜ | Reproducible Docker runtime and automated checks on GitHub |
 | Week 9 — Deployment + public demo | ⬜ | Hosted API, Qdrant Cloud, smoke tests and demo UI |
@@ -272,11 +272,15 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 - [ ] Update experiment report with decisions; confirm or revise production profile.
 
 ### Week 6 (API)
-- [ ] API contract/error handling
-- [ ] Streaming route (if in agreed scope)
-- [ ] Timeouts, lifecycle and readiness cleanup
-- [ ] API integration tests
-- [ ] API docs/examples updated
+- [x] Block 0 baseline (`docs/week6_sprint.md`, `smoke_api.py`)
+- [x] API contract/error handling (`docs/api_contract.md`, `api/errors.py`)
+- [x] Request ID middleware (`X-Request-ID`)
+- [x] Query wall-clock + upstream timeouts → `504`
+- [x] `POST /query/stream` (SSE)
+- [x] Readiness docs + single-pass diagnostics
+- [x] API integration tests (`src/tests/integration/`)
+- [x] API docs/examples + OpenAPI polish
+- [x] Lifecycle smoke (`close_resources`, `smoke_api.py --stream`)
 
 ### Week 7
 - [ ] Structured logs and correlation IDs

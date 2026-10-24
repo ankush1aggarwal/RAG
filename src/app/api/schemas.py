@@ -2,10 +2,32 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.config.production_retrieval import FROZEN_RETRIEVAL_METHOD, FROZEN_RETRIEVAL_TOP_K
 from app.pipeline.rag import RetrievalMethod, SourceCitation
+
+
+class ErrorResponse(BaseModel):
+    """Stable error body for non-2xx responses (see ``docs/api_contract.md``)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "error": "validation_error",
+                    "message": "Request validation failed.",
+                    "detail": [{"loc": ["body", "question"], "msg": "String should have at least 1 character"}],
+                    "request_id": "550e8400-e29b-41d4-a716-446655440000",
+                }
+            ]
+        }
+    )
+
+    error: str
+    message: str
+    detail: object | None = None
+    request_id: str | None = None
 
 
 class HealthResponse(BaseModel):
@@ -22,6 +44,19 @@ class ReadyResponse(BaseModel):
 
 
 class QueryRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "question": "What is APR on a credit card?",
+                    "top_k": 10,
+                    "method": "dense",
+                    "use_rerank": False,
+                }
+            ]
+        }
+    )
+
     question: str = Field(..., min_length=1, description="User question for RAG")
     top_k: int = Field(
         default=FROZEN_RETRIEVAL_TOP_K,
@@ -54,6 +89,25 @@ class RetrievalMeta(BaseModel):
 
 
 class QueryResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "answer": "APR is the annual percentage rate...",
+                    "citations": [
+                        {"document_id": "7411", "chunk_id": 0, "title": ""},
+                    ],
+                    "retrieval": {
+                        "method": "dense",
+                        "top_k": 10,
+                        "reranker": None,
+                        "candidates_retrieved": None,
+                    },
+                }
+            ]
+        }
+    )
+
     answer: str
     citations: list[SourceCitation]
     retrieval: RetrievalMeta

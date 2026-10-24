@@ -52,7 +52,7 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["src/tests"]
 pythonpath = ["src"]
-# Unit tests: ingestion, retrieval, generation, pipeline, API (see pytest)
+# Unit + integration tests under src/tests/
 
 [tool.ruff]
 line-length = 100
