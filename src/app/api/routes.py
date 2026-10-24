@@ -171,7 +171,27 @@ def ready(request: Request) -> ReadyResponse:
     )
 
 
-def _map_query_exception(exc: BaseException, *, timeout: float) -> None:
+async def _cleanup_query_cancellation(
+    scope: QueryScope | None,
+    *,
+    producer_task: asyncio.Task[None] | None = None,
+) -> None:
+    """Signal cooperative cancel, stop producer thread work, drain async producer task."""
+    if scope is not None:
+        scope.cancel()
+    if producer_task is None or producer_task.done():
+        return
+    producer_task.cancel()
+    try:
+        await producer_task
+    except asyncio.CancelledError:
+        pass
+    except Exception:
+        pass
+
+
+def _map_query_failure(exc: BaseException, *, timeout: float) -> None:
+    """Raise HTTP errors for genuine query failures (not ``asyncio.CancelledError``)."""
     if isinstance(exc, HTTPException):
         raise exc
     if isinstance(exc, QueryCancelledError):
@@ -225,10 +245,13 @@ async def query(body: QueryRequest, request: Request) -> QueryResponse:
             body.question,
             resolved,
         )
+    except asyncio.CancelledError:
+        await _cleanup_query_cancellation(scope)
+        raise
     except BaseException as exc:
         if scope is not None:
             scope.cancel()
-        _map_query_exception(exc, timeout=timeout)
+        _map_query_failure(exc, timeout=timeout)
 
     assert resolved is not None and result is not None
     return _query_response(result, resolved.top_k)
@@ -286,13 +309,16 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
                     yield format_sse("token", {"delta": payload})
             if producer_task is not None:
                 await producer_task
+        except asyncio.CancelledError:
+            await _cleanup_query_cancellation(scope, producer_task=producer_task)
+            raise
         except BaseException as exc:
             if scope is not None:
                 scope.cancel()
             if producer_task is not None and not producer_task.done():
                 producer_task.cancel()
             try:
-                _map_query_exception(exc, timeout=timeout)
+                _map_query_failure(exc, timeout=timeout)
             except HTTPException as http_exc:
                 detail = http_exc.detail
                 if isinstance(detail, dict):
