@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.generation.llm import LLMProvider
+from app.generation.llm import LLMProvider, iter_llm_tokens
 from app.generation.prompt import build_rag_prompt
 from app.ingestion.schemas import SearchHit
 from app.retrieval.bm25_store import Bm25ChunkIndex
@@ -28,6 +29,18 @@ class SourceCitation(BaseModel):
 
 class RagAnswer(BaseModel):
     answer: str
+    citations: list[SourceCitation] = Field(default_factory=list)
+    hits: list[SearchHit] = Field(default_factory=list)
+    retrieval_method: RetrievalMethod = "dense"
+    reranker: str | None = None
+    retrieval_candidate_count: int | None = None
+
+
+class RagGenerationContext(BaseModel):
+    """Retrieval + prompt ready for LLM (used by sync and streaming ``/query``)."""
+
+    prompt_user: str
+    prompt_system: str
     citations: list[SourceCitation] = Field(default_factory=list)
     hits: list[SearchHit] = Field(default_factory=list)
     retrieval_method: RetrievalMethod = "dense"
@@ -120,20 +133,19 @@ def retrieve_with_optional_rerank(
     return hits, reranker_name, candidate_count
 
 
-def answer_query(
+def prepare_rag_generation(
     question: str,
     *,
     store: QdrantChunkStore,
     embedder: EmbeddingProvider,
-    llm: LLMProvider,
     top_k: int = 10,
     retrieval_method: RetrievalMethod = "dense",
     bm25_index: Bm25ChunkIndex | None = None,
     use_rerank: bool = False,
     reranker: RerankerProvider | None = None,
     rerank_candidate_limit: int | None = None,
-) -> RagAnswer:
-    """Retrieve context, build a grounded prompt, and generate an answer."""
+) -> RagGenerationContext:
+    """Retrieve context and build the grounded prompt (no LLM call)."""
     if top_k < 1:
         raise ValueError("top_k must be at least 1")
 
@@ -154,13 +166,61 @@ def answer_query(
     )
 
     prompt = build_rag_prompt(question, hits)
-    answer = llm.generate(prompt.user, system=prompt.system)
-
-    return RagAnswer(
-        answer=answer,
+    return RagGenerationContext(
+        prompt_user=prompt.user,
+        prompt_system=prompt.system,
         citations=citations_from_hits(hits),
         hits=hits,
         retrieval_method=retrieval_method,
         reranker=reranker_name,
         retrieval_candidate_count=candidate_count if use_rerank else None,
+    )
+
+
+def stream_answer_tokens(
+    context: RagGenerationContext,
+    llm: LLMProvider,
+) -> Iterator[str]:
+    """Yield answer text deltas from the LLM for a prepared RAG context."""
+    yield from iter_llm_tokens(
+        llm,
+        context.prompt_user,
+        system=context.prompt_system,
+    )
+
+
+def answer_query(
+    question: str,
+    *,
+    store: QdrantChunkStore,
+    embedder: EmbeddingProvider,
+    llm: LLMProvider,
+    top_k: int = 10,
+    retrieval_method: RetrievalMethod = "dense",
+    bm25_index: Bm25ChunkIndex | None = None,
+    use_rerank: bool = False,
+    reranker: RerankerProvider | None = None,
+    rerank_candidate_limit: int | None = None,
+) -> RagAnswer:
+    """Retrieve context, build a grounded prompt, and generate an answer."""
+    context = prepare_rag_generation(
+        question,
+        store=store,
+        embedder=embedder,
+        top_k=top_k,
+        retrieval_method=retrieval_method,
+        bm25_index=bm25_index,
+        use_rerank=use_rerank,
+        reranker=reranker,
+        rerank_candidate_limit=rerank_candidate_limit,
+    )
+    answer = llm.generate(context.prompt_user, system=context.prompt_system)
+
+    return RagAnswer(
+        answer=answer,
+        citations=context.citations,
+        hits=context.hits,
+        retrieval_method=context.retrieval_method,
+        reranker=context.reranker,
+        retrieval_candidate_count=context.retrieval_candidate_count,
     )

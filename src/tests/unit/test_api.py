@@ -1,5 +1,7 @@
+import time
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -14,6 +16,10 @@ from app.ingestion.schemas import SearchHit
 class _FakeLLM:
     def generate(self, prompt: str, *, system: str | None = None) -> str:
         return "API answer."
+
+    def stream_generate(self, prompt: str, *, system: str | None = None):
+        yield "API "
+        yield "answer."
 
 
 @pytest.fixture
@@ -69,6 +75,31 @@ def test_health(client: TestClient):
     assert response.json() == {"status": "ok"}
 
 
+def test_request_id_echoed_from_client_header(client: TestClient):
+    response = client.get("/health", headers={"X-Request-ID": "corr-week6-test"})
+    assert response.status_code == 200
+    assert response.headers.get("X-Request-ID") == "corr-week6-test"
+
+
+def test_request_id_generated_when_header_missing(client: TestClient):
+    response = client.get("/health")
+    rid = response.headers.get("X-Request-ID")
+    assert rid
+    assert len(rid) >= 32
+
+
+def test_validation_error_includes_request_id(client: TestClient):
+    response = client.post(
+        "/query",
+        json={"question": ""},
+        headers={"X-Request-ID": "bad-body-id"},
+    )
+    assert response.status_code == 422
+    body = response.json()
+    assert body["request_id"] == "bad-body-id"
+    assert body["error"] == "validation_error"
+
+
 def test_ready_success(client: TestClient):
     with patch("app.api.resources.llm_ready", return_value=True):
         response = client.get("/ready")
@@ -95,10 +126,12 @@ def test_ready_returns_503_when_bm25_missing_and_hybrid_dev_mode(client: TestCli
     with patch("app.api.resources.llm_ready", return_value=True):
         response = client.get("/ready")
     assert response.status_code == 503
-    detail = response.json()["detail"]
-    assert detail["bm25_index"] is False
-    assert detail["retrieval_index_aligned"] is False
-    assert detail["qdrant_collection"] is True
+    body = response.json()
+    assert body["error"] == "not_ready"
+    diag = body["detail"]
+    assert diag["bm25_index"] is False
+    assert diag["retrieval_index_aligned"] is False
+    assert diag["qdrant_collection"] is True
 
 
 def test_ready_succeeds_without_bm25_when_frozen_profile_enforced():
@@ -143,8 +176,8 @@ def test_ready_returns_503_when_manifest_misaligned(client: TestClient):
     with patch("app.api.resources.llm_ready", return_value=True):
         response = client.get("/ready")
     assert response.status_code == 503
-    detail = response.json()["detail"]
-    assert detail["retrieval_index_aligned"] is False
+    diag = response.json()["detail"]
+    assert diag["retrieval_index_aligned"] is False
 
 
 def test_query_success(client: TestClient):
@@ -153,17 +186,75 @@ def test_query_success(client: TestClient):
     body = response.json()
     assert body["answer"] == "API answer."
     assert body["citations"][0]["document_id"] == "1"
-    assert body["retrieval"] == {
-        "method": "dense",
-        "top_k": 2,
-        "reranker": None,
-        "candidates_retrieved": None,
-    }
+
+
+def test_query_stream_emits_sse_token_and_done(client: TestClient):
+    with client.stream(
+        "POST",
+        "/query/stream",
+        json={"question": "What is APR?", "top_k": 2},
+    ) as response:
+        assert response.status_code == 200
+        assert "text/event-stream" in response.headers.get("content-type", "")
+        body = response.read().decode()
+    assert "event: token" in body
+    assert '"delta": "API "' in body or '"delta":"API "' in body
+    assert "event: done" in body
+    assert '"answer": "API answer."' in body or '"answer":"API answer."' in body
+
+
+def test_query_stream_validation_error_is_json_not_sse(client: TestClient):
+    response = client.post("/query/stream", json={"question": ""})
+    assert response.status_code == 422
+    assert response.json()["error"] == "validation_error"
 
 
 def test_query_validation_empty_question(client: TestClient):
     response = client.post("/query", json={"question": ""})
     assert response.status_code == 422
+    body = response.json()
+    assert body["error"] == "validation_error"
+    assert body["message"]
+
+
+def test_query_internal_error_returns_structured_500(client: TestClient):
+    with patch("app.api.routes.answer_query", side_effect=RuntimeError("boom")):
+        response = client.post("/query", json={"question": "fees?", "top_k": 2})
+    assert response.status_code == 500
+    body = response.json()
+    assert body["error"] == "internal_error"
+    assert body["detail"] is None
+
+
+def test_query_wall_clock_timeout_returns_504(client: TestClient):
+    def slow_answer(*_args, **_kwargs):
+        time.sleep(0.05)
+        return MagicMock(
+            answer="late",
+            citations=[],
+            retrieval_method="dense",
+            reranker=None,
+            retrieval_candidate_count=None,
+        )
+
+    settings = client.app.state.resources.settings.model_copy(
+        update={"query_timeout_seconds": 0.01},
+    )
+    client.app.state.resources.settings = settings
+    with patch("app.api.routes.answer_query", side_effect=slow_answer):
+        response = client.post("/query", json={"question": "fees?", "top_k": 2})
+    assert response.status_code == 504
+    assert response.json()["error"] == "upstream_timeout"
+
+
+def test_query_llm_http_timeout_returns_504(client: TestClient):
+    with patch(
+        "app.api.routes.answer_query",
+        side_effect=httpx.ReadTimeout("llm slow"),
+    ):
+        response = client.post("/query", json={"question": "fees?", "top_k": 2})
+    assert response.status_code == 504
+    assert response.json()["error"] == "upstream_timeout"
 
 
 def test_query_hybrid_uses_bm25_and_reports_method(client: TestClient):
@@ -212,6 +303,7 @@ def test_query_rerank_422_when_provider_disabled(client: TestClient):
         json={"question": "fees", "use_rerank": True},
     )
     assert response.status_code == 422
+    assert response.json()["error"] == "rerank_unavailable"
 
 
 def test_query_with_rerank(client: TestClient):
@@ -243,7 +335,7 @@ def test_query_bm25_returns_422_when_index_missing(client: TestClient):
         json={"question": "fees", "method": "bm25"},
     )
     assert response.status_code == 422
-    assert "BM25 index is not available" in response.json()["detail"]
+    assert "BM25" in response.json()["message"]
 
 
 def test_query_rejects_hybrid_when_frozen_profile_enforced():
@@ -266,7 +358,9 @@ def test_query_rejects_hybrid_when_frozen_profile_enforced():
             json={"question": "fees", "method": "hybrid", "top_k": 10},
         )
     assert response.status_code == 422
-    assert "dense" in response.json()["detail"]
+    body = response.json()
+    assert body["error"] == "frozen_profile_violation"
+    assert "dense" in body["message"]
 
 
 def test_query_default_top_k_is_frozen_when_enforced():

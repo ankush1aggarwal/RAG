@@ -187,7 +187,7 @@ Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, e
 
 `POST /query` body field **`method`**: `dense` (default), `bm25`, or `hybrid`. Optional **`use_rerank`** (requires configured `RerankerProvider` on `AppResources`). Response `retrieval` includes `method`, `top_k`, `reranker`, `candidates_retrieved`.
 
-`GET /ready` requires Qdrant collection, loaded BM25 index, manifest/index alignment, and LLM readiness.
+`GET /ready` requires Qdrant, manifest/dense alignment, and LLM readiness. With `API_ENFORCE_FROZEN_RETRIEVAL=true`, BM25 is optional; with enforcement off, the full ingest bundle (including BM25) must align. HTTP error contract: [`docs/api_contract.md`](docs/api_contract.md).
 
 ### Reranker (Week 4)
 
@@ -271,9 +271,10 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] E3–E9 per [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md); reports in [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md).
 - [x] Local indexes trimmed to **`fiqa`** + **`fiqa_cs200_bge_base_en_v1_5`** (`src/scripts/cleanup_local_indexes.py`).
 
-### Week 6 — production API engineering
+### Week 6 — production API engineering ✅
 
-- [ ] Streaming, request IDs, errors, integration tests
+- [x] Streaming (`POST /query/stream`), request IDs, structured errors, timeouts
+- [x] Integration tests (`src/tests/integration/`), OpenAPI/examples, smoke script
 - [x] **Enforce frozen production profile on `/query`:** `method=dense`, `use_rerank=false`, `top_k=10` (reject conflicting request fields when `API_ENFORCE_FROZEN_RETRIEVAL=true`)
 
 ## Evaluation discipline
@@ -320,11 +321,10 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 ## Out of scope (for now)
 
 - Copying reference repository source code
-- `POST /query/stream` until Week 6
 - HTTP ingest endpoints (ingest remains CLI)
 - LangChain/LangGraph as core orchestrator
 - Docker/cloud until Weeks 8–9 (experiment + API hardening first)
 
 ## Next implementation steps
 
-**Week 6:** API hardening (streaming, integration tests); frozen retrieval profile is already wired on `/query`.
+**Week 7:** Observability (structured logs, stage timings).

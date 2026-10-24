@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+from collections.abc import Iterator
 from typing import Any, Literal, Protocol
 
 import httpx
@@ -12,6 +14,20 @@ LLMMethod = Literal["ollama", "cohere"]
 
 class LLMProvider(Protocol):
     def generate(self, prompt: str, *, system: str | None = None) -> str: ...
+
+
+def iter_llm_tokens(
+    llm: LLMProvider,
+    prompt: str,
+    *,
+    system: str | None = None,
+) -> Iterator[str]:
+    """Stream token deltas when supported; otherwise one chunk from ``generate``."""
+    stream = getattr(llm, "stream_generate", None)
+    if callable(stream):
+        yield from stream(prompt, system=system)
+        return
+    yield llm.generate(prompt, system=system)
 
 
 class OllamaLLM:
@@ -53,6 +69,40 @@ class OllamaLLM:
         if not isinstance(content, str):
             raise ValueError(f"Ollama message content must be a string, got {type(content)}")
         return content
+
+    def stream_generate(self, prompt: str, *, system: str | None = None) -> Iterator[str]:
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        with self._client.stream(
+            "POST",
+            f"{self._base_url}/api/chat",
+            json={
+                "model": self._model,
+                "messages": messages,
+                "stream": True,
+            },
+        ) as response:
+            response.raise_for_status()
+            for line in response.iter_lines():
+                if not line:
+                    continue
+                if line.startswith("data:"):
+                    line = line[5:].strip()
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                message = data.get("message") if isinstance(data, dict) else None
+                if not isinstance(message, dict):
+                    continue
+                content = message.get("content")
+                if isinstance(content, str) and content:
+                    yield content
+                if data.get("done") is True:
+                    break
 
     def close(self) -> None:
         if self._owns_client:
