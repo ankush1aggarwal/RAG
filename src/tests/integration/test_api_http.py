@@ -88,6 +88,38 @@ def test_query_emits_correlated_structured_logs(
     assert any(payload["event"] == "llm_usage" for payload in payloads)
 
 
+def test_query_stream_emits_correlated_structured_logs(
+    integration_client: TestClient,
+    caplog: pytest.LogCaptureFixture,
+):
+    request_id = "stream-log-trace"
+    caplog.set_level(logging.INFO, logger="fiqa.rag")
+    with caplog.at_level(logging.INFO, logger="fiqa.rag"):
+        with integration_client.stream(
+            "POST",
+            "/query/stream",
+            json={"question": "What is APR?", "top_k": 2},
+            headers={"X-Request-ID": request_id},
+        ) as response:
+            assert response.status_code == 200
+            response.read()
+
+    payloads = [
+        record.structured
+        for record in caplog.records
+        if hasattr(record, "structured") and isinstance(record.structured, dict)
+    ]
+    tracked = {"query_start", "query_complete", "stage_start", "stage_end"}
+    correlated = [payload for payload in payloads if payload.get("event") in tracked]
+    assert correlated, "expected query_start, stage, and query_complete log events"
+    assert any(payload["event"] == "query_start" for payload in correlated)
+    assert any(payload["event"] == "query_complete" for payload in correlated)
+    assert any(payload["event"] == "stage_start" for payload in correlated)
+    assert any(payload["event"] == "stage_end" for payload in correlated)
+    for payload in correlated:
+        assert payload.get("request_id") == request_id
+
+
 def test_readiness_503_detail_includes_operator_fields(integration_client: TestClient):
     integration_client.app.state.resources.store.collection_exists.return_value = False
     with patch("app.api.resources.llm_ready", return_value=False):
@@ -129,6 +161,35 @@ def test_stream_mid_pipeline_failure_emits_sse_error_event(integration_client: T
             raw = response.read().decode()
     assert "event: error" in raw or re.search(r"event:\s*error", raw)
     assert "internal_error" in raw
+
+
+def test_stream_mid_pipeline_failure_emits_query_failed_log(
+    integration_client: TestClient,
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level(logging.ERROR, logger="fiqa.rag")
+    with patch(
+        "app.api.routes.prepare_rag_generation",
+        side_effect=RuntimeError("retrieval blew up"),
+    ):
+        with caplog.at_level(logging.INFO, logger="fiqa.rag"):
+            with integration_client.stream(
+                "POST",
+                "/query/stream",
+                json={"question": "fees?", "top_k": 2},
+                headers={"X-Request-ID": "stream-fail-trace"},
+            ) as response:
+                response.read()
+    payloads = [
+        record.structured
+        for record in caplog.records
+        if hasattr(record, "structured") and isinstance(record.structured, dict)
+    ]
+    failed = next(payload for payload in payloads if payload.get("event") == "query_failed")
+    assert failed["route"] == "/query/stream"
+    assert failed["error_type"] == "RuntimeError"
+    assert failed["request_id"] == "stream-fail-trace"
+    assert isinstance(failed.get("duration_ms"), (int, float))
 
 
 def test_frozen_profile_rejection_through_full_app_stack():

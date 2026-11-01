@@ -16,7 +16,7 @@ API startup calls `configure_structured_logging()` from the app lifespan.
 
 ## Correlation
 
-- HTTP header **`X-Request-ID`** is copied into every log event as **`request_id`** when present.
+- HTTP header **`X-Request-ID`** is copied into every log event as **`request_id`** when present. Allowed characters: letters, digits, `_`, `.`, `:`, `-` (max **128** chars after trim); invalid values become a server-generated UUID.
 - Worker threads (RAG pipeline) inherit the same id via `run_bounded_sync(..., request_id=...)`.
 
 ## Event types
@@ -25,7 +25,7 @@ API startup calls `configure_structured_logging()` from the app lifespan.
 |---------|------|
 | `query_start` | `/query` or `/query/stream` accepted (after validation) |
 | `query_complete` | Success; includes `duration_ms`, `citation_count`, `retrieval_method`, `top_k`; optional `prompt_tokens`, `completion_tokens`, `total_tokens`, `estimated_cost_usd`, `provider` when the LLM returns usage |
-| `query_failed` | Handler failure before HTTP mapping |
+| `query_failed` | Handler failure before HTTP mapping (sync `/query` and in-stream `/query/stream`) |
 | `llm_usage` | Token/cost snapshot after generation (same fields as on `query_complete`) |
 | `stage_start` / `stage_end` | RAG sub-stage timing (`retrieval`, `rerank`, `prompt_build`, `generation`) |
 | `stage_error` | Stage raised an exception |
