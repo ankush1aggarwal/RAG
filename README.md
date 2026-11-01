@@ -1149,7 +1149,7 @@ Sprint: [`docs/week8_sprint.md`](docs/week8_sprint.md). Runtime: [`docs/docker.m
 Deliverables:
 
 - Qdrant Cloud
-- Google Cloud Run deployment ([`docs/cloud_run.md`](docs/cloud_run.md))
+- Google Cloud Run deployment ([`docs/cloud_run.md`](docs/cloud_run.md)) — **`LLM_PROVIDER=cohere`**, baked BGE embed, manifest in `deploy/index_metadata/`
 - After re-ingest: refresh [`deploy/index_metadata/`](deploy/index_metadata/) manifest (see README setup §3)
 - Environment variables/secrets
 - Production configuration

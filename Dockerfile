@@ -1,4 +1,4 @@
-# FiQA production RAG API — runtime image (Qdrant index + Ollama are external/mounted).
+# FiQA production RAG API — Qdrant Cloud + Cohere chat on Cloud Run; Ollama optional via env (Compose).
 # syntax=docker/dockerfile:1
 
 FROM python:3.12-slim-bookworm AS runtime
@@ -19,7 +19,7 @@ COPY pyproject.toml README.md ./
 COPY deploy ./deploy
 COPY src ./src
 
-RUN pip install ".[api,embeddings]"
+RUN pip install ".[api,embeddings,hosted]"
 
 # Prefetch frozen production embedder (BGE-base) into the image layer.
 ENV HF_HOME=/app/.cache/huggingface \

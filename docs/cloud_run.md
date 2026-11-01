@@ -68,12 +68,29 @@ PYTHONPATH=src python src/scripts/prefetch_embedding_model.py
 
 with `HF_HOME=/app/.cache/huggingface`, baking **BGE-base** into the image. Runtime uses the same `HF_HOME` (see `Dockerfile`). Rebuild the image when `EMBEDDING_MODEL` / frozen profile changes.
 
+## LLM (production: Cohere)
+
+Cloud Run does **not** run Ollama in the same container. **Production generation** uses **Cohere chat**:
+
+| Variable | Cloud Run (prod) | Local dev |
+|----------|------------------|-----------|
+| `LLM_PROVIDER` | **`cohere`** | `ollama` (default in `settings.py`) |
+| `COHERE_API_KEY` | Required (secret) | Optional |
+| `COHERE_CHAT_MODEL` | `command-r-08-2024` (default) | Same if using Cohere |
+| `OLLAMA_*` | Unused | Ollama on localhost / Compose `host.docker.internal` |
+
+The GHCR image installs **`pip install ".[api,embeddings,hosted]"`** so `LLM_PROVIDER=cohere` works without an extra install step.
+
+**Retrieval** stays **local sentence-transformers** + baked BGE (`EMBEDDING_METHOD=sentence_transformer`); do not switch prod embed to Cohere unless you re-ingest and change the manifest.
+
+`/ready` with Cohere checks that `COHERE_API_KEY` is set; Qdrant + manifest alignment still apply.
+
 ## Cloud Run service (outline)
 
 1. **Image:** `ghcr.io/<owner>/fiqa-production-rag:latest` (or mirror to Artifact Registry).
 2. **Port:** Cloud Run sets **`PORT`** (typically `8080`). The container image defaults `PORT=8080`; `serve_api.py` binds to `PORT` unless you pass `--port`. Local dev without `PORT` uses **8000**.
-3. **Secrets / env:** `QDRANT_URL`, `QDRANT_API_KEY`, `COHERE_API_KEY` (if using Cohere), `COLLECTION_NAME`, frozen retrieval flags, etc. — see [`.env.example`](../.env.example).
-4. **Memory / CPU:** sized for sentence-transformers cold start (model download to container ephemeral disk or mounted volume).
+3. **Secrets / env:** `QDRANT_URL`, `QDRANT_API_KEY`, **`LLM_PROVIDER=cohere`**, **`COHERE_API_KEY`**, `COLLECTION_NAME`, `API_ENFORCE_FROZEN_RETRIEVAL=true`, etc. — see [`.env.example`](../.env.example).
+4. **Memory / CPU:** sized for loading baked BGE from disk (not Hub download on cold start).
 5. **Health checks:** liveness → `GET /health`; readiness → `GET /ready` once Qdrant + LLM are configured.
 
 ## Related
