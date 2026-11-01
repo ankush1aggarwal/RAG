@@ -316,6 +316,7 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 | `ingestion` | datasets | `BeIR/fiqa` load in ingest |
 | `lexical` | rank-bm25 (alias) | Optional extra name; same package as core since Week 3 |
 | `api` | fastapi, uvicorn | `serve_api.py` |
+| **Docker / GHCR image** | `.[api,embeddings,hosted]` | Cloud Run: ST embed + **Cohere chat** |
 | `dev` | pytest, ruff, fastapi (TestClient) | Development |
 | `notebooks` | jupyter, pandas | `notebooks/` |
 

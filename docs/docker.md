@@ -6,12 +6,19 @@ Run the **FiQA RAG API** in a container without baking secrets or local Qdrant d
 
 ## What the image contains
 
-- Python 3.12 slim + app install: `pip install ".[api,embeddings]"` (FastAPI, Uvicorn, sentence-transformers, Qdrant client, etc.)
+- Python 3.12 slim + app install: `pip install ".[api,embeddings,hosted]"` (FastAPI, Uvicorn, sentence-transformers, **cohere** for Cloud Run chat, Qdrant client, etc.)
 - **Baked at build:** `BAAI/bge-base-en-v1.5` weights under `/app/.cache/huggingface` (`src/scripts/prefetch_embedding_model.py` during `docker build`) — avoids Hub downloads on Cloud Run cold start
 - **Not included:** `.env`, Qdrant data, BM25 pickles
 - **Not included:** optional **`datasets`** (ingest/eval scripts only). The API imports `app.ingestion.schemas` only; `app/ingestion/__init__.py` must not import `corpus`/`normalize` (see `test_api_startup_imports.py`).
 
-See also: [`architecture.md`](architecture.md), [`cloud_run.md`](cloud_run.md) (Qdrant Cloud + Cloud Run).
+See also: [`architecture.md`](architecture.md), [`cloud_run.md`](cloud_run.md) (Qdrant Cloud + **Cohere LLM** on Cloud Run).
+
+### Production LLM vs local Compose
+
+| Runtime | `LLM_PROVIDER` | Notes |
+|---------|----------------|--------|
+| **Cloud Run** (intended prod) | `cohere` | Set `COHERE_API_KEY` in Secret Manager; image includes **`hosted`** extra |
+| **Local `.venv` / Compose** | `ollama` (default) | Point `OLLAMA_BASE_URL` at host Ollama; override in `.env` if needed |
 
 ## Qdrant: local path vs Qdrant Cloud
 
