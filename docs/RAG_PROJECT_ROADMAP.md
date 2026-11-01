@@ -210,7 +210,7 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 6. Add container smoke tests for startup, `/health` and readiness behavior. Validate the container build from a clean checkout.
 7. Pin deployment-critical dependencies / model identifiers deliberately; fix `requirements-git.txt` to use a commit SHA when a reproducible remote checkout is intended instead of floating `@main`.
 
-**Deliverables:** Dockerfile, `.dockerignore`, CI workflow(s), updated run instructions.  
+**Deliverables:** Dockerfile, `.dockerignore`, `docker-compose.yml`, [`docs/docker.md`](docker.md), GHCR workflow — CI lint/test workflow next.  
 **Definition of done:** a clean CI run builds the image, lint and tests pass, and the container starts using documented configuration.
 
 ## Week 9 — Cloud deployment + demo ⬜
@@ -289,9 +289,11 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 - [x] Redaction tests + log-based integration test on `/query`
 
 ### Week 8
-- [ ] Dockerfile and `.dockerignore`
-- [ ] Clean container build/start/smoke tests
-- [ ] GitHub Actions lint + tests + build
+- [x] Dockerfile and `.dockerignore`
+- [x] Optional `docker-compose.yml` + [`docs/docker.md`](docker.md)
+- [x] Actions: build + container smoke + GHCR push (`.github/workflows/container.yml`)
+- [ ] CI green on PR (container smoke + pytest when added)
+- [ ] GitHub Actions lint + tests
 - [ ] Reproducible dependency/runtime configuration
 
 ### Week 9

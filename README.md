@@ -1125,16 +1125,13 @@ Sprint: [`docs/week7_sprint.md`](docs/week7_sprint.md). Ops guide: [`docs/observ
 
 ## Week 8 — Docker + CI/CD **(current)**
 
-Deliverables:
+Sprint: [`docs/week8_sprint.md`](docs/week8_sprint.md). Runtime guide: [`docs/docker.md`](docs/docker.md).
 
-- Dockerfile
-- Docker Compose setup
-- Containerized local application
-- GitHub Actions CI
-- Linting
-- Automated tests
-- Automated evaluation
-- Docker image build/publish workflow
+- [x] `Dockerfile`, `.dockerignore`, optional `docker-compose.yml`
+- [x] GHCR workflow + **Actions container smoke** (`ci_container_smoke.sh` → `/health`)
+- [ ] **CI green** on PR (no local Docker Desktop required)
+- [ ] **You:** GHCR public package after first `main` push
+- [ ] GitHub Actions Ruff + `pytest` (next block)
 
 ---
 

@@ -1,0 +1,39 @@
+# Local API container: mount your Qdrant data dir and point Ollama at the host.
+# Usage: copy .env.example -> .env, then: docker compose up --build
+
+services:
+  api:
+    build: .
+    image: fiqa-production-rag:local
+    ports:
+      - "${API_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      QDRANT_PATH: /data/qdrant
+      HF_HOME: /data/hf_cache
+      TRANSFORMERS_CACHE: /data/hf_cache
+      HUGGINGFACE_HUB_CACHE: /data/hf_cache
+      # Reach Ollama on the host from inside the container (Docker Desktop / Linux 20.10+).
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    volumes:
+      - ${QDRANT_HOST_PATH:-./data/qdrant_local}:/data/qdrant:ro
+      - hf_cache:/data/hf_cache
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 180s
+      retries: 3
+
+volumes:
+  hf_cache:

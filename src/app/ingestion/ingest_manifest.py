@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from app.ingestion.corpus import FIQA_HF_ID
+from app.ingestion.constants import FIQA_HF_ID
 
 if TYPE_CHECKING:
     from app.retrieval.bm25_store import Bm25ChunkIndex
