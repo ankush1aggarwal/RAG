@@ -11,11 +11,9 @@ from app.api.main import create_app
 from app.api.resources import AppResources
 from app.config.production_retrieval import FROZEN_COLLECTION_NAME, FROZEN_EMBEDDING_MODEL
 from app.config.settings import Settings
+from app.generation.usage import LlmUsage, set_last_llm_usage
 from app.ingestion.ingest_manifest import IngestManifest
 from app.ingestion.schemas import SearchHit
-
-
-from app.generation.usage import LlmUsage, set_last_llm_usage
 
 
 class FakeStreamLLM:

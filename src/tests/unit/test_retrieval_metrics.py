@@ -1,5 +1,6 @@
 import math
 
+from app.evaluation.retrieval_eval import EvalProtocol
 from app.evaluation.retrieval_metrics import (
     AggregatedMetrics,
     aggregate_query_metrics,
@@ -13,7 +14,6 @@ from app.evaluation.retrieval_metrics import (
     precision_at_k,
     recall_at_k,
 )
-from app.evaluation.retrieval_eval import EvalProtocol
 from app.ingestion.schemas import SearchHit
 
 

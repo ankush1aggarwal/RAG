@@ -1,6 +1,6 @@
 # Project specification
 
-**Status:** Week 7 complete (structured observability); **Week 8** = Docker + CI  
+**Status:** Week 8 complete (Docker, GHCR, CI); **Week 9** = cloud deployment + demo  
 **Last updated:** 2026-11-01
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -37,7 +37,7 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | Hosted LLM | **Cohere** `ClientV2.chat` | `LLM_PROVIDER=cohere` |
 | API | **FastAPI** + **Uvicorn** | `/health`, `/ready`, `POST /query` with `method`: `dense` \| `bm25` \| `hybrid`; streaming later |
 | Observability | Structured JSON logs (stdlib) | **Week 7** ✅ — no OTel/Langfuse |
-| Packaging / CI | Docker + **GitHub Actions** | **Week 8** |
+| Packaging / CI | Docker + **GitHub Actions** | **Week 8** ✅ |
 | Hosting | Render + Qdrant Cloud | **Week 9** |
 
 ## Repository layout (this repo)
@@ -241,7 +241,7 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] API `method` + `/ready` BM25 check
 - [x] Fixed query set + benchmark notebook + comparison report
 - [x] Weighted RRF + validation weight tuning (Week 4)
-- [x] Unit + integration tests (`pytest src/tests`; **235+**)
+- [x] Unit + integration tests (`pytest src/tests`; **251+**)
 
 ### Week 4 ✅ (reranking + evaluation)
 
@@ -330,8 +330,16 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 - Copying reference repository source code
 - HTTP ingest endpoints (ingest remains CLI)
 - LangChain/LangGraph as core orchestrator
-- Docker/cloud until Weeks 8–9 (experiment + API hardening first)
+- Docker/cloud packaging deferred until Week 8 ✅; **Week 9** deployment in progress
 
 ## Next implementation steps
 
-**Week 8:** Dockerfile, `.dockerignore`, Compose, [`docs/docker.md`](docs/docker.md), GHCR (`ghcr.io/<owner>/fiqa-production-rag`); CI lint/tests next.
+### Week 8 — Docker + CI ✅
+
+- [x] GHCR image, container smoke, [`docs/docker.md`](docs/docker.md), [`docs/architecture.md`](docs/architecture.md)
+- [x] `.github/workflows/ci.yml` (Ruff + pytest), `.github/workflows/container.yml`
+- [x] `requirements-git.txt` pinned to commit SHA
+
+### Week 9 — deployment + demo
+
+**Week 9:** Qdrant Cloud, hosted API, deployment runbook, public demo.
