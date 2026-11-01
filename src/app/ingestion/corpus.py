@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from app.ingestion.constants import FIQA_CORPUS_CONFIG, FIQA_CORPUS_SPLIT, FIQA_HF_ID
 
 if TYPE_CHECKING:
-    from datasets import Dataset
+    pass
 
 
 def load_fiqa_corpus(

@@ -20,8 +20,8 @@ The intended outcome is a portfolio-quality RAG application for FiQA financial-i
 | Week 5 — **Experimentation sprint** | ✅ Done | E3–E9 complete; frozen retrieval: **200w / BGE / dense** (see lessons report) |
 | Week 6 — Production API engineering | ✅ Complete | Frozen profile, errors, streaming, integration tests, docs |
 | Week 7 — Observability | ✅ | Structured JSON logs, stage timings, correlation ID, token/cost when available |
-| Week 8 — Container + CI | ⬜ | Reproducible Docker runtime and automated checks on GitHub |
-| Week 9 — Deployment + public demo | ⬜ | Hosted API, Qdrant Cloud, smoke tests and demo UI |
+| Week 8 — Container + CI | ✅ | GHCR, Actions CI + container smoke, [`architecture.md`](architecture.md) |
+| Week 9 — Deployment + public demo | ⬜ **current** | Hosted API, Qdrant Cloud, smoke tests and demo UI |
 | Final polish — Portfolio | ⬜ | Final docs, architecture image, demo evidence, blog/LinkedIn write-up |
 | Phase 2 — Agentic RAG | ⬜ Future project | Multi-step retrieval/tools/evidence checks built on the proven RAG baseline |
 
@@ -178,7 +178,7 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 3. ✅ `QUERY_TIMEOUT_SECONDS`, cooperative cancel (`QueryScope`), Ollama stream abort on timeout
 4. ✅ Lifespan `close_resources`; smoke script with `X-Request-ID` and `--stream`
 5. ✅ Single-pass `/ready` diagnostics; field docs in README + contract
-6. ✅ `src/tests/integration/` + **235** tests under `src/tests/`
+6. ✅ `src/tests/integration/` + **251** tests under `src/tests/`
 7. ✅ OpenAPI examples and route `responses`
 8. ✅ Frozen profile enforced in settings + `/query` (`production_retrieval.py`)
 
@@ -198,22 +198,18 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 **Deliverables:** `src/app/observability/`, `src/app/generation/usage.py`, config switches, tests, operational guide.  
 **Definition of done:** met — sample request traceable through main stages; latency/failure observable without leaking secrets.
 
-## Week 8 — Docker + CI ⬜ **(current)**
+## Week 8 — Docker + CI ✅
 
 **Goal:** Recreate the runtime in a clean environment and automatically reject regressions.
 
-1. Create a production-appropriate Dockerfile; use a non-root user, a sensible working directory and only required dependencies where feasible.
-2. Decide how models and data are supplied. Do not bake secrets or local Qdrant/BM25 artifacts into the image. Account for the size of sentence-transformer models and native dependencies.
-3. Add a local Docker run path and persistent-volume/environment instructions. A compose file is optional if it meaningfully simplifies local testing.
-4. Add GitHub Actions for dependency install, Ruff, unit tests and any fast integration checks.
-5. Keep costly downloads/API calls out of ordinary CI tests; use mocks or cached test fixtures where appropriate.
-6. Add container smoke tests for startup, `/health` and readiness behavior. Validate the container build from a clean checkout.
-7. Pin deployment-critical dependencies / model identifiers deliberately; fix `requirements-git.txt` to use a commit SHA when a reproducible remote checkout is intended instead of floating `@main`.
+1. ✅ Dockerfile, `.dockerignore`, optional Compose; data/models via volumes/env (not baked in).
+2. ✅ GitHub Actions **CI** ([`ci.yml`](../.github/workflows/ci.yml): Ruff + pytest) and **Container** (build + `/health` smoke + GHCR).
+3. ✅ [`docs/docker.md`](docker.md), [`docs/architecture.md`](architecture.md), [`week8_sprint.md`](week8_sprint.md).
+4. ✅ `requirements-git.txt` pinned to commit SHA.
 
-**Deliverables:** Dockerfile, `.dockerignore`, `docker-compose.yml`, [`docs/docker.md`](docker.md), GHCR workflow — CI lint/test workflow next.  
-**Definition of done:** a clean CI run builds the image, lint and tests pass, and the container starts using documented configuration.
+**Definition of done:** met.
 
-## Week 9 — Cloud deployment + demo ⬜
+## Week 9 — Cloud deployment + demo ⬜ **(current)**
 
 **Goal:** Give a reviewer a repeatable way to try the system without running your laptop.
 
@@ -231,7 +227,7 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 ## Final polish — portfolio deliverables ⬜
 
 1. Update README with architecture, setup, API examples, evaluation tables and links to reports.
-2. Add a clear architecture diagram: ingest → chunks/embeddings → Qdrant + BM25 → RRF → reranker → prompt/LLM → answer/citations; include evaluation/observability separately.
+2. Add a clear architecture diagram: ingest → chunks/embeddings → Qdrant + BM25 → RRF → reranker → prompt/LLM → answer/citations; include evaluation/observability separately. **Engineering topology:** [`architecture.md`](architecture.md).
 3. Add a short demo GIF or screenshots only after the deployed path is reliable.
 4. Publish a technical blog that explains the engineering decisions and measured trade-offs, not just a tutorial-style list of features.
 5. Publish a LinkedIn summary that links to the blog and repo, includes one meaningful result, and makes limitations clear.
@@ -264,12 +260,10 @@ Reuse the existing ingestion, Qdrant, BM25, RRF, reranker, evaluation, API and o
 
 Use this as the live checklist in commits/PR descriptions. Complete the current step before starting the next unless there is a clear dependency reason to parallelize.
 
-### Immediate next action — Week 8 Docker + CI
-- [x] Week 5 experimentation (E3–E9); frozen retrieval profile documented.
-- [x] Week 6 production API ([`week6_sprint.md`](week6_sprint.md) blocks 1–8); live smoke.
-- [x] Week 7 observability ([`week7_sprint.md`](week7_sprint.md); [`observability_guide.md`](observability_guide.md)).
-- [ ] **Dockerfile**, `.dockerignore`, and GitHub Actions (lint + tests).
-- [ ] **E10** generation/citation eval (optional, parallel with Week 8).
+### Immediate next action — Week 9 deployment
+- [x] Week 8 Docker + CI + GHCR ([`week8_sprint.md`](week8_sprint.md), [`architecture.md`](architecture.md)).
+- [ ] Qdrant Cloud + hosted API (Render or equivalent).
+- [ ] **E10** generation/citation eval (optional).
 
 ### Week 6 (API)
 - [x] Block 0 baseline (`docs/week6_sprint.md`, `smoke_api.py`)
@@ -292,9 +286,8 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 - [x] Dockerfile and `.dockerignore`
 - [x] Optional `docker-compose.yml` + [`docs/docker.md`](docker.md)
 - [x] Actions: build + container smoke + GHCR push (`.github/workflows/container.yml`)
-- [ ] CI green on PR (container smoke + pytest when added)
-- [ ] GitHub Actions lint + tests
-- [ ] Reproducible dependency/runtime configuration
+- [x] GitHub Actions Ruff + pytest (`.github/workflows/ci.yml`)
+- [x] Pinned `requirements-git.txt` + [`docs/architecture.md`](architecture.md)
 
 ### Week 9
 - [ ] Qdrant Cloud provisioned and secured

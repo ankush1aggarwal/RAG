@@ -21,15 +21,7 @@ from app.api.errors import (
     is_upstream_timeout,
     map_value_error_to_api,
 )
-from app.config.production_retrieval import ResolvedQueryRetrieval, resolve_production_query
 from app.api.resources import AppResources, is_ready_from_diagnostics, ready_diagnostics
-from app.api.sse import format_sse
-from app.cooperative_cancel import QueryCancelledError, QueryScope, invoke_in_scope
-from app.generation.usage import usage_log_fields
-from app.observability.context import observability_context
-from app.observability.events import emit
-from app.api.streaming import iter_stream_queue, produce_llm_tokens
-from app.api.thread_tasks import run_bounded_sync
 from app.api.schemas import (
     ErrorResponse,
     HealthResponse,
@@ -38,6 +30,14 @@ from app.api.schemas import (
     ReadyResponse,
     RetrievalMeta,
 )
+from app.api.sse import format_sse
+from app.api.streaming import iter_stream_queue, produce_llm_tokens
+from app.api.thread_tasks import run_bounded_sync
+from app.config.production_retrieval import ResolvedQueryRetrieval, resolve_production_query
+from app.cooperative_cancel import QueryCancelledError, QueryScope, invoke_in_scope
+from app.generation.usage import usage_log_fields
+from app.observability.context import observability_context
+from app.observability.events import emit
 from app.pipeline.rag import (
     RagAnswer,
     RagGenerationContext,

@@ -3,6 +3,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.evaluation.e8_embedding_model import (
+    DEFAULT_ALTERNATIVE_MODEL,
+    format_e8_metrics_table,
+)
 from app.evaluation.eval_llm import CitationPreservingEvalLLM
 from app.evaluation.fiqa_qrels import FiqaEvalDataset, FiqaEvalQuery
 from app.evaluation.retrieval_eval import (
@@ -13,10 +17,6 @@ from app.evaluation.retrieval_eval import (
     required_top_k,
     save_eval_result,
     summarize_latency_ms,
-)
-from app.evaluation.e8_embedding_model import (
-    DEFAULT_ALTERNATIVE_MODEL,
-    format_e8_metrics_table,
 )
 from app.evaluation.week4_experiments import load_saved_result
 from app.ingestion.schemas import SearchHit

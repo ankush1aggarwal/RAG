@@ -7,8 +7,8 @@ import queue
 from collections.abc import AsyncIterator
 from typing import Any, Literal
 
-from app.cooperative_cancel import QueryCancelledError, QueryScope, cooperative_check
 from app.api.resources import AppResources
+from app.cooperative_cancel import QueryCancelledError, QueryScope, cooperative_check
 from app.pipeline.rag import RagGenerationContext, stream_answer_tokens
 
 StreamKind = Literal["token", "done", "error"]
@@ -54,7 +54,7 @@ async def iter_stream_queue(
         if remaining <= 0:
             if scope is not None:
                 scope.cancel()
-            raise asyncio.TimeoutError()
+            raise TimeoutError()
         wait = min(max(remaining, 0.001), 1.0)
         try:
             kind, payload = await asyncio.wait_for(

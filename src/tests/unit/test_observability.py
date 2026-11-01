@@ -7,7 +7,6 @@ import logging
 
 import pytest
 
-from app.config.settings import Settings
 from app.observability.context import bind_request_id, reset_request_id
 from app.observability.events import emit, stage_timer
 from app.observability.logging import JsonLineFormatter, reset_structured_logging_config

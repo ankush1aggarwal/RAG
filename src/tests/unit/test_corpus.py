@@ -5,7 +5,7 @@ from datasets import Dataset
 from app.ingestion.corpus import load_fiqa_corpus
 
 
-@patch("app.ingestion.corpus.load_dataset")
+@patch("datasets.load_dataset")
 def test_load_fiqa_corpus_with_limit_uses_slice_split(mock_load_dataset: MagicMock):
     mock_load_dataset.return_value = Dataset.from_dict(
         {"_id": ["1"], "title": [""], "text": ["a"]}
@@ -21,7 +21,7 @@ def test_load_fiqa_corpus_with_limit_uses_slice_split(mock_load_dataset: MagicMo
     assert len(result) == 1
 
 
-@patch("app.ingestion.corpus.load_dataset")
+@patch("datasets.load_dataset")
 def test_load_fiqa_corpus_shuffle_selects_subset(mock_load_dataset: MagicMock):
     full = Dataset.from_dict(
         {
@@ -42,7 +42,7 @@ def test_load_fiqa_corpus_shuffle_selects_subset(mock_load_dataset: MagicMock):
     assert len(result) == 3
 
 
-@patch("app.ingestion.corpus.load_dataset")
+@patch("datasets.load_dataset")
 def test_load_fiqa_corpus_full_load(mock_load_dataset: MagicMock):
     mock_load_dataset.return_value = Dataset.from_dict(
         {"_id": ["1"], "title": [""], "text": ["only"]}

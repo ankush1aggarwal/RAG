@@ -10,6 +10,8 @@ Run the **FiQA RAG API** in a container without baking secrets or local Qdrant d
 - **Not included:** `.env`, Qdrant files, BM25 pickles, Hugging Face model weights (downloaded on first startup into `HF_HOME` unless pre-cached on a volume)
 - **Not included:** optional **`datasets`** (ingest/eval scripts only). The API imports `app.ingestion.schemas` only; `app/ingestion/__init__.py` must not import `corpus`/`normalize` (see `test_api_startup_imports.py`).
 
+See also: [`architecture.md`](architecture.md) (dev → Actions → GHCR → cloud).
+
 ## CI container smoke (primary)
 
 On every PR and push to `main`:

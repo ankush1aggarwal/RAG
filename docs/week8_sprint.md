@@ -1,32 +1,35 @@
-# Week 8 sprint — Docker + CI
+# Week 8 sprint — Docker + CI ✅
 
 **Prerequisite:** Week 7 observability merged.
 
-**Validation:** **GitHub Actions** builds the image and runs container smoke — **Docker Desktop is not required** on your laptop.
+**Validation:** **GitHub Actions** — no Docker Desktop required locally.
 
-**End state:** Image on **GHCR**; pytest + Ruff CI (Block 2).
+**Status:** GHCR public image; CI + container workflows on `main`.
 
-## Block 0 — Container & runtime 🟡
+## Block 0 — Container & runtime ✅
 
-- [x] `Dockerfile` (non-root `app` user, `0.0.0.0` bind, healthcheck)
-- [x] `.dockerignore` (no `.env`, no `data/`, no notebooks)
-- [x] Optional `docker-compose.yml` (operators with Docker Engine + mounted index)
-- [x] [`docs/docker.md`](docker.md)
-- [x] `src/scripts/ci_container_smoke.sh` + workflow job **Container smoke**
-- [ ] **CI green** on PR (build + `/health` in container)
+- [x] `Dockerfile`, `.dockerignore`, optional `docker-compose.yml`
+- [x] [`docs/docker.md`](docker.md), `ci_container_smoke.sh`
+- [x] Container workflow green on `main`
 
-## Block 1 — GHCR publish 🟡
+## Block 1 — GHCR publish ✅
 
-- [x] `.github/workflows/container.yml` — smoke on PR; push on `main` / tags / manual
-- [ ] **You:** merge to `main`; set GHCR package visibility
-- [ ] **You (optional):** pull image on a Linux VM and run full `smoke_api.py` with Qdrant + Ollama mounts
+- [x] `.github/workflows/container.yml`
+- [x] Public package `ghcr.io/<owner>/fiqa-production-rag`
 
-## Block 2 — CI (next)
+## Block 2 — CI ✅
 
-- [ ] GitHub Actions: Ruff + `pytest src/tests` (separate or combined workflow)
+- [x] `.github/workflows/ci.yml` — Ruff (`src/app`, `src/tests`) + pytest
 
-## Block 3 — Reproducibility (next)
+## Block 3 — Reproducibility ✅
 
-- [ ] Pin `requirements-git.txt` to commit SHA when using remote editable install
+- [x] `requirements-git.txt` pinned to commit SHA (bump on release)
 
-**Definition of done (Week 8):** GHCR image from `main`; Actions build + container smoke + unit CI; documented pull/run for production-like smoke with volumes.
+## Docs ✅
+
+- [x] [`docs/architecture.md`](architecture.md) — dev / Actions / GHCR / Week 9 topology
+- [x] README, roadmap, `PROJECT_SPEC` updated for Week 8 complete
+
+**Definition of done:** met.
+
+**Next:** Week 9 — Qdrant Cloud + hosted API ([`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md)).

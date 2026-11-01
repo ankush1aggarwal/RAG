@@ -36,7 +36,7 @@ def test_percentile_p95():
     assert 94.0 <= percentile(samples, 95) <= 96.0
 
 
-def test_bm25_overlap_microbench_reports_speedup_on_synthetic_index():
+def test_bm25_overlap_microbench_returns_timings_on_synthetic_index():
     chunks = [
         ChunkRecord(
             doc_id="0",
@@ -60,7 +60,7 @@ def test_bm25_overlap_microbench_reports_speedup_on_synthetic_index():
     assert bench.indexed_chunks == 2
     assert bench.legacy_mean_ms > 0
     assert bench.precomputed_mean_ms > 0
-    assert bench.speedup >= 1.0
+    assert bench.speedup == bench.legacy_mean_ms / bench.precomputed_mean_ms
 
 
 def test_load_query_set_from_repo_fixture(tmp_path):

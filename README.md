@@ -78,7 +78,7 @@ By the end of the project, the system should demonstrate:
 
 # 1. Current Project Status
 
-> **Current phase: Week 8 — Docker + CI** (Weeks 6–7 complete: production API + structured observability).  
+> **Current phase: Week 9 — Deployment + public demo** (Week 8 Docker + CI + GHCR complete).  
 > **Lessons:** [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md) · **Results:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [roadmap](docs/RAG_PROJECT_ROADMAP.md)
 
 Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -95,9 +95,10 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 5 | Experimentation | **Done** | E3–E9; frozen eval: **BGE 200w** NDCG@10 **0.394** (test) |
 | 6 | Production API | **Done** | Frozen `/query`, errors, SSE stream, integration tests ([`week6_sprint.md`](docs/week6_sprint.md)) |
 | 7 | Observability | **Done** | JSON logs, stage timings, `X-Request-ID`, token/cost when provider exposes usage ([`week7_sprint.md`](docs/week7_sprint.md)) |
-| 8–9 | Ops + deploy | **Next** | Docker/CI, public demo |
+| 8 | Docker + CI | **Done** | GHCR image, Actions Ruff/pytest + container smoke ([`week8_sprint.md`](docs/week8_sprint.md), [`architecture.md`](docs/architecture.md)) |
+| 9–10 | Ops + deploy | **Next** | Qdrant Cloud, hosted API, demo |
 
-**Automated tests:** **235** tests — `pytest src/tests` (unit + integration; mocked Qdrant/LLM in tests). Unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and settings tests fail.
+**Automated tests:** **251** tests — `pytest src/tests` (unit + integration; mocked Qdrant/LLM in tests). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and settings tests fail.
 
 **Experiment results:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) (full report); per-experiment [`docs/reports/experiments/`](docs/reports/experiments/README.md); catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md). Week 4 runbook: [`week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md).
 
@@ -495,6 +496,8 @@ The target system will progressively evolve toward:
                 ▼                       ▼
            Evaluation              Observability
 ```
+
+**Engineering topology (laptop → GitHub Actions → GHCR → cloud):** see [`docs/architecture.md`](docs/architecture.md) (Mermaid diagram). Container runtime: [`docs/docker.md`](docs/docker.md).
 
 The final hosted architecture is expected to resemble:
 
@@ -971,7 +974,7 @@ RAG/
 ├── docs/                       # Playbook PDFs, plans
 ├── configs/                    ⬜ planned
 ├── frontend/                   ⬜ Week 9 demo UI
-├── .github/workflows/          ⬜ Week 8 CI
+├── .github/workflows/          ✅ ci.yml + container.yml (GHCR)
 │
 ├── pyproject.toml
 ├── requirements.txt            # Full workspace freeze (incl. FastAPI, notebooks)
@@ -1123,19 +1126,17 @@ Sprint: [`docs/week7_sprint.md`](docs/week7_sprint.md). Ops guide: [`docs/observ
 
 ---
 
-## Week 8 — Docker + CI/CD **(current)**
+## Week 8 — Docker + CI/CD ✅
 
-Sprint: [`docs/week8_sprint.md`](docs/week8_sprint.md). Runtime guide: [`docs/docker.md`](docs/docker.md).
+Sprint: [`docs/week8_sprint.md`](docs/week8_sprint.md). Runtime: [`docs/docker.md`](docs/docker.md). Topology: [`docs/architecture.md`](docs/architecture.md).
 
-- [x] `Dockerfile`, `.dockerignore`, optional `docker-compose.yml`
-- [x] GHCR workflow + **Actions container smoke** (`ci_container_smoke.sh` → `/health`)
-- [ ] **CI green** on PR (no local Docker Desktop required)
-- [ ] **You:** GHCR public package after first `main` push
-- [ ] GitHub Actions Ruff + `pytest` (next block)
+- [x] `Dockerfile`, `.dockerignore`, optional Compose, GHCR public package
+- [x] Actions: **CI** (Ruff + pytest) + **Container** (build + `/health` smoke)
+- [x] `requirements-git.txt` pinned to commit SHA
 
 ---
 
-## Week 9 — Deployment + Public Demo
+## Week 9 — Deployment + Public Demo **(current)**
 
 Deliverables:
 
@@ -1440,16 +1441,16 @@ The project will be considered complete when all of the following are true.
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
 - [x] Request validation (Pydantic) + structured `ErrorResponse` (`422`, `503`, `504`, `500`)
 - [x] Streaming works (`POST /query/stream`, SSE)
-- [x] Unit + integration tests (`pytest src/tests`; **235** at last count)
+- [x] Unit + integration tests (`pytest src/tests`; **251** at last count)
 - [x] `X-Request-ID`, cooperative query cancel, `QUERY_TIMEOUT_SECONDS`
 - [x] Structured logging exists ([`docs/observability_guide.md`](docs/observability_guide.md), [`week7_sprint.md`](docs/week7_sprint.md))
 - [x] Configuration is externalized (`Settings` + `.env`)
 
 ## Productionization
 
-- [ ] Docker image builds
-- [ ] Application runs through Docker
-- [ ] GitHub Actions CI works
+- [x] Docker image builds (GHCR + Actions)
+- [x] Application runs in container (`/health` smoke in CI)
+- [x] GitHub Actions CI works (Ruff + pytest + container workflow)
 - [ ] Automated evaluation works
 - [ ] Qdrant Cloud works
 - [ ] Public deployment works
@@ -1458,7 +1459,7 @@ The project will be considered complete when all of the following are true.
 ## Portfolio
 
 - [ ] README polished
-- [ ] Architecture diagram added
+- [x] Engineering topology diagram ([`docs/architecture.md`](docs/architecture.md))
 - [x] Experiment results documented (Week 4 `docs/reports/week4_*.md`)
 - [ ] Screenshots/demo GIF added
 - [ ] Blog articles published

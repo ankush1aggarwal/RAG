@@ -12,7 +12,6 @@ from fastapi.testclient import TestClient
 from app.api.main import create_app
 from app.api.resources import AppResources
 from app.config.settings import Settings
-from app.ingestion.schemas import SearchHit
 
 
 def _parse_sse_events(body: str) -> list[tuple[str, str]]:

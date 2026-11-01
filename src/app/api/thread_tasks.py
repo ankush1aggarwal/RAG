@@ -42,11 +42,11 @@ async def run_bounded_sync(
                 scope.check()
             except QueryCancelledError:
                 scope.cancel()
-                raise asyncio.TimeoutError() from None
+                raise TimeoutError() from None
             wait = min(max(scope.remaining(), 0.001), _POLL_INTERVAL_SECONDS)
             try:
                 return await asyncio.wait_for(asyncio.shield(task), timeout=wait)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
     except asyncio.CancelledError:
         scope.cancel()
@@ -59,5 +59,5 @@ async def run_bounded_sync(
             scope.cancel()
             try:
                 await asyncio.wait_for(task, timeout=_JOIN_AFTER_CANCEL_SECONDS)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass

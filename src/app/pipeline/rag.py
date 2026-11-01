@@ -9,10 +9,10 @@ from pydantic import BaseModel, Field
 
 from app.cooperative_cancel import cooperative_check
 from app.generation.llm import LLMProvider, iter_llm_tokens
-from app.generation.usage import LlmUsage, take_llm_usage, usage_log_fields
 from app.generation.prompt import build_rag_prompt
-from app.observability.events import emit, stage_timer
+from app.generation.usage import LlmUsage, take_llm_usage, usage_log_fields
 from app.ingestion.schemas import SearchHit
+from app.observability.events import emit, stage_timer
 from app.retrieval.bm25_store import Bm25ChunkIndex
 from app.retrieval.embeddings import EmbeddingProvider
 from app.retrieval.hybrid import hybrid_search_text
