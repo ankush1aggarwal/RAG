@@ -21,7 +21,12 @@ docker run -d --name "${CONTAINER_NAME}" -p "${PORT}:8000" \
   "${IMAGE}"
 
 echo "Waiting for ${HEALTH_URL} (embedding model load may take several minutes)..."
-for _ in $(seq 1 90); do
+for attempt in $(seq 1 90); do
+  if ! docker inspect -f '{{.State.Running}}' "${CONTAINER_NAME}" 2>/dev/null | grep -q true; then
+    echo "FAIL: container exited before /health was ready" >&2
+    docker logs "${CONTAINER_NAME}" >&2 || true
+    exit 1
+  fi
   if curl -sf "${HEALTH_URL}" >/dev/null; then
     echo "OK /health"
     curl -sf "${HEALTH_URL}"
@@ -29,6 +34,10 @@ for _ in $(seq 1 90); do
     ready_code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/ready" || true)"
     echo "INFO /ready -> HTTP ${ready_code} (503 expected without mounted production index + Ollama)"
     exit 0
+  fi
+  if [ "$((attempt % 6))" -eq 0 ]; then
+    echo "Still waiting (${attempt}/90)..."
+    docker logs "${CONTAINER_NAME}" 2>&1 | tail -n 15 || true
   fi
   sleep 5
 done

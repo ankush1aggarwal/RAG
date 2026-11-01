@@ -2,10 +2,7 @@
 
 from datasets import Dataset, load_dataset
 
-# Official BEIR FiQA corpus (~57k docs); aligns with BeIR/fiqa-qrels corpus-id.
-FIQA_HF_ID = "BeIR/fiqa"
-FIQA_CORPUS_CONFIG = "corpus"
-FIQA_CORPUS_SPLIT = "corpus"
+from app.ingestion.constants import FIQA_CORPUS_CONFIG, FIQA_CORPUS_SPLIT, FIQA_HF_ID
 
 
 def load_fiqa_corpus(

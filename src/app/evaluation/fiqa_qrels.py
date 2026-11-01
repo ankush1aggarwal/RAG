@@ -10,7 +10,7 @@ from typing import Literal
 
 from datasets import load_dataset
 
-from app.ingestion.corpus import FIQA_HF_ID
+from app.ingestion.constants import FIQA_HF_ID
 
 FIQA_QRELS_HF_ID = "BeIR/fiqa-qrels"
 FIQA_QUERIES_CONFIG = "queries"
