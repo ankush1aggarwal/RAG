@@ -78,8 +78,7 @@ By the end of the project, the system should demonstrate:
 
 # 1. Current Project Status
 
-> **Current phase: Week 5 complete — retrieval experiment program (E0–E9)**  
-> **Current phase: Week 7 — Observability** (Week 6 production API complete).  
+> **Current phase: Week 8 — Docker + CI** (Weeks 6–7 complete: production API + structured observability).  
 > **Lessons:** [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md) · **Results:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [roadmap](docs/RAG_PROJECT_ROADMAP.md)
 
 Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -95,10 +94,10 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 4 | Rerank + qrels eval | **Done** | Experiments 1–5; production default **dense, no rerank** (see experiment report) |
 | 5 | Experimentation | **Done** | E3–E9; frozen eval: **BGE 200w** NDCG@10 **0.394** (test) |
 | 6 | Production API | **Done** | Frozen `/query`, errors, SSE stream, integration tests ([`week6_sprint.md`](docs/week6_sprint.md)) |
-| 7 | Observability | **Next** | Structured logs, stage timings, correlation ID in pipeline |
-| 8–9 | Ops + deploy | Planned | Docker/CI, public demo |
+| 7 | Observability | **Done** | JSON logs, stage timings, `X-Request-ID`, token/cost when provider exposes usage ([`week7_sprint.md`](docs/week7_sprint.md)) |
+| 8–9 | Ops + deploy | **Next** | Docker/CI, public demo |
 
-**Automated tests:** **225** tests — `pytest src/tests` (unit + integration; mocked Qdrant/LLM in tests). Unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and settings tests fail.
+**Automated tests:** **235** tests — `pytest src/tests` (unit + integration; mocked Qdrant/LLM in tests). Unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and settings tests fail.
 
 **Experiment results:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) (full report); per-experiment [`docs/reports/experiments/`](docs/reports/experiments/README.md); catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md). Week 4 runbook: [`week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md).
 
@@ -953,7 +952,7 @@ RAG/
 │   │   ├── generation/       ✅ LLM providers + prompt builder
 │   │   ├── pipeline/         ✅ answer_query orchestrator
 │   │   ├── evaluation/       ✅ Benchmark (Week 3); qrels metrics, Week 4 experiments, error analysis
-│   │   └── observability/    ⬜ Week 7+
+│   │   └── observability/    ✅ Week 7 JSON logs
 │   ├── scripts/
 │   │   ├── ingest.py         ✅ Build Qdrant + BM25 indexes (`--full-corpus`, `--no-recreate`)
 │   │   ├── query.py          ✅ Dense / BM25 / hybrid CLI; `--rerank`
@@ -1107,27 +1106,24 @@ Sprint tracker: [`docs/week6_sprint.md`](docs/week6_sprint.md). HTTP contract: [
 
 - [x] Frozen retrieval on `/query`, structured `ErrorResponse`, `X-Request-ID`, cooperative cancel + timeouts
 - [x] `POST /query/stream` (SSE, incremental tokens, pre-stream **422 JSON**), integration tests, OpenAPI examples
-- [ ] **You:** live smoke + merge branch ([`week6_sprint.md`](docs/week6_sprint.md) Block 0)
+- [x] **You:** live smoke + merge branch ([`week6_sprint.md`](docs/week6_sprint.md) Block 0)
 - [ ] Auth / HTTP ingest — deferred (ingest remains CLI)
 
 ---
 
-## Week 7 — Observability
+## Week 7 — Observability ✅
 
-Deliverables:
+Sprint: [`docs/week7_sprint.md`](docs/week7_sprint.md). Ops guide: [`docs/observability_guide.md`](docs/observability_guide.md).
 
-- Structured logs
-- Request tracing
-- Retrieval timing
-- Reranking timing
-- LLM timing
-- Token/cost tracking
-- Langfuse/OpenTelemetry integration
-- Evaluation reporting
+- [x] `src/app/observability/` — JSON logs, redaction, stage timers
+- [x] `request_id` in pipeline logs; RAG stage events (`query_start` / `query_complete` / `llm_usage`)
+- [x] Settings + `.env.example` (`LOG_*`, optional Cohere USD-per-1M for `estimated_cost_usd`)
+- [x] Token/cost from provider usage when available (Ollama eval counts; Cohere billed units)
+- [x] Live smoke: correlated JSON on stderr (see observability guide)
 
 ---
 
-## Week 8 — Docker + CI/CD
+## Week 8 — Docker + CI/CD **(current)**
 
 Deliverables:
 
@@ -1447,9 +1443,9 @@ The project will be considered complete when all of the following are true.
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
 - [x] Request validation (Pydantic) + structured `ErrorResponse` (`422`, `503`, `504`, `500`)
 - [x] Streaming works (`POST /query/stream`, SSE)
-- [x] Unit + integration tests (`pytest src/tests`; **225** at last count)
+- [x] Unit + integration tests (`pytest src/tests`; **235** at last count)
 - [x] `X-Request-ID`, cooperative query cancel, `QUERY_TIMEOUT_SECONDS`
-- [ ] Structured logging exists (Week 7)
+- [x] Structured logging exists ([`docs/observability_guide.md`](docs/observability_guide.md), [`week7_sprint.md`](docs/week7_sprint.md))
 - [x] Configuration is externalized (`Settings` + `.env`)
 
 ## Productionization

@@ -15,11 +15,23 @@ from app.ingestion.ingest_manifest import IngestManifest
 from app.ingestion.schemas import SearchHit
 
 
+from app.generation.usage import LlmUsage, set_last_llm_usage
+
+
 class FakeStreamLLM:
+    usage = LlmUsage(
+        provider="test",
+        prompt_tokens=100,
+        completion_tokens=20,
+        total_tokens=120,
+    )
+
     def generate(self, prompt: str, *, system: str | None = None) -> str:
+        set_last_llm_usage(self.usage)
         return "integration answer."
 
     def stream_generate(self, prompt: str, *, system: str | None = None, cancel=None):
+        set_last_llm_usage(self.usage)
         yield "integration "
         yield "answer."
 

@@ -19,7 +19,7 @@ The intended outcome is a portfolio-quality RAG application for FiQA financial-i
 | Week 4 — Reranking + relevance evaluation | ✅ Done | Qrels, IR metrics, reranker, experiment program 1–5, error analysis |
 | Week 5 — **Experimentation sprint** | ✅ Done | E3–E9 complete; frozen retrieval: **200w / BGE / dense** (see lessons report) |
 | Week 6 — Production API engineering | ✅ Complete | Frozen profile, errors, streaming, integration tests, docs |
-| Week 7 — Observability | ⬜ | Structured logs, tracing, latency/error/cost visibility |
+| Week 7 — Observability | ✅ | Structured JSON logs, stage timings, correlation ID, token/cost when available |
 | Week 8 — Container + CI | ⬜ | Reproducible Docker runtime and automated checks on GitHub |
 | Week 9 — Deployment + public demo | ⬜ | Hosted API, Qdrant Cloud, smoke tests and demo UI |
 | Final polish — Portfolio | ⬜ | Final docs, architecture image, demo evidence, blog/LinkedIn write-up |
@@ -178,27 +178,27 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 3. ✅ `QUERY_TIMEOUT_SECONDS`, cooperative cancel (`QueryScope`), Ollama stream abort on timeout
 4. ✅ Lifespan `close_resources`; smoke script with `X-Request-ID` and `--stream`
 5. ✅ Single-pass `/ready` diagnostics; field docs in README + contract
-6. ✅ `src/tests/integration/` + **225** tests under `src/tests/`
+6. ✅ `src/tests/integration/` + **235** tests under `src/tests/`
 7. ✅ OpenAPI examples and route `responses`
 8. ✅ Frozen profile enforced in settings + `/query` (`production_retrieval.py`)
 
 **Definition of done:** met for code/tests/docs; **live smoke + PR merge** remain operator steps ([`docs/week6_sprint.md`](week6_sprint.md) Block 0).
 
-## Week 7 — Observability ⬜
+## Week 7 — Observability ✅
 
 **Goal:** Explain what a query did and where latency/errors/cost came from without exposing secrets or unnecessarily logging user data.
 
-1. Choose one primary approach: lightweight structured JSON logs first; add OpenTelemetry or Langfuse only where it gives concrete value.
-2. Assign a request/correlation ID and propagate it through retrieval, reranking and generation.
-3. Log method, candidate counts, reranker use, timings by stage, errors and provider/model IDs. Avoid logging API keys or full sensitive prompts/context by default.
-4. Track p50/p95 and error counts; record token usage and estimated LLM cost when the provider returns the needed usage data.
-5. Add tests for log fields/redaction and failure reporting; document how to enable/disable telemetry.
-6. Update the benchmark/report so total query latency can be separated into retrieval, reranking and generation.
+1. ✅ **Structured JSON logs to stderr** (stdlib only — no OpenTelemetry or Langfuse).
+2. ✅ Propagate **`X-Request-ID`** into RAG stage logs (middleware + thread pool).
+3. ✅ Log method, candidate counts, reranker use, **timings by stage**, errors and provider/model IDs. Avoid logging API keys or full prompts/context by default.
+4. ✅ Token usage on `llm_usage` / `query_complete` when Ollama or Cohere returns counts; optional **`estimated_cost_usd`** via Cohere pricing env vars. p50/p95 in log aggregator — **Week 8+** deployment.
+5. ✅ Tests for log fields/redaction + integration caplog on `/query`; [`docs/observability_guide.md`](observability_guide.md).
+6. Eval reports can split latency using `duration_ms` on `stage_*` events.
 
-**Deliverables:** `src/app/observability/` implementation, config switches, tests and a short operational guide.  
-**Definition of done:** a sample request can be traced through the main stages and its latency/failure cause is observable without leaking secrets.
+**Deliverables:** `src/app/observability/`, `src/app/generation/usage.py`, config switches, tests, operational guide.  
+**Definition of done:** met — sample request traceable through main stages; latency/failure observable without leaking secrets.
 
-## Week 8 — Docker + CI ⬜
+## Week 8 — Docker + CI ⬜ **(current)**
 
 **Goal:** Recreate the runtime in a clean environment and automatically reject regressions.
 
@@ -264,11 +264,12 @@ Reuse the existing ingestion, Qdrant, BM25, RRF, reranker, evaluation, API and o
 
 Use this as the live checklist in commits/PR descriptions. Complete the current step before starting the next unless there is a clear dependency reason to parallelize.
 
-### Immediate next action — Week 7 observability
+### Immediate next action — Week 8 Docker + CI
 - [x] Week 5 experimentation (E3–E9); frozen retrieval profile documented.
-- [x] Week 6 production API ([`week6_sprint.md`](week6_sprint.md) blocks 1–8).
-- [ ] **You:** live API smoke; merge Week 6 branch when ready.
-- [ ] **E10** generation/citation eval (optional, parallel with Week 7).
+- [x] Week 6 production API ([`week6_sprint.md`](week6_sprint.md) blocks 1–8); live smoke.
+- [x] Week 7 observability ([`week7_sprint.md`](week7_sprint.md); [`observability_guide.md`](observability_guide.md)).
+- [ ] **Dockerfile**, `.dockerignore`, and GitHub Actions (lint + tests).
+- [ ] **E10** generation/citation eval (optional, parallel with Week 8).
 
 ### Week 6 (API)
 - [x] Block 0 baseline (`docs/week6_sprint.md`, `smoke_api.py`)
@@ -282,10 +283,10 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 - [x] Lifecycle smoke (`close_resources`, `smoke_api.py --stream`)
 
 ### Week 7
-- [ ] Structured logs and correlation IDs
-- [ ] Stage-level latency/error instrumentation
-- [ ] Token/cost accounting where available
-- [ ] Redaction/privacy checks and tests
+- [x] Structured JSON logs (`src/app/observability/`, `docs/observability_guide.md`)
+- [x] Correlation ID in pipeline + stage latency events
+- [x] Token/cost accounting when provider returns usage (`src/app/generation/usage.py`)
+- [x] Redaction tests + log-based integration test on `/query`
 
 ### Week 8
 - [ ] Dockerfile and `.dockerignore`

@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 
 from app.cooperative_cancel import cooperative_check
 from app.generation.llm import LLMProvider, iter_llm_tokens
+from app.generation.usage import LlmUsage, take_llm_usage, usage_log_fields
 from app.generation.prompt import build_rag_prompt
+from app.observability.events import emit, stage_timer
 from app.ingestion.schemas import SearchHit
 from app.retrieval.bm25_store import Bm25ChunkIndex
 from app.retrieval.embeddings import EmbeddingProvider
@@ -35,6 +37,7 @@ class RagAnswer(BaseModel):
     retrieval_method: RetrievalMethod = "dense"
     reranker: str | None = None
     retrieval_candidate_count: int | None = None
+    llm_usage: LlmUsage | None = None
 
 
 class RagGenerationContext(BaseModel):
@@ -47,6 +50,7 @@ class RagGenerationContext(BaseModel):
     retrieval_method: RetrievalMethod = "dense"
     reranker: str | None = None
     retrieval_candidate_count: int | None = None
+    llm_usage: LlmUsage | None = None
 
 
 def citations_from_hits(hits: list[SearchHit]) -> list[SourceCitation]:
@@ -115,21 +119,28 @@ def retrieve_with_optional_rerank(
             candidate_limit=rerank_candidate_limit,
         )
 
-    hits = retrieve_hits(
-        question,
+    with stage_timer(
+        "retrieval",
         retrieval_method=retrieval_method,
-        store=store,
-        embedder=embedder,
-        bm25_index=bm25_index,
         top_k=top_k,
-        fusion_weights=fusion_weights,
-        candidate_limit=candidate_limit,
-    )
+        use_rerank=use_rerank,
+    ):
+        hits = retrieve_hits(
+            question,
+            retrieval_method=retrieval_method,
+            store=store,
+            embedder=embedder,
+            bm25_index=bm25_index,
+            top_k=top_k,
+            fusion_weights=fusion_weights,
+            candidate_limit=candidate_limit,
+        )
     candidate_count: int | None = None
     reranker_name: str | None = None
     if use_rerank and reranker is not None:
         candidate_count = len(hits)
-        hits = reranker.rerank(question, hits, top_k=top_k)
+        with stage_timer("rerank", reranker=reranker.name, candidates=candidate_count):
+            hits = reranker.rerank(question, hits, top_k=top_k)
         reranker_name = reranker.name
     return hits, reranker_name, candidate_count
 
@@ -168,7 +179,16 @@ def prepare_rag_generation(
     )
 
     cooperative_check()
-    prompt = build_rag_prompt(question, hits)
+    with stage_timer("prompt_build", hit_count=len(hits)):
+        prompt = build_rag_prompt(question, hits)
+    emit(
+        "retrieval_complete",
+        retrieval_method=retrieval_method,
+        top_k=top_k,
+        hit_count=len(hits),
+        reranker=reranker_name,
+        candidates_retrieved=candidate_count,
+    )
     return RagGenerationContext(
         prompt_user=prompt.user,
         prompt_system=prompt.system,
@@ -180,16 +200,30 @@ def prepare_rag_generation(
     )
 
 
+def _attach_generation_usage(
+    usage: LlmUsage | None,
+    *,
+    context: RagGenerationContext | None = None,
+) -> LlmUsage | None:
+    if usage is not None:
+        emit("llm_usage", **usage_log_fields(usage))
+        if context is not None:
+            context.llm_usage = usage
+    return usage
+
+
 def stream_answer_tokens(
     context: RagGenerationContext,
     llm: LLMProvider,
 ) -> Iterator[str]:
     """Yield answer text deltas from the LLM for a prepared RAG context."""
-    yield from iter_llm_tokens(
-        llm,
-        context.prompt_user,
-        system=context.prompt_system,
-    )
+    with stage_timer("generation", streaming=True):
+        yield from iter_llm_tokens(
+            llm,
+            context.prompt_user,
+            system=context.prompt_system,
+        )
+    _attach_generation_usage(take_llm_usage(), context=context)
 
 
 def answer_query(
@@ -218,7 +252,10 @@ def answer_query(
         rerank_candidate_limit=rerank_candidate_limit,
     )
     cooperative_check()
-    answer = llm.generate(context.prompt_user, system=context.prompt_system)
+    with stage_timer("generation"):
+        answer = llm.generate(context.prompt_user, system=context.prompt_system)
+    usage = take_llm_usage()
+    _attach_generation_usage(usage)
 
     return RagAnswer(
         answer=answer,
@@ -227,4 +264,5 @@ def answer_query(
         retrieval_method=context.retrieval_method,
         reranker=context.reranker,
         retrieval_candidate_count=context.retrieval_candidate_count,
+        llm_usage=usage,
     )

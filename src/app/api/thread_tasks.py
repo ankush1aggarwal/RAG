@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import TypeVar
 
 from app.cooperative_cancel import QueryCancelledError, QueryScope, invoke_in_scope
+from app.observability.context import observability_context
 
 T = TypeVar("T")
 
@@ -20,6 +21,7 @@ async def run_bounded_sync(
     func: Callable[..., T],
     /,
     *args: object,
+    request_id: str | None = None,
     **kwargs: object,
 ) -> T:
     """
@@ -28,9 +30,12 @@ async def run_bounded_sync(
     On timeout, calls ``scope.cancel()`` so in-flight LLM streams can abort; does not
     force-kill the OS thread if ``func`` ignores the cancel flag.
     """
-    task = asyncio.create_task(
-        asyncio.to_thread(invoke_in_scope, scope, func, *args, **kwargs),
-    )
+
+    def _worker() -> T:
+        with observability_context(request_id):
+            return invoke_in_scope(scope, func, *args, **kwargs)
+
+    task = asyncio.create_task(asyncio.to_thread(_worker))
     try:
         while True:
             try:

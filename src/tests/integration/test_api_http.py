@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api.main import create_app
@@ -56,6 +58,34 @@ def test_http_stack_carries_request_id_on_success_path(integration_client: TestC
     assert query.status_code == 200
     assert query.headers["X-Request-ID"] == "trace-abc"
     assert query.json()["answer"] == "integration answer."
+
+
+def test_query_emits_correlated_structured_logs(
+    integration_client: TestClient,
+    caplog: pytest.LogCaptureFixture,
+):
+    caplog.set_level(logging.INFO, logger="fiqa.rag")
+    with caplog.at_level(logging.INFO, logger="fiqa.rag"):
+        response = integration_client.post(
+            "/query",
+            json={"question": "What is APR?", "top_k": 2},
+            headers={"X-Request-ID": "int-log-trace"},
+        )
+    assert response.status_code == 200
+    payloads = [
+        record.structured
+        for record in caplog.records
+        if hasattr(record, "structured") and isinstance(record.structured, dict)
+    ]
+    events = [payload["event"] for payload in payloads]
+    assert "query_start" in events
+    assert "query_complete" in events
+    complete = next(payload for payload in payloads if payload["event"] == "query_complete")
+    assert complete["request_id"] == "int-log-trace"
+    assert complete["prompt_tokens"] == 100
+    assert complete["completion_tokens"] == 20
+    assert complete["total_tokens"] == 120
+    assert any(payload["event"] == "llm_usage" for payload in payloads)
 
 
 def test_readiness_503_detail_includes_operator_fields(integration_client: TestClient):
