@@ -334,4 +334,4 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 
 ## Next implementation steps
 
-**Week 8:** Dockerfile, `.dockerignore`, GitHub Actions (lint + tests), reproducible container smoke path.
+**Week 8:** Dockerfile, `.dockerignore`, Compose, [`docs/docker.md`](docs/docker.md), GHCR (`ghcr.io/<owner>/fiqa-production-rag`); CI lint/tests next.

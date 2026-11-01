@@ -1,0 +1,42 @@
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Python / tooling
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# IDE / OS
+.cursor/
+.vscode/
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Local indexes and large artifacts (mount at runtime)
+data/
+notebooks/
+docs/reports/
+*.log
+api.log
+
+# Docs and non-runtime assets (keep README for pip install)
+docs/
+*.md
+!README.md
+PROJECT_SPEC.md
+
+# Jupyter
+.ipynb_checkpoints/
