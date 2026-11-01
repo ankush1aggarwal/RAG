@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -118,3 +118,75 @@ def test_search_text_uses_embedder(vector_store: QdrantChunkStore):
 
     assert len(hits) == 1
     assert hits[0].doc_id == "160"
+
+
+@patch("app.retrieval.qdrant_store.QdrantClient")
+def test_from_connection_uses_remote_url(mock_client: MagicMock):
+    QdrantChunkStore.from_connection(
+        collection_name="fiqa",
+        url="https://example.cloud.qdrant.io:6333",
+        api_key="test-key",
+        path="data/qdrant_local",
+    )
+    mock_client.assert_called_once_with(
+        url="https://example.cloud.qdrant.io:6333",
+        api_key="test-key",
+    )
+
+
+@patch("app.retrieval.qdrant_store.QdrantClient")
+def test_from_connection_remote_url_without_api_key(mock_client: MagicMock):
+    QdrantChunkStore.from_connection(
+        collection_name="fiqa",
+        url="https://example.cloud.qdrant.io",
+        api_key=None,
+        path=None,
+    )
+    mock_client.assert_called_once_with(url="https://example.cloud.qdrant.io")
+
+
+@patch("app.retrieval.qdrant_store.QdrantClient")
+def test_from_connection_local_path_when_no_url(mock_client: MagicMock):
+    QdrantChunkStore.from_connection(
+        collection_name="fiqa",
+        url=None,
+        path="/var/qdrant",
+    )
+    mock_client.assert_called_once_with(path="/var/qdrant")
+
+
+@patch("app.retrieval.qdrant_store.QdrantClient")
+def test_from_connection_in_memory_when_no_url_and_no_path(mock_client: MagicMock):
+    QdrantChunkStore.from_connection(collection_name="fiqa", url=None, path=None)
+    mock_client.assert_called_once_with(":memory:")
+
+
+@patch("app.retrieval.qdrant_connection.QdrantChunkStore.from_connection")
+def test_open_qdrant_chunk_store_prefers_url(mock_from_connection: MagicMock):
+    from app.config.settings import Settings
+    from app.retrieval.qdrant_connection import open_qdrant_chunk_store
+
+    settings = Settings(
+        _env_file=None,
+        qdrant_url="https://cloud.example",
+        qdrant_api_key="key",
+        qdrant_path="data/qdrant_local",
+    )
+    open_qdrant_chunk_store(settings, "my_coll", path_override="/ignored")
+    mock_from_connection.assert_called_once_with(
+        collection_name="my_coll",
+        url="https://cloud.example",
+        api_key="key",
+    )
+
+
+@patch("app.retrieval.qdrant_connection.QdrantChunkStore.from_connection")
+def test_open_qdrant_chunk_store_local_path(mock_from_connection: MagicMock):
+    from app.config.settings import Settings
+    from app.retrieval.qdrant_connection import open_qdrant_chunk_store
+
+    settings = Settings(_env_file=None, qdrant_url=None, qdrant_path="data/qdrant_local")
+    open_qdrant_chunk_store(settings, "my_coll", path_override="custom/path")
+    mock_from_connection.assert_called_once()
+    assert mock_from_connection.call_args.kwargs["collection_name"] == "my_coll"
+    assert mock_from_connection.call_args.kwargs["path"] is not None

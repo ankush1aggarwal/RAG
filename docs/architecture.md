@@ -31,8 +31,8 @@ flowchart TB
     K -->|"Success / failure"| L["GitHub PR status"]
     K -.->|"Optional: publish image later"| M["GitHub Container Registry"]
 
-    subgraph CLOUD["Week 9 — Cloud Deployment"]
-        N["Cloud container service / VM"]
+    subgraph CLOUD["Week 9 — Cloud Deployment (Cloud Run)"]
+        N["Cloud Run service (GHCR image)"]
         O["Persistent Qdrant storage or managed Qdrant"]
         P["LLM endpoint"]
         N --> O
@@ -55,6 +55,7 @@ flowchart TB
 
 ## Related
 
-- [`week8_sprint.md`](week8_sprint.md) — sprint checklist  
+- [`cloud_run.md`](cloud_run.md) — Qdrant Cloud env + Cloud Run outline  
+- [`week8_sprint.md`](week8_sprint.md) — container + CI checklist  
 - [`observability_guide.md`](observability_guide.md) — JSON logs on stderr  
 - [`api_contract.md`](api_contract.md) — HTTP API

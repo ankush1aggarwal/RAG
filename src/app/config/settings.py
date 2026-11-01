@@ -51,10 +51,13 @@ class Settings(BaseSettings):
     chunk_size: int = FROZEN_CHUNK_SIZE
     chunk_overlap_fraction: float = FROZEN_CHUNK_OVERLAP_FRACTION
 
-    # Relative paths resolve from repository root. Use empty string for in-memory Qdrant.
+    # Local Qdrant directory (relative to repo root). Empty string = in-memory. Ignored when ``qdrant_url`` is set.
     qdrant_path: str = "data/qdrant_local"
+    qdrant_url: str | None = None
+    qdrant_api_key: str | None = None
     collection_name: str = FROZEN_COLLECTION_NAME
     bm25_index_dir: str = "data/bm25_indexes"
+    # Manifest path: ``{bm25_index_dir}/{collection}.manifest.json`` (see ``manifest_path_for_collection``).
 
     # Reranker (optional at query time; default provider is local cross-encoder)
     reranker_provider: str = "none"  # cross_encoder | cohere | none (dev API / CLI)
@@ -89,6 +92,14 @@ class Settings(BaseSettings):
         if not path.is_absolute():
             path = _REPO_ROOT / path
         return str(path)
+
+    def resolved_qdrant_url(self) -> str | None:
+        raw = (self.qdrant_url or "").strip()
+        return raw or None
+
+    def resolved_qdrant_api_key(self) -> str | None:
+        raw = (self.qdrant_api_key or "").strip()
+        return raw or None
 
     def resolved_bm25_index_path(self, collection_name: str | None = None) -> Path:
         name = collection_name or self.collection_name

@@ -38,7 +38,7 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | API | **FastAPI** + **Uvicorn** | `/health`, `/ready`, `POST /query` with `method`: `dense` \| `bm25` \| `hybrid`; streaming later |
 | Observability | Structured JSON logs (stdlib) | **Week 7** ✅ — no OTel/Langfuse |
 | Packaging / CI | Docker + **GitHub Actions** | **Week 8** ✅ |
-| Hosting | Render + Qdrant Cloud | **Week 9** |
+| Hosting | **Google Cloud Run** + Qdrant Cloud | **Week 9** |
 
 ## Repository layout (this repo)
 
@@ -168,8 +168,17 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 | `data/qdrant_local/` | `ingest.py` | No (`.gitignore`) |
 | `data/bm25_indexes/*.pkl` | `ingest.py` | No (`.gitignore`) |
 | `data/bm25_indexes/*.manifest.json` | `ingest.py` | No (same directory) |
+| `deploy/index_metadata/*.manifest.json` | Copied from local ingest after re-index | **Yes** (for Cloud Run `/ready`; no `.pkl` required when frozen dense) |
 
 **`ingest.py --recreate` (default):** deletes and rebuilds the Qdrant collection and replaces BM25 + manifest. Use after changing corpus limit, chunking, or embeddings.
+
+**After a new production ingest:** copy the manifest into the repo (not hand-edited), then rebuild the container image:
+
+```powershell
+Copy-Item data\bm25_indexes\fiqa_cs200_bge_base_en_v1_5.manifest.json deploy\index_metadata\
+```
+
+See [`deploy/index_metadata/README.md`](deploy/index_metadata/README.md) and [`docs/cloud_run.md`](docs/cloud_run.md). Container default: `BM25_INDEX_DIR=deploy/index_metadata`.
 
 **`ingest.py --no-recreate`:** re-embeds and upserts only if the new run matches the saved manifest (corpus limit, chunking, embedding method/model/dimension, document/chunk counts) and Qdrant `point_count` equals `num_chunks`. Otherwise ingest exits with an error — run with `--recreate`.
 
@@ -177,7 +186,7 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 
 **`/ready` alignment:** manifest must match runtime ingest/embedding settings (method, model id, dimension, collection, corpus limit, chunking), Qdrant point count and vector size, BM25 chunk count, and matching `ingest_generation_id` on manifest and BM25 pickle.
 
-Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, embedding model) and `python src/scripts/ingest.py`, not from committing binary indexes. This project does **not** ship a demo BM25 pickle in git.
+Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, embedding model) and `python src/scripts/ingest.py`, not from committing binary indexes. The repo **does** commit the **deploy manifest JSON** for Cloud Run; it does **not** ship BM25 pickles or Qdrant files in git.
 
 ### BM25 pickle security
 

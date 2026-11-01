@@ -18,7 +18,7 @@ from app.evaluation.rerank_error_analysis import (
     append_analysis_to_report,
     render_rerank_error_analysis_report,
 )
-from app.retrieval import QdrantChunkStore, create_embedding_provider, create_reranker_provider
+from app.retrieval import create_embedding_provider, create_reranker_provider, open_qdrant_chunk_store
 
 BENCHMARK_DIR = Path(_REPO_ROOT) / "data" / "benchmarks"
 REPORT_PATH = Path(_REPO_ROOT) / "docs" / "reports" / "week4_exp5_test_rerank.md"
@@ -53,7 +53,6 @@ def main() -> None:
     if not baseline_path.is_file() or not rerank_path.is_file():
         raise SystemExit("Missing Exp 4/5 dense JSON artifacts; run experiments first.")
 
-    qdrant_path = settings.resolved_qdrant_path()
     embedder = create_embedding_provider(
         settings.embedding_method,
         model_name=settings.embedding_model,
@@ -69,7 +68,7 @@ def main() -> None:
     if reranker is None:
         raise SystemExit("cross_encoder reranker unavailable")
 
-    store = QdrantChunkStore.from_path(qdrant_path, args.collection)
+    store = open_qdrant_chunk_store(settings, args.collection)
     try:
         print("Analyzing dense rerank deltas (re-fetching candidates where dNDCG@10 != 0)...")
         classified, summary = analyze_dense_rerank(

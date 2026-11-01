@@ -18,7 +18,7 @@ from app.evaluation.retrieval_eval import (
     render_week4_comparison_report,
     save_eval_result,
 )
-from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
+from app.retrieval import Bm25ChunkIndex, create_embedding_provider, open_qdrant_chunk_store
 from app.retrieval.embeddings import embedding_model_for_method
 
 
@@ -61,10 +61,6 @@ def main() -> None:
             queries=tuple(limited),
         )
 
-    qdrant_path = args.qdrant_path.strip() or None
-    if qdrant_path is not None and not os.path.isabs(qdrant_path):
-        qdrant_path = os.path.join(_REPO_ROOT, qdrant_path)
-
     bm25_path = settings.resolved_bm25_index_path(args.collection)
     bm25_index = Bm25ChunkIndex.load(bm25_path)
 
@@ -77,7 +73,11 @@ def main() -> None:
         cohere_embed_batch_sleep_seconds=settings.cohere_embed_batch_sleep_seconds,
     )
 
-    store = QdrantChunkStore.from_path(qdrant_path, args.collection)
+    store = open_qdrant_chunk_store(
+        settings,
+        args.collection,
+        path_override=args.qdrant_path,
+    )
     try:
         results = evaluate_all_methods(
             dataset,

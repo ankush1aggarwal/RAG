@@ -16,25 +16,36 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml README.md ./
+COPY deploy ./deploy
 COPY src ./src
 
 RUN pip install ".[api,embeddings]"
 
+# Prefetch frozen production embedder (BGE-base) into the image layer.
+ENV HF_HOME=/app/.cache/huggingface \
+    TRANSFORMERS_CACHE=/app/.cache/huggingface \
+    HUGGINGFACE_HUB_CACHE=/app/.cache/huggingface \
+    HF_HUB_DISABLE_SYMLINKS_WARNING=1
+RUN mkdir -p /app/.cache/huggingface \
+    && PYTHONPATH=/app/src python /app/src/scripts/prefetch_embedding_model.py
+
 RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin app \
-    && mkdir -p /data/qdrant /data/hf_cache \
-    && chown -R app:app /app /data/qdrant /data/hf_cache
+    && mkdir -p /data/qdrant \
+    && chown -R app:app /app /data/qdrant
 
 USER app
 
-# Mount host or named volumes at runtime; do not bake indexes into the image.
+# Qdrant index is external (local mount or Qdrant Cloud). Embedding weights are baked at build time.
 ENV QDRANT_PATH=/data/qdrant \
-    HF_HOME=/data/hf_cache \
-    TRANSFORMERS_CACHE=/data/hf_cache \
-    HUGGINGFACE_HUB_CACHE=/data/hf_cache
+    BM25_INDEX_DIR=deploy/index_metadata \
+    HF_HOME=/app/.cache/huggingface \
+    TRANSFORMERS_CACHE=/app/.cache/huggingface \
+    HUGGINGFACE_HUB_CACHE=/app/.cache/huggingface \
+    PORT=8080
 
-EXPOSE 8000
+EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=180s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8080') + '/health', timeout=3)"
 
-CMD ["python", "src/scripts/serve_api.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "src/scripts/serve_api.py", "--host", "0.0.0.0"]

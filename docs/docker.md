@@ -7,10 +7,18 @@ Run the **FiQA RAG API** in a container without baking secrets or local Qdrant d
 ## What the image contains
 
 - Python 3.12 slim + app install: `pip install ".[api,embeddings]"` (FastAPI, Uvicorn, sentence-transformers, Qdrant client, etc.)
-- **Not included:** `.env`, Qdrant files, BM25 pickles, Hugging Face model weights (downloaded on first startup into `HF_HOME` unless pre-cached on a volume)
+- **Baked at build:** `BAAI/bge-base-en-v1.5` weights under `/app/.cache/huggingface` (`src/scripts/prefetch_embedding_model.py` during `docker build`) — avoids Hub downloads on Cloud Run cold start
+- **Not included:** `.env`, Qdrant data, BM25 pickles
 - **Not included:** optional **`datasets`** (ingest/eval scripts only). The API imports `app.ingestion.schemas` only; `app/ingestion/__init__.py` must not import `corpus`/`normalize` (see `test_api_startup_imports.py`).
 
-See also: [`architecture.md`](architecture.md) (dev → Actions → GHCR → cloud).
+See also: [`architecture.md`](architecture.md), [`cloud_run.md`](cloud_run.md) (Qdrant Cloud + Cloud Run).
+
+## Qdrant: local path vs Qdrant Cloud
+
+- **Local / Compose:** `QDRANT_PATH=data/qdrant_local` (default); leave `QDRANT_URL` unset.
+- **Cloud Run:** set `QDRANT_URL` and `QDRANT_API_KEY`; do not rely on container disk for the vector index.
+
+Details: [`cloud_run.md`](cloud_run.md).
 
 ## CI container smoke (primary)
 
@@ -45,7 +53,9 @@ On Linux, `OLLAMA_BASE_URL=http://host.docker.internal:11434` uses `extra_hosts:
 ### Readiness vs liveness
 
 - **`/health`** — liveness once Uvicorn and startup (embedder load) complete; **this is what CI asserts**.
-- **`/ready`** — needs aligned Qdrant collection, embedder, and LLM; full RAG smoke remains a **manual** step with mounted data + Ollama/Cohere.
+- **`/ready`** — needs aligned Qdrant collection, embedder, and LLM; uses the ingest manifest under `BM25_INDEX_DIR` (image default: `deploy/index_metadata/`). Full RAG smoke remains a **manual** step with mounted data + Ollama/Cohere.
+
+**After re-ingest:** copy `data/bm25_indexes/<collection>.manifest.json` → `deploy/index_metadata/`, commit, rebuild the image — see [`deploy/index_metadata/README.md`](../deploy/index_metadata/README.md).
 
 ## GitHub Container Registry (GHCR)
 

@@ -18,7 +18,7 @@ from app.evaluation.retrieval_eval import (
     save_eval_result,
 )
 from app.evaluation.retrieval_metrics import DEFAULT_K_VALUES
-from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
+from app.retrieval import Bm25ChunkIndex, create_embedding_provider, open_qdrant_chunk_store
 
 
 def main() -> None:
@@ -70,10 +70,6 @@ def main() -> None:
             queries=tuple(limited),
         )
 
-    qdrant_path = args.qdrant_path.strip() or None
-    if qdrant_path is not None and not os.path.isabs(qdrant_path):
-        qdrant_path = os.path.join(_REPO_ROOT, qdrant_path)
-
     bm25_index = None
     if args.method in ("bm25", "hybrid"):
         bm25_path = settings.resolved_bm25_index_path(args.collection)
@@ -88,7 +84,11 @@ def main() -> None:
         cohere_embed_batch_sleep_seconds=settings.cohere_embed_batch_sleep_seconds,
     )
 
-    store = QdrantChunkStore.from_path(qdrant_path, args.collection)
+    store = open_qdrant_chunk_store(
+        settings,
+        args.collection,
+        path_override=args.qdrant_path,
+    )
     try:
         print(
             f"Evaluating method={args.method} on {dataset.num_queries} queries "

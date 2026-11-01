@@ -19,12 +19,31 @@ class QdrantChunkStore:
         self._closed = False
 
     @classmethod
-    def from_path(cls, path: str | None, collection_name: str) -> QdrantChunkStore:
-        if path is None:
+    def from_connection(
+        cls,
+        *,
+        collection_name: str,
+        url: str | None = None,
+        api_key: str | None = None,
+        path: str | None = None,
+    ) -> QdrantChunkStore:
+        """Connect to Qdrant Cloud when ``url`` is set; otherwise local path or in-memory."""
+        url = (url or "").strip() or None
+        if url:
+            kwargs: dict[str, str] = {"url": url}
+            key = (api_key or "").strip()
+            if key:
+                kwargs["api_key"] = key
+            client = QdrantClient(**kwargs)
+        elif path is None:
             client = QdrantClient(":memory:")
         else:
             client = QdrantClient(path=path)
         return cls(client, collection_name)
+
+    @classmethod
+    def from_path(cls, path: str | None, collection_name: str) -> QdrantChunkStore:
+        return cls.from_connection(collection_name=collection_name, path=path)
 
     def collection_exists(self) -> bool:
         return self._client.collection_exists(self._collection_name)

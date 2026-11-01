@@ -52,7 +52,7 @@ from app.ingestion.ingest_manifest import (
     load_manifest,
     manifest_path_for_collection,
 )
-from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
+from app.retrieval import Bm25ChunkIndex, create_embedding_provider, open_qdrant_chunk_store
 from app.retrieval.embeddings import embedding_dimension
 
 BENCHMARK_DIR = Path(_REPO_ROOT) / "data" / "benchmarks"
@@ -100,7 +100,7 @@ def _list_bm25_collections(settings) -> list[str]:
 
 
 def delete_collection_bundle(settings, collection: str, qdrant_path: str | None) -> None:
-    store = QdrantChunkStore.from_path(qdrant_path, collection)
+    store = open_qdrant_chunk_store(settings, collection, path_override=qdrant_path)
     try:
         if store.drop_collection():
             print(f"Deleted Qdrant collection '{collection}'.")
@@ -191,7 +191,9 @@ def _needs_treatment_ingest(
 ) -> bool:
     if force:
         return True
-    store = QdrantChunkStore.from_path(qdrant_path, TREATMENT_COLLECTION)
+    store = open_qdrant_chunk_store(
+        settings, TREATMENT_COLLECTION, path_override=qdrant_path
+    )
     try:
         if not store.collection_exists() or store.point_count() == 0:
             return True
@@ -266,7 +268,7 @@ def _open_store(settings, collection: str, qdrant_path: str | None):
         cohere_embed_batch_size=settings.cohere_embed_batch_size,
         cohere_embed_batch_sleep_seconds=settings.cohere_embed_batch_sleep_seconds,
     )
-    store = QdrantChunkStore.from_path(qdrant_path, collection)
+    store = open_qdrant_chunk_store(settings, collection, path_override=qdrant_path)
     return store, embedder, bm25
 
 

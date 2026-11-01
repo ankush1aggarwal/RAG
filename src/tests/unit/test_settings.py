@@ -10,7 +10,8 @@ from app.config.production_retrieval import (
 from app.config.settings import _REPO_ROOT, Settings
 
 
-def test_settings_defaults():
+def test_settings_defaults(monkeypatch):
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
     settings = Settings(_env_file=None)
     assert settings.embedding_model == FROZEN_EMBEDDING_MODEL
     assert settings.embedding_method == "sentence_transformer"
@@ -52,3 +53,15 @@ def test_resolved_qdrant_path_keeps_absolute_path():
     abs_path = Path("D:/custom/qdrant")
     settings = Settings(qdrant_path=str(abs_path), _env_file=None)
     assert Path(settings.resolved_qdrant_path()) == abs_path
+
+
+def test_resolved_qdrant_url_strips_blank():
+    settings = Settings(qdrant_url="  https://cloud.qdrant.io  ", _env_file=None)
+    assert settings.resolved_qdrant_url() == "https://cloud.qdrant.io"
+    settings = Settings(qdrant_url="", _env_file=None)
+    assert settings.resolved_qdrant_url() is None
+
+
+def test_resolved_qdrant_api_key_strips_blank():
+    settings = Settings(qdrant_api_key="  secret  ", _env_file=None)
+    assert settings.resolved_qdrant_api_key() == "secret"

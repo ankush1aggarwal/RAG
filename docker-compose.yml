@@ -6,15 +6,18 @@ services:
     build: .
     image: fiqa-production-rag:local
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "${API_PORT:-8000}:${API_PORT:-8000}"
     env_file:
       - path: .env
         required: false
     environment:
+      PORT: ${API_PORT:-8000}
       QDRANT_PATH: /data/qdrant
-      HF_HOME: /data/hf_cache
-      TRANSFORMERS_CACHE: /data/hf_cache
-      HUGGINGFACE_HUB_CACHE: /data/hf_cache
+      # Optional: override to download models at runtime instead of using the image bake:
+      # HF_HOME: /data/hf_cache
+      HF_HOME: /app/.cache/huggingface
+      TRANSFORMERS_CACHE: /app/.cache/huggingface
+      HUGGINGFACE_HUB_CACHE: /app/.cache/huggingface
       # Reach Ollama on the host from inside the container (Docker Desktop / Linux 20.10+).
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
     volumes:
@@ -28,7 +31,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)",
+          "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8000') + '/health', timeout=3)",
         ]
       interval: 30s
       timeout: 5s

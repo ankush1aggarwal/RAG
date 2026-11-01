@@ -31,7 +31,7 @@ When `API_ENFORCE_FROZEN_RETRIEVAL=true`:
 
 - **Settings** must match E8 (`production_retrieval.py`) at startup.
 - **`POST /query`:** `method=dense`, `use_rerank=false`, `top_k=10` only.
-- **`GET /ready`:** Qdrant + manifest/dense alignment + LLM; BM25 reported but not required.
+- **`GET /ready`:** Qdrant + manifest/dense alignment + LLM; BM25 reported but not required. Manifest path: `{BM25_INDEX_DIR}/{collection}.manifest.json` (Cloud Run: copy from local ingest into `deploy/index_metadata/` after re-index — see [`cloud_run.md`](cloud_run.md)).
 
 ### `GET /ready` fields
 

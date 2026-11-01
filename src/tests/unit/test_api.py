@@ -50,7 +50,11 @@ def client() -> TestClient:
             score=0.5,
         )
     ]
-    settings = Settings(_env_file=None, api_enforce_frozen_retrieval=False)
+    settings = Settings(
+        _env_file=None,
+        api_enforce_frozen_retrieval=False,
+        llm_provider="ollama",
+    )
     manifest = IngestManifest(
         ingest_generation_id="gen-api-test",
         corpus_limit=None,
