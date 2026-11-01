@@ -12,7 +12,9 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, os.path.join(_REPO_ROOT, "src"))
 
 from app.config import get_settings
-from app.ingestion import chunks_from_documents, documents_from_corpus, load_fiqa_corpus
+from app.ingestion import chunks_from_documents
+from app.ingestion.corpus import load_fiqa_corpus
+from app.ingestion.normalize import documents_from_corpus
 from app.ingestion.ingest_manifest import (
     IngestManifest,
     IngestReuseValidationError,

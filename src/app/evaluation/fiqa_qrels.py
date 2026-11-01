@@ -8,8 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from datasets import load_dataset
-
 from app.ingestion.constants import FIQA_HF_ID
 
 FIQA_QRELS_HF_ID = "BeIR/fiqa-qrels"
@@ -44,11 +42,15 @@ class FiqaEvalDataset:
 
 def load_fiqa_queries() -> dict[str, str]:
     """Map BEIR query ``_id`` to query text."""
+    from datasets import load_dataset
+
     dataset = load_dataset(FIQA_HF_ID, FIQA_QUERIES_CONFIG, split=FIQA_QUERIES_SPLIT)
     return {str(row["_id"]): str(row["text"]) for row in dataset}
 
 
 def load_fiqa_qrels_rows(split: QrelsSplit) -> list[dict[str, object]]:
+    from datasets import load_dataset
+
     dataset = load_dataset(FIQA_QRELS_HF_ID, "default", split=split)
     return [dict(row) for row in dataset]
 

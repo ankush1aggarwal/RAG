@@ -44,7 +44,9 @@ from app.evaluation.retrieval_eval import (
     load_eval_dataset,
     save_eval_result,
 )
-from app.ingestion import chunks_from_documents, documents_from_corpus, load_fiqa_corpus
+from app.ingestion import chunks_from_documents
+from app.ingestion.corpus import load_fiqa_corpus
+from app.ingestion.normalize import documents_from_corpus
 from app.ingestion.ingest_manifest import (
     invalidate_published_ingest_artifacts,
     load_manifest,

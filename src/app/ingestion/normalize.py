@@ -1,10 +1,14 @@
 """Normalize raw BEIR FiQA corpus rows into document records."""
 
-import re
+from __future__ import annotations
 
-from datasets import Dataset
+import re
+from typing import TYPE_CHECKING, Any
 
 from app.ingestion.schemas import DocumentRecord
+
+if TYPE_CHECKING:
+    from datasets import Dataset
 
 _PARAGRAPH_SPLIT = re.compile(r"\n\s*\n+")
 
