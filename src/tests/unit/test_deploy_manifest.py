@@ -1,4 +1,4 @@
-from app.config.settings import Settings, _REPO_ROOT
+from app.config.settings import _REPO_ROOT, Settings
 from app.ingestion.ingest_manifest import load_manifest, manifest_path_for_collection
 
 

@@ -19,7 +19,12 @@ from app.ingestion.ingest_manifest import (
     validate_manifest_runtime_config,
     validate_retrieval_index_alignment,
 )
-from app.retrieval import Bm25ChunkIndex, create_embedding_provider, open_qdrant_chunk_store
+from app.retrieval import (
+    Bm25ChunkIndex,
+    QdrantChunkStore,
+    create_embedding_provider,
+    open_qdrant_chunk_store,
+)
 from app.retrieval.embeddings import (
     EmbeddingProvider,
     embedding_dimension,

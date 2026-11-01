@@ -10,8 +10,8 @@ from app.retrieval.embeddings import (
 )
 from app.retrieval.fusion import DEFAULT_RRF_K, reciprocal_rank_fusion
 from app.retrieval.hybrid import hybrid_search_text
-from app.retrieval.qdrant_store import QdrantChunkStore, VectorDimensionMismatchError
 from app.retrieval.qdrant_connection import open_qdrant_chunk_store, resolve_local_qdrant_path
+from app.retrieval.qdrant_store import QdrantChunkStore, VectorDimensionMismatchError
 from app.retrieval.reranker import (
     RerankerProvider,
     create_reranker_provider,

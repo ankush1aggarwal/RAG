@@ -10,7 +10,7 @@ from app.api.resources import (
     ready_diagnostics,
     retrieval_ready_for_api,
 )
-from app.config.production_retrieval import FROZEN_COLLECTION_NAME, FROZEN_EMBEDDING_MODEL
+from app.config.production_retrieval import FROZEN_COLLECTION_NAME
 from app.config.settings import Settings
 from app.ingestion.ingest_manifest import load_manifest, manifest_path_for_collection
 from app.retrieval.qdrant_connection import open_qdrant_chunk_store
