@@ -16,6 +16,16 @@ from app.config.production_retrieval import (
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
+def _is_windows_drive_path(value: str) -> bool:
+    """Drive-letter paths (``D:/...``) are absolute on Windows but not on POSIX."""
+    return (
+        len(value) >= 3
+        and value[0].isalpha()
+        and value[1] == ":"
+        and value[2] in ("/", "\\")
+    )
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=_REPO_ROOT / ".env",
@@ -73,6 +83,8 @@ class Settings(BaseSettings):
     def resolved_qdrant_path(self) -> str | None:
         if not self.qdrant_path:
             return None
+        if _is_windows_drive_path(self.qdrant_path):
+            return str(Path(self.qdrant_path))
         path = Path(self.qdrant_path)
         if not path.is_absolute():
             path = _REPO_ROOT / path
