@@ -167,23 +167,22 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 
 ---
 
-## Week 6 — Production API engineering ⬜
+## Week 6 — Production API engineering ✅
 
-**Goal:** Harden the API and **serve only the frozen production retrieval design** (experimental methods not exposed on default `/query` unless explicitly scoped for dev).
+**Goal:** Harden the API and **serve only the frozen production retrieval design** (experimental methods remain CLI/eval-only when enforcement is on).
 
-**Includes:**
+**Delivered:**
 
-1. **Review API contracts and errors.** Define expected status codes and response bodies for invalid requests, missing BM25, unavailable LLM/provider errors, retrieval failures and timeouts.
-2. **Add streaming** if still part of the agreed scope (`POST /query/stream`, likely Server-Sent Events). Keep non-streaming `/query` working as the compatibility path.
-3. **Add timeout and resource controls.** Ensure model/API calls are bounded; configure appropriate client timeouts and safe error mapping. Do not add blind retries to non-idempotent work.
-4. **Check lifecycle/concurrency.** Ensure clients are closed on shutdown, avoid unsafe concurrent access to embedded local Qdrant, and keep expensive startup/model loading out of each request.
-5. **Strengthen readiness.** Avoid duplicate alignment checks per `/ready` request; turn provider/network failures into controlled not-ready diagnostics. Do not treat a configured API key as proof that the provider is reachable unless that is explicitly the chosen check.
-6. **Add API-level integration tests.** Test success, invalid input, retrieval/provider failure, timeout behavior, streaming termination/errors, and readiness when dependencies are missing or misaligned.
-7. **Update OpenAPI/examples and docs.** Include request/response examples, error semantics and run commands.
-8. ~~**Enforce the frozen production retrieval profile in code**~~ ✅ Done (`production_retrieval.py`, settings validation, `/query` + startup checks).
+1. ✅ API contract, `ErrorResponse`, exception handlers (`docs/api_contract.md`)
+2. ✅ `POST /query/stream` (SSE); incremental tokens; pre-stream **422 JSON** for config/validation errors
+3. ✅ `QUERY_TIMEOUT_SECONDS`, cooperative cancel (`QueryScope`), Ollama stream abort on timeout
+4. ✅ Lifespan `close_resources`; smoke script with `X-Request-ID` and `--stream`
+5. ✅ Single-pass `/ready` diagnostics; field docs in README + contract
+6. ✅ `src/tests/integration/` + **225** tests under `src/tests/`
+7. ✅ OpenAPI examples and route `responses`
+8. ✅ Frozen profile enforced in settings + `/query` (`production_retrieval.py`)
 
-**Deliverables:** hardened routes/schemas, optional stream route, API integration tests, updated API documentation.  
-**Definition of done:** `/query` serves only the frozen profile; errors are predictable; streaming works if committed to; tests cover critical success/failure paths.
+**Definition of done:** met for code/tests/docs; **live smoke + PR merge** remain operator steps ([`docs/week6_sprint.md`](week6_sprint.md) Block 0).
 
 ## Week 7 — Observability ⬜
 
@@ -265,11 +264,11 @@ Reuse the existing ingestion, Qdrant, BM25, RRF, reranker, evaluation, API and o
 
 Use this as the live checklist in commits/PR descriptions. Complete the current step before starting the next unless there is a clear dependency reason to parallelize.
 
-### Immediate next action — Week 5 experimentation
-- [x] Week 4 artifacts and [`rag_experiment_program_report.md`](reports/rag_experiment_program_report.md).
-- [x] E3 (candidate diversity) — control pool frozen.
-- [ ] **E6–E8** (E7 after E6); optional **E9**. **E5** skipped.
-- [ ] Update experiment report with decisions; confirm or revise production profile.
+### Immediate next action — Week 7 observability
+- [x] Week 5 experimentation (E3–E9); frozen retrieval profile documented.
+- [x] Week 6 production API ([`week6_sprint.md`](week6_sprint.md) blocks 1–8).
+- [ ] **You:** live API smoke; merge Week 6 branch when ready.
+- [ ] **E10** generation/citation eval (optional, parallel with Week 7).
 
 ### Week 6 (API)
 - [x] Block 0 baseline (`docs/week6_sprint.md`, `smoke_api.py`)

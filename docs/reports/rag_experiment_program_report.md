@@ -32,7 +32,7 @@ Weighted hybrid (dense 0.95 / BM25 0.05) matches dense on test but adds fusion c
 
 **Eval discipline:** validation for tuning; test for final metrics — [`eval_protocol_reference.md`](eval_protocol_reference.md). **Primary metric:** NDCG@10; **candidate Recall@50** on first-stage pools (in eval code from this revision).
 
-Implementation note: **Week 6** must **enforce** this profile on `/query` (`method`, `use_rerank`, `top_k`) in settings/schema, not only in these docs. Until then the API keeps dev defaults (`top_k=3`, all methods).
+Implementation note: **Week 6** **enforces** this profile on `/query` and at startup when `API_ENFORCE_FROZEN_RETRIEVAL=true` (`production_retrieval.py`, `validate_frozen_retrieval_settings`). See [`docs/api_contract.md`](../api_contract.md).
 
 ---
 

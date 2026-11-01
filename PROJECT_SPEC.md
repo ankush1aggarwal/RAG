@@ -1,7 +1,7 @@
 # Project specification
 
-**Status:** Week 5 complete (retrieval frozen); **Week 6** = production API (wire frozen profile)  
-**Last updated:** 2026-10-21
+**Status:** Week 6 complete (production API); **Week 7** = observability  
+**Last updated:** 2026-11-01
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
@@ -53,7 +53,7 @@ RAG/
 │   │   ├── generation/    # Week 2
 │   │   ├── pipeline/      # RAG orchestrator + retrieve_hits
 │   │   ├── evaluation/    # Benchmark (Week 3); qrels, experiments, error analysis (Week 4)
-│   │   └── observability/ # planned Week 6
+│   │   └── observability/ # Week 7+
 │   ├── scripts/
 │   │   ├── ingest.py      # Qdrant + BM25; --full-corpus, --no-recreate
 │   │   ├── query.py       # dense / bm25 / hybrid; --rerank
@@ -114,7 +114,7 @@ Factory functions:
 | Retrieval benchmark | `evaluation/retrieval_benchmark.py`, notebook + report | 3 | ✅ |
 | Rerank + offline eval (qrels) | `reranker.py`, `retrieval_eval.py`, `run_week4_experiments.py` | 4 | ✅ |
 | Experiment sprint E3–E9 | `docs/RAG_PROJECT_ROADMAP.md` | 5 | ✅ |
-| SSE, API hardening (frozen retrieval) | — | 6 | ⬜ |
+| SSE, API hardening (frozen retrieval) | — | 6 | ✅ |
 | Observability | — | 7 | ⬜ |
 | Docker + CI + deploy | — | 8–9 | ⬜ |
 
@@ -203,7 +203,7 @@ Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, e
 | Variable | Purpose |
 |----------|---------|
 | `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud |
-| `LOG_LEVEL` | Structured logging (Week 6) |
+| `LOG_LEVEL` | Structured logging (Week 7) |
 | Default `method=hybrid` via settings | Optional product default (currently client default is `dense`) |
 
 ## Week exit criteria
@@ -241,7 +241,7 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] API `method` + `/ready` BM25 check
 - [x] Fixed query set + benchmark notebook + comparison report
 - [x] Weighted RRF + validation weight tuning (Week 4)
-- [x] Unit tests (162+ in `src/tests/unit/`)
+- [x] Unit + integration tests (`pytest src/tests`; 225+)
 
 ### Week 4 ✅ (reranking + evaluation)
 
@@ -273,9 +273,10 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 
 ### Week 6 — production API engineering ✅
 
-- [x] Streaming (`POST /query/stream`), request IDs, structured errors, timeouts
-- [x] Integration tests (`src/tests/integration/`), OpenAPI/examples, smoke script
-- [x] **Enforce frozen production profile on `/query`:** `method=dense`, `use_rerank=false`, `top_k=10` (reject conflicting request fields when `API_ENFORCE_FROZEN_RETRIEVAL=true`)
+- [x] Streaming (`POST /query/stream`), request IDs, structured errors, cooperative cancel + timeouts
+- [x] Integration tests (`src/tests/integration/`), OpenAPI/examples, smoke script (`--stream`)
+- [x] **Enforce frozen production profile** on `/query` and at startup (`production_retrieval.py`, `API_ENFORCE_FROZEN_RETRIEVAL`)
+- [ ] **You:** live smoke against Ollama + Qdrant `fiqa_cs200_bge_base_en_v1_5`; merge Week 6 branch
 
 ## Evaluation discipline
 

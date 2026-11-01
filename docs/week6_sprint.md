@@ -1,7 +1,9 @@
-# Week 6 sprint — Production API
+# Week 6 sprint — Production API ✅
 
-**Branch:** `week6_production_api` (or your Week 6 branch name)  
+**Branch:** `week6_production_api` (merge when live smoke passes)  
 **Prerequisite:** Week 5 frozen retrieval; `.env` aligned with E8 (see `.env.example`).
+
+**Code complete:** blocks 1–8 below. **Remaining:** Block 0 operator steps only.
 
 ## Block 0 — Baseline ✅
 
@@ -28,6 +30,7 @@
 
 - [x] `QUERY_TIMEOUT_SECONDS` wall-clock on `/query` → `504` / `upstream_timeout`
 - [x] `httpx.TimeoutException` from LLM → `504`
+- [x] Cooperative cancel (`QueryScope` + `run_bounded_sync`; Ollama stream abort)
 - [x] Documented in `api_contract.md`
 
 ## Block 4 — Readiness polish ✅
@@ -38,8 +41,10 @@
 ## Block 5 — Streaming ✅
 
 - [x] `POST /query/stream` (SSE: `token`, `done`, `error`)
+- [x] Incremental tokens via queue producer (not full-buffer)
+- [x] Pre-stream validation → **422 JSON** (not SSE under HTTP 200)
 - [x] Ollama `stream_generate`; other providers fall back to one chunk via `generate`
-- [x] Unit tests
+- [x] Unit + integration tests
 
 ## Block 6 — Integration tests ✅
 
