@@ -214,8 +214,8 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 **Goal:** Give a reviewer a repeatable way to try the system without running your laptop.
 
 1. Provision Qdrant Cloud and configure connection URL/API key through the hosting platform's secrets mechanism.
-2. Decide where the corpus/embeddings are built and how they are loaded. Make the ingestion job repeatable; do not assume ephemeral application filesystem storage preserves indexes.
-3. Deploy the API (Render is the current plan unless cost/constraints change) and configure start command, runtime variables, health checks and resource limits.
+2. Decide where the corpus/embeddings are built and how they are loaded. Make the ingestion job repeatable; do not assume ephemeral application filesystem storage preserves indexes. **After re-ingest:** copy `data/bm25_indexes/<collection>.manifest.json` to [`deploy/index_metadata/`](../deploy/index_metadata/) and rebuild the container (see [`cloud_run.md`](cloud_run.md)).
+3. Deploy the API on **Google Cloud Run** (GHCR image) and configure env/secrets, health checks, and resource limits.
 4. Make readiness checks match the deployment architecture. Use a persistent, explicitly managed index generation and avoid destructive ingest at API startup.
 5. Run smoke tests against the deployed URL: health, readiness, dense/BM25/hybrid query, reranked query (if enabled), citations and controlled failure behavior.
 6. Add a lightweight user interface or hosted API demo. Keep it simple: question input, retrieval choice, answer and source citations. Do not add UI features before the API is stable.
@@ -262,7 +262,7 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 
 ### Immediate next action — Week 9 deployment
 - [x] Week 8 Docker + CI + GHCR ([`week8_sprint.md`](week8_sprint.md), [`architecture.md`](architecture.md)).
-- [ ] Qdrant Cloud + hosted API (Render or equivalent).
+- [ ] Qdrant Cloud + hosted API on Cloud Run ([`cloud_run.md`](cloud_run.md)).
 - [ ] **E10** generation/citation eval (optional).
 
 ### Week 6 (API)

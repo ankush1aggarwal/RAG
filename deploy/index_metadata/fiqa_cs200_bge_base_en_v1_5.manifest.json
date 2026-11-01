@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "ingest_generation_id": "006902f2-1a5d-4b97-afef-ff29e295cb97",
+  "corpus_id": "BeIR/fiqa",
+  "corpus_limit": null,
+  "chunk_size": 200,
+  "overlap_fraction": 0.2,
+  "embedding_method": "sentence_transformer",
+  "embedding_model": "BAAI/bge-base-en-v1.5",
+  "embedding_dimension": 768,
+  "collection_name": "fiqa_cs200_bge_base_en_v1_5",
+  "num_documents": 57638,
+  "num_chunks": 72851
+}

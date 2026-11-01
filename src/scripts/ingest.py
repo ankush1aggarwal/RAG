@@ -26,9 +26,9 @@ from app.ingestion.ingest_manifest import (
 )
 from app.retrieval import (
     Bm25ChunkIndex,
-    QdrantChunkStore,
     attach_embeddings,
     create_embedding_provider,
+    open_qdrant_chunk_store,
 )
 from app.retrieval.embeddings import (
     embedding_dimension,
@@ -78,7 +78,7 @@ def main() -> None:
     parser.add_argument(
         "--qdrant-path",
         default=settings.qdrant_path,
-        help="Local Qdrant storage path (empty string for in-memory)",
+        help="Local Qdrant storage path (ignored when QDRANT_URL is set; empty for in-memory)",
     )
     parser.add_argument(
         "--recreate",
@@ -89,10 +89,6 @@ def main() -> None:
         "the saved ingest manifest and point count.",
     )
     args = parser.parse_args()
-
-    qdrant_path = args.qdrant_path.strip() or None
-    if qdrant_path is not None and not os.path.isabs(qdrant_path):
-        qdrant_path = os.path.join(_REPO_ROOT, qdrant_path)
 
     bm25_path = settings.resolved_bm25_index_path(args.collection)
     manifest_path = manifest_path_for_collection(bm25_path)
@@ -164,7 +160,11 @@ def main() -> None:
         num_chunks=len(chunks),
     )
 
-    store = QdrantChunkStore.from_path(qdrant_path, args.collection)
+    store = open_qdrant_chunk_store(
+        settings,
+        args.collection,
+        path_override=args.qdrant_path,
+    )
     try:
         if not args.recreate and store.collection_exists():
             print(f"Validating existing collection '{args.collection}' for --no-recreate...")

@@ -15,9 +15,9 @@ from app.ingestion.schemas import SearchHit
 from app.pipeline.rag import RetrievalMethod, retrieve_with_optional_rerank
 from app.retrieval import (
     Bm25ChunkIndex,
-    QdrantChunkStore,
     create_embedding_provider,
     create_reranker_provider,
+    open_qdrant_chunk_store,
 )
 
 
@@ -68,7 +68,7 @@ def main() -> None:
     parser.add_argument(
         "--qdrant-path",
         default=settings.qdrant_path,
-        help="Local Qdrant storage path (dense methods only; empty string for in-memory)",
+        help="Local Qdrant path (ignored when QDRANT_URL is set; dense/hybrid only)",
     )
     parser.add_argument(
         "--bm25-path",
@@ -82,10 +82,6 @@ def main() -> None:
     bm25_index = None
     if retrieval_method in ("bm25", "hybrid"):
         bm25_index = Bm25ChunkIndex.load(bm25_path)
-
-    qdrant_path = args.qdrant_path.strip() or None
-    if qdrant_path is not None and not os.path.isabs(qdrant_path):
-        qdrant_path = os.path.join(_REPO_ROOT, qdrant_path)
 
     dense_method = settings.embedding_method if args.method == "hybrid" else args.method
     if retrieval_method == "dense" and args.method in ("sentence_transformer", "cohere"):
@@ -111,7 +107,11 @@ def main() -> None:
         if reranker is None:
             raise SystemExit("RERANKER_PROVIDER=none; cannot use --rerank")
 
-    store = QdrantChunkStore.from_path(qdrant_path, args.collection)
+    store = open_qdrant_chunk_store(
+        settings,
+        args.collection,
+        path_override=args.qdrant_path,
+    )
     try:
         hits, reranker_name, candidate_count = retrieve_with_optional_rerank(
             args.query,

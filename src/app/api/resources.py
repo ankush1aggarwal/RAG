@@ -19,7 +19,12 @@ from app.ingestion.ingest_manifest import (
     validate_manifest_runtime_config,
     validate_retrieval_index_alignment,
 )
-from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
+from app.retrieval import (
+    Bm25ChunkIndex,
+    QdrantChunkStore,
+    create_embedding_provider,
+    open_qdrant_chunk_store,
+)
 from app.retrieval.embeddings import (
     EmbeddingProvider,
     embedding_dimension,
@@ -49,10 +54,7 @@ def build_resources(settings: Settings) -> AppResources:
         cohere_embed_batch_size=settings.cohere_embed_batch_size,
         cohere_embed_batch_sleep_seconds=settings.cohere_embed_batch_sleep_seconds,
     )
-    store = QdrantChunkStore.from_path(
-        settings.resolved_qdrant_path(),
-        settings.collection_name,
-    )
+    store = open_qdrant_chunk_store(settings, settings.collection_name)
     if settings.llm_provider not in ("ollama", "cohere"):
         raise ValueError(f"Unsupported llm_provider for API: {settings.llm_provider}")
     method: LLMMethod = settings.llm_provider  # type: ignore[assignment]

@@ -285,6 +285,14 @@ python src/scripts/ingest.py --no-recreate
 
 `data/qdrant_local/` and `data/bm25_indexes/` are **gitignored** local indexes. They are not shipped in the repo — run ingest on each machine (same as Qdrant). BM25 files are **pickle**; only load indexes you built locally or otherwise trust (see `Bm25ChunkIndex.load` in `bm25_store.py`).
 
+**After a new production ingest (Cloud Run / container):** copy the manifest into `deploy/index_metadata/` (do not edit values by hand), commit, and rebuild the image:
+
+```powershell
+Copy-Item data\bm25_indexes\fiqa_cs200_bge_base_en_v1_5.manifest.json deploy\index_metadata\
+```
+
+Linux/macOS: `cp data/bm25_indexes/fiqa_cs200_bge_base_en_v1_5.manifest.json deploy/index_metadata/`. Details: [`deploy/index_metadata/README.md`](deploy/index_metadata/README.md), [`docs/cloud_run.md`](docs/cloud_run.md).
+
 **4. Retrieval smoke test:**
 
 ```powershell
@@ -384,7 +392,7 @@ Full list and design notes: [`PROJECT_SPEC.md`](PROJECT_SPEC.md).
 | Observability | Langfuse / OpenTelemetry |
 | Packaging | Docker |
 | CI/CD | GitHub Actions |
-| Application hosting | Render |
+| Application hosting | **Google Cloud Run** |
 | Vector DB hosting | Qdrant Cloud |
 | Documentation/demo site | GitHub Pages (optional) |
 
@@ -505,7 +513,7 @@ The final hosted architecture is expected to resemble:
                         Internet
                            │
                            ▼
-                        Render
+                        Google Cloud Run
                            │
                         FastAPI
                            │
@@ -1141,7 +1149,8 @@ Sprint: [`docs/week8_sprint.md`](docs/week8_sprint.md). Runtime: [`docs/docker.m
 Deliverables:
 
 - Qdrant Cloud
-- Render deployment
+- Google Cloud Run deployment ([`docs/cloud_run.md`](docs/cloud_run.md))
+- After re-ingest: refresh [`deploy/index_metadata/`](deploy/index_metadata/) manifest (see README setup §3)
 - Environment variables/secrets
 - Production configuration
 - Public API
@@ -1535,7 +1544,7 @@ For unfamiliar infrastructure — such as:
 Qdrant Cloud
 Docker
 GitHub Actions
-Render
+Google Cloud Run
 Secrets / environment variables
 Observability
 ```

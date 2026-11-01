@@ -64,6 +64,11 @@ def main() -> None:
     parser.add_argument("--execute", action="store_true", help="Perform deletes")
     args = parser.parse_args()
     keep = set(args.keep)
+    if settings.resolved_qdrant_url():
+        raise SystemExit(
+            "QDRANT_URL is set — cleanup_local_indexes only removes on-disk "
+            "collections under QDRANT_PATH."
+        )
     qdrant_path = settings.resolved_qdrant_path()
     if not qdrant_path:
         raise SystemExit("In-memory Qdrant — nothing to clean on disk.")

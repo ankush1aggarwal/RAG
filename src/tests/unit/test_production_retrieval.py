@@ -121,7 +121,7 @@ def test_build_resources_skips_reranker_when_frozen_enforced(monkeypatch):
     )
     monkeypatch.setattr("app.api.resources.create_llm_provider", lambda *_a, **_k: MagicMock())
     monkeypatch.setattr(
-        "app.api.resources.QdrantChunkStore.from_path",
+        "app.api.resources.open_qdrant_chunk_store",
         lambda *_a, **_k: MagicMock(),
     )
     monkeypatch.setattr(

@@ -32,7 +32,7 @@ from app.evaluation.retrieval_eval import (
     load_eval_dataset,
     save_eval_result,
 )
-from app.retrieval import Bm25ChunkIndex, QdrantChunkStore, create_embedding_provider
+from app.retrieval import Bm25ChunkIndex, create_embedding_provider, open_qdrant_chunk_store
 from app.retrieval.candidate_diversity import E3_ARMS, e3_arm_by_id
 from app.retrieval.embeddings import embedding_model_for_method
 from app.retrieval.reranker import create_reranker_provider
@@ -78,9 +78,6 @@ def _prepare_eval(split: str, collection: str) -> None:
 
 
 def _open_store(settings, collection: str, qdrant_path: str | None):
-    path = qdrant_path
-    if path is not None and not os.path.isabs(path):
-        path = os.path.join(_REPO_ROOT, path)
     bm25 = Bm25ChunkIndex.load(settings.resolved_bm25_index_path(collection))
     embedder = create_embedding_provider(
         settings.embedding_method,
@@ -90,7 +87,7 @@ def _open_store(settings, collection: str, qdrant_path: str | None):
         cohere_embed_batch_size=settings.cohere_embed_batch_size,
         cohere_embed_batch_sleep_seconds=settings.cohere_embed_batch_sleep_seconds,
     )
-    store = QdrantChunkStore.from_path(path, collection)
+    store = open_qdrant_chunk_store(settings, collection, path_override=qdrant_path)
     return store, embedder, bm25
 
 
