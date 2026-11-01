@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     api_enforce_frozen_retrieval: bool = True
     query_timeout_seconds: float = 120.0
 
+    # Week 7 — structured observability (stdlib JSON logs; no OTel/Langfuse)
+    log_level: str = "INFO"
+    structured_logging_enabled: bool = True
+    log_max_field_chars: int = 120
+    # Optional Cohere chat pricing (USD per 1M tokens) for ``estimated_cost_usd`` in logs.
+    cohere_chat_input_usd_per_1m: float | None = None
+    cohere_chat_output_usd_per_1m: float | None = None
+
     def resolved_fiqa_corpus_limit(self) -> int | None:
         """``None`` means load the full FiQA corpus (no document cap)."""
         if self.fiqa_corpus_limit <= 0:

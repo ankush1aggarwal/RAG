@@ -10,8 +10,8 @@
 - [x] Document sprint scope (`docs/week6_sprint.md`, `RAG_PROJECT_ROADMAP.md`)
 - [x] HTTP contract reference (`docs/api_contract.md`)
 - [x] Local smoke script (`src/scripts/smoke_api.py`)
-- [ ] You: branch from latest `main`, confirm `.env` + Qdrant index `fiqa_cs200_bge_base_en_v1_5`, Ollama up
-- [ ] You: run smoke script against a live server
+- [x] You: branch from latest `main`, confirm `.env` + Qdrant index `fiqa_cs200_bge_base_en_v1_5`, Ollama up
+- [x] You: run smoke script against a live server
 
 ## Block 1 — API contract & errors ✅
 

@@ -63,6 +63,8 @@ def build_resources(settings: Settings) -> AppResources:
         timeout_seconds=settings.ollama_timeout_seconds,
         cohere_api_key=settings.cohere_api_key,
         cohere_model=settings.cohere_chat_model,
+        cohere_input_usd_per_1m=settings.cohere_chat_input_usd_per_1m,
+        cohere_output_usd_per_1m=settings.cohere_chat_output_usd_per_1m,
     )
     bm25_path = settings.resolved_bm25_index_path()
     manifest_path = manifest_path_for_collection(bm25_path)

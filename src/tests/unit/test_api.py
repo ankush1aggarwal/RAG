@@ -12,13 +12,23 @@ from app.config.production_retrieval import FROZEN_COLLECTION_NAME, FROZEN_EMBED
 from app.config.settings import Settings
 from app.ingestion.ingest_manifest import IngestManifest
 from app.ingestion.schemas import SearchHit
+from app.generation.usage import LlmUsage, set_last_llm_usage
 
 
 class _FakeLLM:
+    usage = LlmUsage(
+        provider="test",
+        prompt_tokens=50,
+        completion_tokens=10,
+        total_tokens=60,
+    )
+
     def generate(self, prompt: str, *, system: str | None = None) -> str:
+        set_last_llm_usage(self.usage)
         return "API answer."
 
     def stream_generate(self, prompt: str, *, system: str | None = None, cancel=None):
+        set_last_llm_usage(self.usage)
         yield "API "
         yield "answer."
 

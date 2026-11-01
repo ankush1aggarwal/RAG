@@ -12,6 +12,7 @@ from app.api.middleware import RequestIdMiddleware
 from app.api.resources import AppResources, build_resources, close_resources
 from app.api.routes import router
 from app.config import get_settings
+from app.observability.logging import configure_structured_logging
 
 
 @asynccontextmanager
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.resources = injected
     else:
         app.state.resources = build_resources(get_settings())
+    configure_structured_logging(app.state.resources.settings)
     try:
         yield
     finally:

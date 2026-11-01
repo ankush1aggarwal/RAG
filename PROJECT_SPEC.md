@@ -1,6 +1,6 @@
 # Project specification
 
-**Status:** Week 6 complete (production API); **Week 7** = observability  
+**Status:** Week 7 complete (structured observability); **Week 8** = Docker + CI  
 **Last updated:** 2026-11-01
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -36,7 +36,7 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | Local LLM | **Ollama** (`/api/chat`) | `LLMProvider` interface |
 | Hosted LLM | **Cohere** `ClientV2.chat` | `LLM_PROVIDER=cohere` |
 | API | **FastAPI** + **Uvicorn** | `/health`, `/ready`, `POST /query` with `method`: `dense` \| `bm25` \| `hybrid`; streaming later |
-| Observability | Langfuse / OpenTelemetry | **Week 7** |
+| Observability | Structured JSON logs (stdlib) | **Week 7** ✅ — no OTel/Langfuse |
 | Packaging / CI | Docker + **GitHub Actions** | **Week 8** |
 | Hosting | Render + Qdrant Cloud | **Week 9** |
 
@@ -53,7 +53,7 @@ RAG/
 │   │   ├── generation/    # Week 2
 │   │   ├── pipeline/      # RAG orchestrator + retrieve_hits
 │   │   ├── evaluation/    # Benchmark (Week 3); qrels, experiments, error analysis (Week 4)
-│   │   └── observability/ # Week 7+
+│   │   └── observability/ # Week 7 ✅
 │   ├── scripts/
 │   │   ├── ingest.py      # Qdrant + BM25; --full-corpus, --no-recreate
 │   │   ├── query.py       # dense / bm25 / hybrid; --rerank
@@ -83,7 +83,7 @@ RAG/
 | `pipeline` | `retrieve_hits`, `answer_query` → `RagAnswer` + citations | ✅ |
 | `api` | FastAPI app, `POST /query` retrieval `method`, readiness | ✅ |
 | `evaluation` | Benchmark, qrels metrics, Week 4 experiment runner, rerank error analysis | ✅ |
-| `observability` | Logging, tracing | ⬜ Week 7 |
+| `observability` | JSON logs, redaction, stage timers, usage fields | ✅ Week 7 |
 
 ## Provider interfaces (design contract)
 
@@ -115,7 +115,7 @@ Factory functions:
 | Rerank + offline eval (qrels) | `reranker.py`, `retrieval_eval.py`, `run_week4_experiments.py` | 4 | ✅ |
 | Experiment sprint E3–E9 | `docs/RAG_PROJECT_ROADMAP.md` | 5 | ✅ |
 | SSE, API hardening (frozen retrieval) | — | 6 | ✅ |
-| Observability | — | 7 | ⬜ |
+| Observability | `observability/*`, `generation/usage.py`, `docs/observability_guide.md` | 7 | ✅ |
 | Docker + CI + deploy | — | 8–9 | ⬜ |
 
 ## Environment variables
@@ -203,7 +203,7 @@ Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, e
 | Variable | Purpose |
 |----------|---------|
 | `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud |
-| `LOG_LEVEL` | Structured logging (Week 7) |
+| `LOG_LEVEL` | Structured logging (Week 7 ✅) |
 | Default `method=hybrid` via settings | Optional product default (currently client default is `dense`) |
 
 ## Week exit criteria
@@ -241,7 +241,7 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] API `method` + `/ready` BM25 check
 - [x] Fixed query set + benchmark notebook + comparison report
 - [x] Weighted RRF + validation weight tuning (Week 4)
-- [x] Unit + integration tests (`pytest src/tests`; 225+)
+- [x] Unit + integration tests (`pytest src/tests`; **235+**)
 
 ### Week 4 ✅ (reranking + evaluation)
 
@@ -276,7 +276,13 @@ Word windows advance by `chunk_size - overlap_int`. The **first** window is alwa
 - [x] Streaming (`POST /query/stream`), request IDs, structured errors, cooperative cancel + timeouts
 - [x] Integration tests (`src/tests/integration/`), OpenAPI/examples, smoke script (`--stream`)
 - [x] **Enforce frozen production profile** on `/query` and at startup (`production_retrieval.py`, `API_ENFORCE_FROZEN_RETRIEVAL`)
-- [ ] **You:** live smoke against Ollama + Qdrant `fiqa_cs200_bge_base_en_v1_5`; merge Week 6 branch
+- [x] **You:** live smoke against Ollama + Qdrant `fiqa_cs200_bge_base_en_v1_5`
+
+### Week 7 — observability ✅
+
+- [x] Structured JSON logs, `X-Request-ID`, RAG stage timings ([`docs/week7_sprint.md`](docs/week7_sprint.md))
+- [x] Token/cost fields when providers return usage; redaction + integration tests
+- [x] Live verification: correlated JSON lines on stderr ([`docs/observability_guide.md`](docs/observability_guide.md))
 
 ## Evaluation discipline
 
@@ -328,4 +334,4 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 
 ## Next implementation steps
 
-**Week 7:** Observability (structured logs, stage timings).
+**Week 8:** Dockerfile, `.dockerignore`, GitHub Actions (lint + tests), reproducible container smoke path.

@@ -11,6 +11,11 @@ from typing import Any, Literal, Protocol
 import httpx
 
 from app.cooperative_cancel import QueryCancelledError, active_cancel_event, cooperative_check
+from app.generation.usage import (
+    set_last_llm_usage,
+    usage_from_cohere_chat_response,
+    usage_from_ollama_chat_payload,
+)
 
 LLMMethod = Literal["ollama", "cohere"]
 
@@ -55,6 +60,7 @@ class OllamaLLM:
 
     def generate(self, prompt: str, *, system: str | None = None) -> str:
         cooperative_check()
+        set_last_llm_usage(None)
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -70,6 +76,7 @@ class OllamaLLM:
         )
         response.raise_for_status()
         data = response.json()
+        set_last_llm_usage(usage_from_ollama_chat_payload(data))
         try:
             content = data["message"]["content"]
         except (KeyError, TypeError) as exc:
@@ -88,6 +95,7 @@ class OllamaLLM:
     ) -> Iterator[str]:
         cancel = cancel or active_cancel_event()
         cooperative_check()
+        set_last_llm_usage(None)
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -103,6 +111,7 @@ class OllamaLLM:
             },
         ) as response:
             response.raise_for_status()
+            last_payload: dict[str, Any] | None = None
             for line in response.iter_lines():
                 if cancel is not None and cancel.is_set():
                     response.close()
@@ -116,6 +125,8 @@ class OllamaLLM:
                     data = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+                if isinstance(data, dict):
+                    last_payload = data
                 message = data.get("message") if isinstance(data, dict) else None
                 if not isinstance(message, dict):
                     continue
@@ -124,6 +135,8 @@ class OllamaLLM:
                     yield content
                 if data.get("done") is True:
                     break
+            if last_payload is not None:
+                set_last_llm_usage(usage_from_ollama_chat_payload(last_payload))
 
     def close(self) -> None:
         if self._owns_client:
@@ -144,6 +157,9 @@ class CohereLLM:
         api_key: str,
         model: str = "command-r-08-2024",
         client: Any | None = None,
+        *,
+        cohere_input_usd_per_1m: float | None = None,
+        cohere_output_usd_per_1m: float | None = None,
     ) -> None:
         if client is None:
             import cohere
@@ -152,14 +168,24 @@ class CohereLLM:
         else:
             self._client = client
         self._model = model
+        self._cohere_input_usd_per_1m = cohere_input_usd_per_1m
+        self._cohere_output_usd_per_1m = cohere_output_usd_per_1m
 
     def generate(self, prompt: str, *, system: str | None = None) -> str:
+        set_last_llm_usage(None)
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
         response = self._client.chat(model=self._model, messages=messages)
+        set_last_llm_usage(
+            usage_from_cohere_chat_response(
+                response,
+                input_usd_per_1m=_cohere_input_usd_per_1m(self),
+                output_usd_per_1m=_cohere_output_usd_per_1m(self),
+            )
+        )
         try:
             content_blocks = response.message.content
         except (AttributeError, TypeError) as exc:
@@ -185,6 +211,8 @@ def create_llm_provider(
     timeout_seconds: float = 120.0,
     cohere_api_key: str | None = None,
     cohere_model: str = "command-r-08-2024",
+    cohere_input_usd_per_1m: float | None = None,
+    cohere_output_usd_per_1m: float | None = None,
 ) -> LLMProvider:
     if method == "ollama":
         return OllamaLLM(
@@ -196,5 +224,18 @@ def create_llm_provider(
         key = cohere_api_key or os.getenv("COHERE_API_KEY")
         if not key:
             raise ValueError("COHERE_API_KEY is required for cohere LLM provider")
-        return CohereLLM(api_key=key, model=cohere_model)
+        return CohereLLM(
+            api_key=key,
+            model=cohere_model,
+            cohere_input_usd_per_1m=cohere_input_usd_per_1m,
+            cohere_output_usd_per_1m=cohere_output_usd_per_1m,
+        )
     raise ValueError(f"Invalid LLM method: {method}")
+
+
+def _cohere_input_usd_per_1m(llm: CohereLLM) -> float | None:
+    return getattr(llm, "_cohere_input_usd_per_1m", None)
+
+
+def _cohere_output_usd_per_1m(llm: CohereLLM) -> float | None:
+    return getattr(llm, "_cohere_output_usd_per_1m", None)

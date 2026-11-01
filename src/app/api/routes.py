@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import queue
+import time
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, HTTPException, Request
@@ -23,6 +25,9 @@ from app.config.production_retrieval import ResolvedQueryRetrieval, resolve_prod
 from app.api.resources import AppResources, is_ready_from_diagnostics, ready_diagnostics
 from app.api.sse import format_sse
 from app.cooperative_cancel import QueryCancelledError, QueryScope, invoke_in_scope
+from app.generation.usage import usage_log_fields
+from app.observability.context import observability_context
+from app.observability.events import emit
 from app.api.streaming import iter_stream_queue, produce_llm_tokens
 from app.api.thread_tasks import run_bounded_sync
 from app.api.schemas import (
@@ -222,6 +227,17 @@ def _map_query_failure(exc: BaseException, *, timeout: float) -> None:
     )
 
 
+def _run_stream_producer(
+    request_id: str | None,
+    scope: QueryScope,
+    resources: AppResources,
+    context: RagGenerationContext,
+    token_queue: queue.Queue,
+) -> None:
+    with observability_context(request_id):
+        invoke_in_scope(scope, produce_llm_tokens, resources, context, token_queue)
+
+
 @router.post(
     "/query",
     response_model=QueryResponse,
@@ -231,6 +247,9 @@ def _map_query_failure(exc: BaseException, *, timeout: float) -> None:
 async def query(body: QueryRequest, request: Request) -> QueryResponse:
     """RAG: retrieve chunks, generate an answer, return citations."""
     resources = _resources(request)
+    request_id = getattr(request.state, "request_id", None)
+    started = time.perf_counter()
+    emit("query_start", route="/query", question_chars=len(body.question))
     timeout = resources.settings.query_timeout_seconds
     resolved: ResolvedQueryRetrieval | None = None
     result: RagAnswer | None = None
@@ -244,6 +263,7 @@ async def query(body: QueryRequest, request: Request) -> QueryResponse:
             resources,
             body.question,
             resolved,
+            request_id=str(request_id) if request_id else None,
         )
     except asyncio.CancelledError:
         await _cleanup_query_cancellation(scope)
@@ -251,9 +271,27 @@ async def query(body: QueryRequest, request: Request) -> QueryResponse:
     except BaseException as exc:
         if scope is not None:
             scope.cancel()
+        emit(
+            "query_failed",
+            level=logging.ERROR,
+            route="/query",
+            duration_ms=round((time.perf_counter() - started) * 1000, 2),
+            error_type=type(exc).__name__,
+        )
         _map_query_failure(exc, timeout=timeout)
 
     assert resolved is not None and result is not None
+    emit(
+        "query_complete",
+        route="/query",
+        duration_ms=round((time.perf_counter() - started) * 1000, 2),
+        retrieval_method=result.retrieval_method,
+        top_k=resolved.top_k,
+        citation_count=len(result.citations),
+        answer_chars=len(result.answer),
+        reranker=result.reranker,
+        **usage_log_fields(result.llm_usage),
+    )
     return _query_response(result, resolved.top_k)
 
 
@@ -269,6 +307,7 @@ async def query(body: QueryRequest, request: Request) -> QueryResponse:
 async def query_stream(body: QueryRequest, request: Request) -> StreamingResponse:
     """RAG with Server-Sent Events: ``token`` deltas then a ``done`` payload."""
     resources = _resources(request)
+    request_id = getattr(request.state, "request_id", None)
     timeout = resources.settings.query_timeout_seconds
     resolved: ResolvedQueryRetrieval | None = None
     scope: QueryScope | None = None
@@ -281,6 +320,12 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
     assert resolved is not None and scope is not None
 
     async def event_stream() -> AsyncIterator[str]:
+        started = time.perf_counter()
+        emit(
+            "query_start",
+            route="/query/stream",
+            question_chars=len(body.question),
+        )
         context: RagGenerationContext | None = None
         token_queue: queue.Queue | None = None
         producer_task: asyncio.Task[None] | None = None
@@ -291,13 +336,14 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
                 resources,
                 body.question,
                 resolved,
+                request_id=str(request_id) if request_id else None,
             )
             token_queue = queue.Queue()
             producer_task = asyncio.create_task(
                 asyncio.to_thread(
-                    invoke_in_scope,
+                    _run_stream_producer,
+                    str(request_id) if request_id else None,
                     scope,
-                    produce_llm_tokens,
                     resources,
                     context,
                     token_queue,
@@ -348,6 +394,18 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
                 retrieval_candidate_count=context.retrieval_candidate_count,
             ),
             resolved.top_k,
+        )
+        emit(
+            "query_complete",
+            route="/query/stream",
+            stream=True,
+            duration_ms=round((time.perf_counter() - started) * 1000, 2),
+            retrieval_method=context.retrieval_method,
+            top_k=resolved.top_k,
+            citation_count=len(context.citations),
+            answer_chars=len(answer),
+            reranker=context.reranker,
+            **usage_log_fields(context.llm_usage),
         )
         yield format_sse("done", done.model_dump())
 

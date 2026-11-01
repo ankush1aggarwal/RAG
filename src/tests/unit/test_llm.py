@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from app.generation.llm import CohereLLM, OllamaLLM, create_llm_provider
+from app.generation.usage import take_llm_usage
 
 
 def _chat_response(content: str) -> MagicMock:
@@ -15,6 +16,11 @@ def _chat_response(content: str) -> MagicMock:
 def test_ollama_generate_user_only():
     client = MagicMock()
     client.post.return_value = _chat_response("answer")
+    client.post.return_value.json.return_value = {
+        "message": {"content": "answer"},
+        "prompt_eval_count": 10,
+        "eval_count": 4,
+    }
 
     llm = OllamaLLM(
         base_url="http://ollama:11434",
@@ -34,6 +40,10 @@ def test_ollama_generate_user_only():
     )
     response = client.post.return_value
     response.raise_for_status.assert_called_once()
+    usage = take_llm_usage()
+    assert usage is not None
+    assert usage.prompt_tokens == 10
+    assert usage.completion_tokens == 4
 
 
 def test_ollama_generate_includes_system_message():
