@@ -1,5 +1,6 @@
 import asyncio
 import time
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -7,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.main import create_app
+from app.api.request_id import REQUEST_ID_MAX_LENGTH
 from app.api.resources import AppResources
 from app.config.production_retrieval import FROZEN_COLLECTION_NAME, FROZEN_EMBEDDING_MODEL
 from app.config.settings import Settings
@@ -97,6 +99,21 @@ def test_request_id_generated_when_header_missing(client: TestClient):
     rid = response.headers.get("X-Request-ID")
     assert rid
     assert len(rid) >= 32
+
+
+def test_request_id_replaced_when_header_contains_newline(client: TestClient):
+    with patch("app.api.request_id.uuid.uuid4", return_value=uuid.UUID(int=4)):
+        response = client.get("/health", headers={"X-Request-ID": "evil\nheader"})
+    assert response.status_code == 200
+    assert response.headers.get("X-Request-ID") == str(uuid.UUID(int=4))
+
+
+def test_request_id_replaced_when_header_exceeds_max_length(client: TestClient):
+    overlong = "x" * (REQUEST_ID_MAX_LENGTH + 1)
+    with patch("app.api.request_id.uuid.uuid4", return_value=uuid.UUID(int=5)):
+        response = client.get("/health", headers={"X-Request-ID": overlong})
+    assert response.status_code == 200
+    assert response.headers.get("X-Request-ID") == str(uuid.UUID(int=5))
 
 
 def test_validation_error_includes_request_id(client: TestClient):

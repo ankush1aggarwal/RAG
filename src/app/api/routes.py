@@ -320,94 +320,102 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
     assert resolved is not None and scope is not None
 
     async def event_stream() -> AsyncIterator[str]:
-        started = time.perf_counter()
-        emit(
-            "query_start",
-            route="/query/stream",
-            question_chars=len(body.question),
-        )
-        context: RagGenerationContext | None = None
-        token_queue: queue.Queue | None = None
-        producer_task: asyncio.Task[None] | None = None
-        try:
-            context = await run_bounded_sync(
-                scope,
-                _run_prepare_generation,
-                resources,
-                body.question,
-                resolved,
-                request_id=str(request_id) if request_id else None,
+        with observability_context(str(request_id) if request_id else None):
+            started = time.perf_counter()
+            emit(
+                "query_start",
+                route="/query/stream",
+                question_chars=len(body.question),
             )
-            token_queue = queue.Queue()
-            producer_task = asyncio.create_task(
-                asyncio.to_thread(
-                    _run_stream_producer,
-                    str(request_id) if request_id else None,
-                    scope,
-                    resources,
-                    context,
-                    token_queue,
-                ),
-            )
-            parts: list[str] = []
-            async for kind, payload in iter_stream_queue(
-                token_queue,
-                wall_clock_timeout=max(scope.remaining(), 0.001),
-                scope=scope,
-            ):
-                if kind == "token" and isinstance(payload, str):
-                    parts.append(payload)
-                    yield format_sse("token", {"delta": payload})
-            if producer_task is not None:
-                await producer_task
-        except asyncio.CancelledError:
-            await _cleanup_query_cancellation(scope, producer_task=producer_task)
-            raise
-        except BaseException as exc:
-            if scope is not None:
-                scope.cancel()
-            if producer_task is not None and not producer_task.done():
-                producer_task.cancel()
+            context: RagGenerationContext | None = None
+            token_queue: queue.Queue | None = None
+            producer_task: asyncio.Task[None] | None = None
             try:
-                _map_query_failure(exc, timeout=timeout)
-            except HTTPException as http_exc:
-                # In-flight failures only (504/500); 422 config is rejected before the stream opens.
-                detail = http_exc.detail
-                if isinstance(detail, dict):
-                    yield format_sse("error", detail)
-                else:
-                    yield format_sse(
-                        "error",
-                        {"error": ERROR_INTERNAL, "message": str(detail), "detail": None},
-                    )
-            return
+                context = await run_bounded_sync(
+                    scope,
+                    _run_prepare_generation,
+                    resources,
+                    body.question,
+                    resolved,
+                    request_id=str(request_id) if request_id else None,
+                )
+                token_queue = queue.Queue()
+                producer_task = asyncio.create_task(
+                    asyncio.to_thread(
+                        _run_stream_producer,
+                        str(request_id) if request_id else None,
+                        scope,
+                        resources,
+                        context,
+                        token_queue,
+                    ),
+                )
+                parts: list[str] = []
+                async for kind, payload in iter_stream_queue(
+                    token_queue,
+                    wall_clock_timeout=max(scope.remaining(), 0.001),
+                    scope=scope,
+                ):
+                    if kind == "token" and isinstance(payload, str):
+                        parts.append(payload)
+                        yield format_sse("token", {"delta": payload})
+                if producer_task is not None:
+                    await producer_task
+            except asyncio.CancelledError:
+                await _cleanup_query_cancellation(scope, producer_task=producer_task)
+                raise
+            except BaseException as exc:
+                if scope is not None:
+                    scope.cancel()
+                if producer_task is not None and not producer_task.done():
+                    producer_task.cancel()
+                emit(
+                    "query_failed",
+                    level=logging.ERROR,
+                    route="/query/stream",
+                    duration_ms=round((time.perf_counter() - started) * 1000, 2),
+                    error_type=type(exc).__name__,
+                )
+                try:
+                    _map_query_failure(exc, timeout=timeout)
+                except HTTPException as http_exc:
+                    # In-flight failures only (504/500); 422 config is rejected before the stream opens.
+                    detail = http_exc.detail
+                    if isinstance(detail, dict):
+                        yield format_sse("error", detail)
+                    else:
+                        yield format_sse(
+                            "error",
+                            {"error": ERROR_INTERNAL, "message": str(detail), "detail": None},
+                        )
+                return
 
-        assert context is not None
-        answer = "".join(parts)
-        done = _query_response(
-            RagAnswer(
-                answer=answer,
-                citations=context.citations,
-                hits=context.hits,
+            assert context is not None
+            answer = "".join(parts)
+            done = _query_response(
+                RagAnswer(
+                    answer=answer,
+                    citations=context.citations,
+                    hits=context.hits,
+                    retrieval_method=context.retrieval_method,
+                    reranker=context.reranker,
+                    retrieval_candidate_count=context.retrieval_candidate_count,
+                ),
+                resolved.top_k,
+            )
+            emit(
+                "query_complete",
+                route="/query/stream",
+                stream=True,
+                duration_ms=round((time.perf_counter() - started) * 1000, 2),
                 retrieval_method=context.retrieval_method,
+                top_k=resolved.top_k,
+                citation_count=len(context.citations),
+                answer_chars=len(answer),
                 reranker=context.reranker,
-                retrieval_candidate_count=context.retrieval_candidate_count,
-            ),
-            resolved.top_k,
-        )
-        emit(
-            "query_complete",
-            route="/query/stream",
-            stream=True,
-            duration_ms=round((time.perf_counter() - started) * 1000, 2),
-            retrieval_method=context.retrieval_method,
-            top_k=resolved.top_k,
-            citation_count=len(context.citations),
-            answer_chars=len(answer),
-            reranker=context.reranker,
-            **usage_log_fields(context.llm_usage),
-        )
-        yield format_sse("done", done.model_dump())
+                **usage_log_fields(context.llm_usage),
+            )
+            yield format_sse("done", done.model_dump())
 
     return StreamingResponse(
         event_stream(),

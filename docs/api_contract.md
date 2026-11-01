@@ -59,7 +59,7 @@ All non-2xx responses handled by the API exception layer use:
 }
 ```
 
-Every response includes header **`X-Request-ID`** (client may send one; otherwise the server generates a UUID). Error bodies echo the same id in `request_id` when available.
+Every response includes header **`X-Request-ID`** (client may send one; otherwise the server generates a UUID). Client values must match **`[A-Za-z0-9._:-]`**, length **1–128** after trim; invalid or overlong values are replaced with a server UUID. Error bodies echo the same id in `request_id` when available.
 
 | HTTP | `error` code | When |
 |------|----------------|------|
