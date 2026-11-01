@@ -269,17 +269,22 @@ async def query(body: QueryRequest, request: Request) -> QueryResponse:
 async def query_stream(body: QueryRequest, request: Request) -> StreamingResponse:
     """RAG with Server-Sent Events: ``token`` deltas then a ``done`` payload."""
     resources = _resources(request)
+    timeout = resources.settings.query_timeout_seconds
+    resolved: ResolvedQueryRetrieval | None = None
+    scope: QueryScope | None = None
+    try:
+        resolved, timeout = _resolve_query_request(body, resources)
+        scope = QueryScope(timeout)
+    except BaseException as exc:
+        _map_query_failure(exc, timeout=timeout)
+
+    assert resolved is not None and scope is not None
 
     async def event_stream() -> AsyncIterator[str]:
-        resolved: ResolvedQueryRetrieval | None = None
-        timeout = resources.settings.query_timeout_seconds
         context: RagGenerationContext | None = None
         token_queue: queue.Queue | None = None
         producer_task: asyncio.Task[None] | None = None
-        scope: QueryScope | None = None
         try:
-            resolved, timeout = _resolve_query_request(body, resources)
-            scope = QueryScope(timeout)
             context = await run_bounded_sync(
                 scope,
                 _run_prepare_generation,
@@ -320,6 +325,7 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
             try:
                 _map_query_failure(exc, timeout=timeout)
             except HTTPException as http_exc:
+                # In-flight failures only (504/500); 422 config is rejected before the stream opens.
                 detail = http_exc.detail
                 if isinstance(detail, dict):
                     yield format_sse("error", detail)
@@ -330,7 +336,7 @@ async def query_stream(body: QueryRequest, request: Request) -> StreamingRespons
                     )
             return
 
-        assert resolved is not None and context is not None
+        assert context is not None
         answer = "".join(parts)
         done = _query_response(
             RagAnswer(

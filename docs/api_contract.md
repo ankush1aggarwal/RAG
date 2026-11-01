@@ -21,7 +21,9 @@ OpenAPI: `/docs` (FastAPI auto-generated from Pydantic models).
 - **`POST /query/stream`:** Server-Sent Events (same request body as `/query`):
   - `event: token` — `{"delta": "<text chunk>"}` (one or more)
   - `event: done` — full `QueryResponse` JSON (includes assembled `answer`, `citations`, `retrieval`)
-  - `event: error` — same shape as `ErrorResponse` fields when failure occurs after the stream has started; validation/frozen errors before streaming still return normal JSON + status code
+  - `event: error` — same shape as `ErrorResponse` when failure occurs **after** the stream has started (e.g. timeout, pipeline error)
+
+**Before** the response is committed to `text/event-stream`, the same validation as `POST /query` applies: frozen profile, rerank availability, and `query_timeout_seconds` → **422 JSON** (not an SSE `error` under HTTP 200). Pydantic body validation is also JSON **422**.
 
 ### Frozen production profile (default)
 
@@ -69,7 +71,7 @@ Every response includes header **`X-Request-ID`** (client may send one; otherwis
 | `504` | `upstream_timeout` | `/query` wall-clock limit (`QUERY_TIMEOUT_SECONDS`) or LLM HTTP timeout |
 | `500` | `internal_error` | Unhandled server exception (no stack trace in response) |
 
-**Timeouts:** `QUERY_TIMEOUT_SECONDS` (default `120`) bounds the entire `/query` handler (retrieval + generation). On expiry the API sets a cooperative cancel flag and closes in-flight Ollama streams; sync work in a thread pool is not force-killed (orphan work may finish briefly). Non-streaming LLM calls also rely on `OLLAMA_TIMEOUT_SECONDS` on the HTTP client. Breaches map to `504` / `upstream_timeout`.
+**Timeouts:** `QUERY_TIMEOUT_SECONDS` (default `120`) bounds each `/query` and `/query/stream` request. On expiry the API sets a cooperative **cancel flag** and closes in-flight Ollama streams; sync thread work is not force-killed. Non-streaming LLM calls also use `OLLAMA_TIMEOUT_SECONDS` on the HTTP client. Breaches map to `504` / `upstream_timeout`. Client/task **cancellation** (`asyncio.CancelledError`) is re-raised after cleanup (not mapped to JSON errors).
 
 ### Examples
 

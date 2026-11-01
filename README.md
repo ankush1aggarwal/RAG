@@ -94,10 +94,11 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 3 | Hybrid retrieval | **Done** | BM25 + dense + RRF; API/CLI; benchmark notebook + comparison report |
 | 4 | Rerank + qrels eval | **Done** | Experiments 1–5; production default **dense, no rerank** (see experiment report) |
 | 5 | Experimentation | **Done** | E3–E9; frozen eval: **BGE 200w** NDCG@10 **0.394** (test) |
-| 6 | Production API | **Next** | Hardening + streaming; API serves frozen design only |
-| 7–9 | Ops + deploy | Planned | Observability, Docker/CI, public demo |
+| 6 | Production API | **Done** | Frozen `/query`, errors, SSE stream, integration tests ([`week6_sprint.md`](docs/week6_sprint.md)) |
+| 7 | Observability | **Next** | Structured logs, stage timings, correlation ID in pipeline |
+| 8–9 | Ops + deploy | Planned | Docker/CI, public demo |
 
-**Automated tests:** **185** unit tests — `pytest src/tests/unit` (unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and defaults tests fail).
+**Automated tests:** **225** tests — `pytest src/tests` (unit + integration; mocked Qdrant/LLM in tests). Unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and settings tests fail.
 
 **Experiment results:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) (full report); per-experiment [`docs/reports/experiments/`](docs/reports/experiments/README.md); catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md). Week 4 runbook: [`week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md).
 
@@ -963,7 +964,7 @@ RAG/
 │   │   ├── run_week4_experiments.py ✅ Exp 2–5 runner + reports
 │   │   └── analyze_rerank_dense.py ✅ Dense rerank error analysis (Exp 4 vs 5)
 │   └── tests/
-│       └── unit/             ✅ 162 unit tests (no integration eval dirs yet)
+│       └── unit/             ✅ unit tests (+ `integration/` — `pytest src/tests`)
 │
 ├── data/                     # Local Qdrant path, FiQA artifacts (gitignored as needed)
 ├── notebooks/                # code_dev.ipynb — experiments, not canonical app code
@@ -1104,8 +1105,9 @@ Deliverables (see [`RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) E3–E
 
 Sprint tracker: [`docs/week6_sprint.md`](docs/week6_sprint.md). HTTP contract: [`docs/api_contract.md`](docs/api_contract.md). Smoke: `python src/scripts/smoke_api.py [--stream]`.
 
-- [x] Frozen retrieval on `/query`, structured `ErrorResponse`, `X-Request-ID`, timeouts
-- [x] `POST /query/stream` (SSE), integration tests (`src/tests/integration/`), OpenAPI examples
+- [x] Frozen retrieval on `/query`, structured `ErrorResponse`, `X-Request-ID`, cooperative cancel + timeouts
+- [x] `POST /query/stream` (SSE, incremental tokens, pre-stream **422 JSON**), integration tests, OpenAPI examples
+- [ ] **You:** live smoke + merge branch ([`week6_sprint.md`](docs/week6_sprint.md) Block 0)
 - [ ] Auth / HTTP ingest — deferred (ingest remains CLI)
 
 ---
@@ -1443,9 +1445,10 @@ The project will be considered complete when all of the following are true.
 ## Engineering
 
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
-- [x] Request validation (Pydantic) + basic HTTP errors (`422`, `503`)
+- [x] Request validation (Pydantic) + structured `ErrorResponse` (`422`, `503`, `504`, `500`)
 - [x] Streaming works (`POST /query/stream`, SSE)
-- [x] Unit tests exist (**162** in `src/tests/unit/`; integration tests later)
+- [x] Unit + integration tests (`pytest src/tests`; **225** at last count)
+- [x] `X-Request-ID`, cooperative query cancel, `QUERY_TIMEOUT_SECONDS`
 - [ ] Structured logging exists (Week 7)
 - [x] Configuration is externalized (`Settings` + `.env`)
 

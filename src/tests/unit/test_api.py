@@ -239,6 +239,52 @@ def test_query_stream_validation_error_is_json_not_sse(client: TestClient):
     response = client.post("/query/stream", json={"question": ""})
     assert response.status_code == 422
     assert response.json()["error"] == "validation_error"
+    assert "text/event-stream" not in response.headers.get("content-type", "")
+
+
+def test_query_stream_rerank_unavailable_returns_json_422(client: TestClient):
+    client.app.state.resources.reranker = None
+    response = client.post(
+        "/query/stream",
+        json={"question": "fees?", "use_rerank": True},
+    )
+    assert response.status_code == 422
+    assert response.json()["error"] == "rerank_unavailable"
+    assert "event:" not in response.text
+
+
+def test_query_stream_invalid_timeout_config_returns_json_422(client: TestClient):
+    settings = client.app.state.resources.settings.model_copy(
+        update={"query_timeout_seconds": 0},
+    )
+    client.app.state.resources.settings = settings
+    response = client.post("/query/stream", json={"question": "fees?"})
+    assert response.status_code == 422
+    assert response.json()["error"] == "invalid_request"
+
+
+def test_query_stream_frozen_violation_returns_json_422():
+    store = MagicMock()
+    store.collection_exists.return_value = True
+    settings = Settings(_env_file=None, api_enforce_frozen_retrieval=True)
+    resources = AppResources(
+        settings=settings,
+        store=store,
+        embedder=MagicMock(),
+        llm=_FakeLLM(),
+        bm25_index=None,
+        ingest_manifest=MagicMock(),
+        reranker=None,
+    )
+    app = create_app(resources=resources)
+    with TestClient(app) as test_client:
+        response = test_client.post(
+            "/query/stream",
+            json={"question": "fees?", "method": "hybrid", "top_k": 10},
+        )
+    assert response.status_code == 422
+    assert response.json()["error"] == "frozen_profile_violation"
+    assert "event:" not in response.text
 
 
 def test_query_validation_empty_question(client: TestClient):

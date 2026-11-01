@@ -4,7 +4,7 @@
 **Status:** **Retrieval experiment program complete** (E0–E9; E5 skipped)  
 **Teaching summary:** [`rag_retrieval_lessons.md`](rag_retrieval_lessons.md)  
 **Implementation decision:** **Frozen (retrieval)** — dense, no rerank, `top_k=10`, **200w / 20% / BGE-base** (Week 6 API lock)  
-**Selected production configuration commit:** TBD at Week 6 merge (eval index: `fiqa_cs200_bge_base_en_v1_5`)
+**Selected production configuration commit:** set at Week 6 merge (eval index: `fiqa_cs200_bge_base_en_v1_5`)
 
 **Per-experiment detail:** [`experiments/README.md`](experiments/README.md)  
 **Template (do not edit for results):** [`RAG_EXPERIMENT_REPORT_TEMPLATE.md`](../RAG_EXPERIMENT_REPORT_TEMPLATE.md)
@@ -265,7 +265,7 @@ python src/scripts/analyze_rerank_dense.py --collection fiqa
 
 ## 11. Public-facing summary for README and PROJECT_SPEC
 
-**Architecture (one line):** FiQA RAG with **dense** chunk retrieval over Qdrant + BM25 index for experiments, optional CE rerank in eval only; production API will expose **one** frozen profile after Week 6.
+**Architecture (one line):** FiQA RAG with **dense** chunk retrieval over Qdrant + BM25 index for experiments, optional CE rerank in eval only; production **HTTP API** serves the **frozen dense profile** when enforcement is on (Week 6).
 
 **Baseline vs selected (test, NDCG@10):**
 
