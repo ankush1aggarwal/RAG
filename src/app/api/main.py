@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from app.api.errors import register_exception_handlers
 from app.api.middleware import RequestIdMiddleware
+from app.api.request_protection import RequestProtectionMiddleware
 from app.api.resources import AppResources, build_resources, close_resources
 from app.api.routes import router
 from app.config import get_settings
@@ -48,6 +49,8 @@ def create_app(resources: AppResources | None = None) -> FastAPI:
         ],
     )
     app.state._inject_resources = resources
+    # Request IDs are outermost so rejected requests remain correlated.
+    app.add_middleware(RequestProtectionMiddleware)
     app.add_middleware(RequestIdMiddleware)
     app.include_router(router)
     register_exception_handlers(app)
