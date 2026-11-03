@@ -220,6 +220,48 @@ def test_query_success(client: TestClient):
     assert body["citations"][0]["document_id"] == "1"
 
 
+def test_query_rejects_question_longer_than_2000_characters(client: TestClient):
+    response = client.post(
+        "/query",
+        json={"question": "x" * 2001},
+        headers={"X-Request-ID": "question-length-limit"},
+    )
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"] == "validation_error"
+    assert body["request_id"] == "question-length-limit"
+
+
+def test_query_rejects_request_body_larger_than_16_kib(client: TestClient):
+    body = b'{"question":"' + (b"x" * (16 * 1024)) + b'"}'
+    response = client.post(
+        "/query",
+        content=body,
+        headers={
+            "Content-Type": "application/json",
+            "X-Request-ID": "request-body-limit",
+        },
+    )
+    assert response.status_code == 413
+    payload = response.json()
+    assert payload["error"] == "payload_too_large"
+    assert payload["request_id"] == "request-body-limit"
+
+
+def test_query_rate_limit_applies_to_query_endpoints_but_not_health(client: TestClient):
+    for i in range(10):
+        response = client.post("/query", json={"question": f"APR question {i}"})
+        assert response.status_code == 200
+
+    limited = client.post("/query", json={"question": "one request too many"})
+    assert limited.status_code == 429
+    assert limited.json()["error"] == "rate_limit_exceeded"
+    assert int(limited.headers["retry-after"]) >= 1
+
+    health = client.get("/health")
+    assert health.status_code == 200
+
+
 def test_query_stream_emits_sse_token_and_done(client: TestClient):
     with client.stream(
         "POST",
