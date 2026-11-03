@@ -2,7 +2,7 @@
 
 Run the **FiQA RAG API** in a container without baking secrets or local Qdrant data into the image.
 
-**Validation strategy:** You do **not** need Docker Desktop locally. **GitHub Actions** builds the image, runs an in-runner **container smoke** (`/health`), and pushes to **GHCR** on `main` / tags (see [`.github/workflows/container.yml`](../.github/workflows/container.yml)).
+**Validation strategy:** You do **not** need Docker Desktop locally. **GitHub Actions** builds the image, runs an in-runner **container smoke** (`/health`), and pushes to **GHCR** on `main` / tags (see [`.github/workflows/container.yml`](../.github/workflows/container.yml)). **Cloud Run is not updated automatically** — see [`public_demo_operations_runbook.md`](public_demo_operations_runbook.md).
 
 ## What the image contains
 
@@ -11,7 +11,7 @@ Run the **FiQA RAG API** in a container without baking secrets or local Qdrant d
 - **Not included:** `.env`, Qdrant data, BM25 pickles
 - **Not included:** optional **`datasets`** (ingest/eval scripts only). The API imports `app.ingestion.schemas` only; `app/ingestion/__init__.py` must not import `corpus`/`normalize` (see `test_api_startup_imports.py`).
 
-See also: [`architecture.md`](architecture.md), [`cloud_run.md`](cloud_run.md) (Qdrant Cloud + **Cohere LLM** on Cloud Run).
+See also: [`architecture.md`](architecture.md), [`cloud_run.md`](cloud_run.md) (app/env/migration), [`cloud_run_deployment.md`](cloud_run_deployment.md) (first deploy), [`public_demo_operations_runbook.md`](public_demo_operations_runbook.md) (**public demo + manual Cloud Run release**).
 
 ### Production LLM vs local Compose
 
@@ -22,10 +22,10 @@ See also: [`architecture.md`](architecture.md), [`cloud_run.md`](cloud_run.md) (
 
 ## Qdrant: local path vs Qdrant Cloud
 
-- **Local / Compose:** `QDRANT_PATH=data/qdrant_local` (default); leave `QDRANT_URL` unset.
+- **Local / Compose:** `QDRANT_PATH=data/qdrant_local` (default); leave `QDRANT_URL` unset. Index on disk: `data/qdrant_local/collection/<COLLECTION_NAME>/`.
 - **Cloud Run:** set `QDRANT_URL` and `QDRANT_API_KEY`; do not rely on container disk for the vector index.
 
-Details: [`cloud_run.md`](cloud_run.md).
+**Migrate local → cloud:** re-ingest with `QDRANT_URL` set (not a folder copy). **After migration:** toggle local vs cloud by setting or unsetting `QDRANT_URL` in `.env`; see [`cloud_run.md` — Migrate local collection → Qdrant Cloud](cloud_run.md#migrate-local-collection--qdrant-cloud) and [Local vs cloud after migration](cloud_run.md#local-vs-cloud-after-migration).
 
 ## CI container smoke (primary)
 
@@ -69,9 +69,11 @@ On Linux, `OLLAMA_BASE_URL=http://host.docker.internal:11434` uses `extra_hosts:
 | Event | Behavior |
 |--------|----------|
 | Pull request | Build + container smoke; **no** GHCR push |
-| Push to `main` | Build + smoke + push `latest` and SHA tags |
+| Push to `main` | Build + smoke + push `latest` and SHA tags; **no Cloud Run deploy** |
 | Tag `v*` | Semver tags |
 | `workflow_dispatch` | Manual build, smoke, push |
+
+After a successful push to `main`, redeploy Cloud Run manually with the merge commit's GHCR SHA tag — [`public_demo_operations_runbook.md` §7](public_demo_operations_runbook.md#7-manual-release-procedure-after-a-merge-to-main).
 
 **Image:** `ghcr.io/<github-owner>/fiqa-production-rag`
 

@@ -1,6 +1,6 @@
 # Project specification
 
-**Status:** Week 8 complete (Docker, GHCR, CI); **Week 9** = cloud deployment + demo  
+**Status:** Week 9 complete (public Cloud Run demo); **Final polish** in progress — [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md)  
 **Last updated:** 2026-11-01
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -38,7 +38,7 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 | API | **FastAPI** + **Uvicorn** | `/health`, `/ready`, `POST /query` with `method`: `dense` \| `bm25` \| `hybrid`; streaming later |
 | Observability | Structured JSON logs (stdlib) | **Week 7** ✅ — no OTel/Langfuse |
 | Packaging / CI | Docker + **GitHub Actions** | **Week 8** ✅ |
-| Hosting | **Google Cloud Run** + Qdrant Cloud | **Week 9** |
+| Hosting | **Google Cloud Run** + Qdrant Cloud | **Live** — [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) (image **`4f5ddf3`**) |
 
 ## Repository layout (this repo)
 
@@ -155,7 +155,9 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 | `FIQA_CORPUS_LIMIT` | `1000` | Max documents per ingest (`0` or negative = **full** ~57k corpus) |
 | `CHUNK_SIZE` | `100` | Chunk size in words |
 | `CHUNK_OVERLAP_FRACTION` | `0.2` | Overlap fraction |
-| `QDRANT_PATH` | `data/qdrant_local` | Empty → in-memory Qdrant |
+| `QDRANT_PATH` | `data/qdrant_local` | Local persistent Qdrant dir (ignored when `QDRANT_URL` is set). Empty → in-memory Qdrant |
+| `QDRANT_URL` | unset | Qdrant Cloud cluster URL (e.g. `https://<id>.cloud.qdrant.io:6333`) |
+| `QDRANT_API_KEY` | unset | Qdrant Cloud API key when using `QDRANT_URL` |
 | `COLLECTION_NAME` | `fiqa_cs200_bge_base_en_v1_5` | Production Qdrant collection (E8) |
 | `RETRIEVAL_TOP_K` | `10` | Frozen retrieval depth for enforced API |
 | `API_ENFORCE_FROZEN_RETRIEVAL` | `true` | Reject non-dense / rerank / other `top_k` on `/query` |
@@ -166,6 +168,8 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 | Path | Produced by | In repo? |
 |------|-------------|----------|
 | `data/qdrant_local/` | `ingest.py` | No (`.gitignore`) |
+
+**Qdrant Cloud:** do not copy `data/qdrant_local/` to the cloud. Re-run `ingest.py` with `QDRANT_URL` + `QDRANT_API_KEY` set. Toggle local vs cloud by setting or unsetting `QDRANT_URL` in `.env` — [`docs/cloud_run.md`](docs/cloud_run.md#local-vs-cloud-after-migration).
 | `data/bm25_indexes/*.pkl` | `ingest.py` | No (`.gitignore`) |
 | `data/bm25_indexes/*.manifest.json` | `ingest.py` | No (same directory) |
 | `deploy/index_metadata/*.manifest.json` | Copied from local ingest after re-index | **Yes** (for Cloud Run `/ready`; no `.pkl` required when frozen dense) |
@@ -178,7 +182,7 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 Copy-Item data\bm25_indexes\fiqa_cs200_bge_base_en_v1_5.manifest.json deploy\index_metadata\
 ```
 
-See [`deploy/index_metadata/README.md`](deploy/index_metadata/README.md) and [`docs/cloud_run.md`](docs/cloud_run.md). Container default: `BM25_INDEX_DIR=deploy/index_metadata`.
+See [`deploy/index_metadata/README.md`](deploy/index_metadata/README.md), [`docs/cloud_run.md`](docs/cloud_run.md), [`docs/cloud_run_deployment.md`](docs/cloud_run_deployment.md), and [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) (manual Cloud Run release after manifest/image changes). Container default: `BM25_INDEX_DIR=deploy/index_metadata`.
 
 **`ingest.py --no-recreate`:** re-embeds and upserts only if the new run matches the saved manifest (corpus limit, chunking, embedding method/model/dimension, document/chunk counts) and Qdrant `point_count` equals `num_chunks`. Otherwise ingest exits with an error — run with `--recreate`.
 
@@ -211,8 +215,6 @@ Reproducibility comes from **ingest settings** (`FIQA_CORPUS_LIMIT`, chunking, e
 
 | Variable | Purpose |
 |----------|---------|
-| `QDRANT_URL` / `QDRANT_API_KEY` | Qdrant Cloud |
-| `LOG_LEVEL` | Structured logging (Week 7 ✅) |
 | Default `method=hybrid` via settings | Optional product default (currently client default is `dense`) |
 
 ## Week exit criteria
@@ -340,7 +342,7 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 - Copying reference repository source code
 - HTTP ingest endpoints (ingest remains CLI)
 - LangChain/LangGraph as core orchestrator
-- Docker/cloud packaging deferred until Week 8 ✅; **Week 9** deployment in progress
+- Docker/cloud packaging ✅ (Week 8); public Cloud Run demo ✅ — [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md). **GHCR publish is automated; Cloud Run deploy is manual.**
 
 ## Next implementation steps
 
@@ -350,6 +352,8 @@ Regenerating the freeze: `pip freeze` and **omit** any `-e .` or `-e git+…` li
 - [x] `.github/workflows/ci.yml` (Ruff + pytest), `.github/workflows/container.yml`
 - [x] `requirements-git.txt` pinned to commit SHA
 
-### Week 9 — deployment + demo
+### Week 9 — deployment + demo ✅
 
-**Week 9:** Qdrant Cloud, hosted API, deployment runbook, public demo.
+**Complete:** Qdrant Cloud, public Cloud Run API, Secret Manager, in-app demo limits, manual release runbook, README screenshots — [`docs/week9_sprint.md`](docs/week9_sprint.md), [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md).
+
+**Parked / not doing:** demo UI, E10 citation eval, automated Cloud Run deploy, formal load testing under traffic.

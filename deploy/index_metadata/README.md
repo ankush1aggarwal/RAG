@@ -16,4 +16,6 @@ cp data/bm25_indexes/fiqa_cs200_bge_base_en_v1_5.manifest.json deploy/index_meta
 
 Commit the updated JSON, then rebuild and redeploy the container image.
 
-Cloud Run / container default: `BM25_INDEX_DIR=deploy/index_metadata` (see `Dockerfile`, [`docs/cloud_run.md`](../../docs/cloud_run.md)).
+Cloud Run / container default: `BM25_INDEX_DIR=deploy/index_metadata` (see `Dockerfile`, [`docs/cloud_run.md`](../../docs/cloud_run.md), [`docs/public_demo_operations_runbook.md`](../../docs/public_demo_operations_runbook.md)).
+
+After migrating vectors to Qdrant Cloud, re-ingest with `QDRANT_URL` set still writes the manifest here locally; copy into this folder when **`num_chunks`** or frozen ingest settings change, then rebuild the image and run the **manual Cloud Run release** (runbook §7).
