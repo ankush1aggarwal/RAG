@@ -1,7 +1,7 @@
 # Project specification
 
 **Status:** Week 9 complete (public Cloud Run demo); **Final polish** in progress — [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md)  
-**Last updated:** 2026-11-01
+**Last updated:** 2026-11-03
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
@@ -17,7 +17,7 @@ Build a portfolio-quality, production-minded RAG system for **financial informat
 |------|-----------|--------------|
 | Inspiration | [Ashok007-cmd/production-grade-rag](https://github.com/Ashok007-cmd/production-grade-rag) | Same engineering themes; **original codebase** |
 | Corpus | Domain documents (reference-specific) | **FiQA-2018** (`BeIR/fiqa`) |
-| Vector DB | Production RAG patterns | **Qdrant** (local persistent → Qdrant Cloud later) |
+| Vector DB | Production RAG patterns | **Qdrant** (local dev + **Qdrant Cloud** on hosted demo) |
 | Code location | Monorepo / app package | **`src/`** — `src/app/`, `src/scripts/`, `src/tests/` |
 | Learning artifacts | — | **`notebooks/`** — prototypes; **not** the canonical pipeline |
 | Config / secrets | Env-based | **`.env`** at repo root (gitignored); committed **`.env.example`** template |
@@ -168,11 +168,11 @@ Use **`.env`** at the repository root (gitignored). Pydantic field names in `Set
 | Path | Produced by | In repo? |
 |------|-------------|----------|
 | `data/qdrant_local/` | `ingest.py` | No (`.gitignore`) |
-
-**Qdrant Cloud:** do not copy `data/qdrant_local/` to the cloud. Re-run `ingest.py` with `QDRANT_URL` + `QDRANT_API_KEY` set. Toggle local vs cloud by setting or unsetting `QDRANT_URL` in `.env` — [`docs/cloud_run.md`](docs/cloud_run.md#local-vs-cloud-after-migration).
 | `data/bm25_indexes/*.pkl` | `ingest.py` | No (`.gitignore`) |
 | `data/bm25_indexes/*.manifest.json` | `ingest.py` | No (same directory) |
 | `deploy/index_metadata/*.manifest.json` | Copied from local ingest after re-index | **Yes** (for Cloud Run `/ready`; no `.pkl` required when frozen dense) |
+
+**Qdrant Cloud:** do not copy `data/qdrant_local/` to the cloud. Re-run `ingest.py` with `QDRANT_URL` + `QDRANT_API_KEY` set. Toggle local vs cloud by setting or unsetting `QDRANT_URL` in `.env` — [`docs/cloud_run.md`](docs/cloud_run.md#local-vs-cloud-after-migration).
 
 **`ingest.py --recreate` (default):** deletes and rebuilds the Qdrant collection and replaces BM25 + manifest. Use after changing corpus limit, chunking, or embeddings.
 

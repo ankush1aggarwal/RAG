@@ -76,9 +76,29 @@ By the end of the project, the system should demonstrate:
 
 ---
 
-# 1. Current Project Status
+# Live demo (hosted)
 
 [![FiQA Production RAG Demo](demo/fiqa_rag_demo_preview.gif)](demo/fiqa_rag_demo_video.mp4) 
+
+| | |
+|---|---|
+| **URL** | https://fiqa-rag-api-729436472430.asia-south1.run.app |
+| **Try it** | [`/docs`](https://fiqa-rag-api-729436472430.asia-south1.run.app/docs) (Swagger) or `POST /query` — examples in [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §4 |
+| **Release** | Manual `gcloud run deploy` after GHCR push — runbook §7; current image tag **`4f5ddf3`** |
+
+OpenAPI landing page:
+
+![Live FiQA RAG API — OpenAPI docs](docs/live_fiqa_rag_api.png)
+
+Example query response (dense retrieval + Cohere answer + citations):
+
+![Live API query response](docs/live_api_query_repsonse.png)
+
+---
+
+# 1. Current Project Status
+
+Demo quotas and limitations: [`public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §3. No separate web UI — API + OpenAPI only.
 > **Public API:** https://fiqa-rag-api-729436472430.asia-south1.run.app — OpenAPI at `/docs`; ops & manual release: [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) (deployed image **`4f5ddf3`**).  
 > **CI/CD:** merge to `main` → **GHCR** only; **Cloud Run deploy stays manual** (by design).  
 > **Lessons:** [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md) · **Results:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [roadmap](docs/RAG_PROJECT_ROADMAP.md)
@@ -107,24 +127,6 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 
 **Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. **Frozen retrieval (Week 5):** dense, rerank off, **`top_k=10`**, **200w / 20%**, **`BAAI/bge-base-en-v1.5`**, collection **`fiqa_cs200_bge_base_en_v1_5`**. The **HTTP API** serves the same frozen profile when `API_ENFORCE_FROZEN_RETRIEVAL=true` (default): startup checks **settings** (encoder, collection, chunking, corpus limit, `retrieval_top_k`) and **requests** (dense only, `top_k=10`, no rerank). Eval rules: [`docs/reports/eval_protocol_reference.md`](docs/reports/eval_protocol_reference.md). Index cleanup: `python src/scripts/cleanup_local_indexes.py` (dry-run; `--execute` to delete).
 
-### Live demo (hosted)
-
-| | |
-|---|---|
-| **URL** | https://fiqa-rag-api-729436472430.asia-south1.run.app |
-| **Try it** | [`/docs`](https://fiqa-rag-api-729436472430.asia-south1.run.app/docs) (Swagger) or `POST /query` — examples in [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §4 |
-| **Release** | Manual `gcloud run deploy` after GHCR push — runbook §7; current image tag **`4f5ddf3`** |
-
-OpenAPI landing page:
-
-![Live FiQA RAG API — OpenAPI docs](docs/live_fiqa_rag_api.png)
-
-Example query response (dense retrieval + Cohere answer + citations):
-
-![Live API query response](docs/live_api_query_repsonse.png)
-
-Demo quotas and limitations: [`public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §3. No separate web UI — API + OpenAPI only.
-
 ---
 
 ### Week 0 checklist
@@ -137,8 +139,8 @@ Demo quotas and limitations: [`public_demo_operations_runbook.md`](docs/public_d
 - [x] `pyproject.toml` (package metadata + optional dependency groups)
 - [x] Python **≥ 3.11** (workspace-driven; playbook version pins are reference only)
 - [x] Architecture documented
-- [ ] GitHub remote / portfolio publish (your timeline)
-- [ ] “First commit” / branch hygiene (your timeline)
+- [x] GitHub remote / portfolio publish ([`ankush1aggarwal/RAG`](https://github.com/ankush1aggarwal/RAG))
+- [x] “First commit” / branch hygiene (ongoing PR workflow)
 
 ---
 
@@ -177,8 +179,8 @@ Question → retrieve (dense | bm25 | hybrid) → prompt builder → LLM → ans
 | Component | Location | Notes |
 |-----------|----------|--------|
 | LLM interface | `src/app/generation/llm.py` | `LLMProvider.generate(prompt, system=...)` |
-| Ollama | `OllamaLLM` | `POST /api/chat`, non-streaming; context manager + `close()` |
-| Cohere chat | `CohereLLM` | `ClientV2.chat`; same interface |
+| Ollama | `OllamaLLM` | `POST /api/chat`; `stream_generate()` for incremental SSE; context manager + `close()` |
+| Cohere chat | `CohereLLM` | `ClientV2.chat` (non-streaming); `/query/stream` sends full answer as one SSE chunk |
 | Factory | `create_llm_provider("ollama" \| "cohere", ...)` | Cohere requires `COHERE_API_KEY` |
 | Prompt builder | `src/app/generation/prompt.py` | `build_rag_prompt`; per-source `Citation reference: [doc_id:chunk_id]` in context |
 | Orchestrator | `src/app/pipeline/rag.py` | `retrieve_hits()` + `answer_query()` → `RagAnswer` (default retrieval: dense) |
@@ -336,7 +338,7 @@ python src/scripts/serve_api.py --reload
 - Liveness: `GET http://127.0.0.1:8000/health` (optional header `X-Request-ID`)
 - Readiness: `GET http://127.0.0.1:8000/ready` — see §8 and `docs/api_contract.md`
 - Interactive docs: `http://127.0.0.1:8000/docs` (includes request/response examples)
-- RAG: `POST /query` or streaming `POST /query/stream` (SSE)
+- RAG: `POST /query` or streaming `POST /query/stream` (SSE; incremental tokens with **Ollama**, typically one chunk with **Cohere** — see [`docs/api_contract.md`](docs/api_contract.md))
 - Smoke (server running): `python src/scripts/smoke_api.py` or `python src/scripts/smoke_api.py --stream`
 
 **Example query** (production frozen profile — `top_k=10`, `dense`):
@@ -862,7 +864,7 @@ Served by `src/app/api/` (`create_app()`). Local entrypoint: `python src/scripts
 | `GET` | `/health` | **Liveness** — process up; no dependency checks |
 | `GET` | `/ready` | **Readiness** for `/query` (`503` + `not_ready` if dependencies fail) |
 | `POST` | `/query` | **RAG** — `question`, optional `top_k`, `method`, `use_rerank` (frozen profile: dense, `top_k=10`, no rerank) |
-| `POST` | `/query/stream` | **RAG (SSE)** — same body as `/query`; `token` events then `done` with full JSON |
+| `POST` | `/query/stream` | **RAG (SSE)** — same body as `/query`; `token` event(s) then `done` with full JSON (see below) |
 
 See **`docs/api_contract.md`** for error codes, `X-Request-ID`, and timeouts.
 
@@ -889,6 +891,8 @@ See **`docs/api_contract.md`** for error codes, `X-Request-ID`, and timeouts.
 **`GET /ready` failure (503)** returns `ErrorResponse` with a `detail` object that adds `full_ingest_bundle_aligned`, `frozen_retrieval_enforced`, and the same boolean flags above. Manifest must match embedding model/dimension, chunk settings, and Qdrant point counts; a failed or partial ingest stays not-ready until artifacts are consistent.
 
 **`POST /query/stream`:** `Content-Type: text/event-stream`. Events: `token` (`{"delta":"..."}`), then `done` (full `QueryResponse`). Pre-stream validation errors use normal JSON status codes (e.g. `422`).
+
+**Streaming vs provider:** SSE is always used for `/query/stream`. **Ollama** can emit many `token` deltas (incremental chat stream). **Cohere** (production Cloud Run) returns the completed answer from the chat API, so the server usually emits **one** `token` with the full text before `done` — same RAG result as `POST /query`, not live token-by-token generation. Details: [`docs/api_contract.md`](docs/api_contract.md).
 
 **`POST /query` response shape (200):**
 
@@ -1136,7 +1140,7 @@ Deliverables (see [`RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) E3–E
 Sprint tracker: [`docs/week6_sprint.md`](docs/week6_sprint.md). HTTP contract: [`docs/api_contract.md`](docs/api_contract.md). Smoke: `python src/scripts/smoke_api.py [--stream]`.
 
 - [x] Frozen retrieval on `/query`, structured `ErrorResponse`, `X-Request-ID`, cooperative cancel + timeouts
-- [x] `POST /query/stream` (SSE, incremental tokens, pre-stream **422 JSON**), integration tests, OpenAPI examples
+- [x] `POST /query/stream` (SSE; **Ollama** incremental tokens; **Cohere** single-chunk fallback via `iter_llm_tokens`), pre-stream **422 JSON**, integration tests, OpenAPI examples
 - [x] **You:** live smoke + merge branch ([`week6_sprint.md`](docs/week6_sprint.md) Block 0)
 - [ ] Auth / HTTP ingest — deferred (ingest remains CLI)
 
@@ -1182,7 +1186,7 @@ The portfolio demo is **API-first** (no separate UI):
 2. Ask a financial question via `POST /query` (or Try it out in OpenAPI)
 3. See the generated answer and ten citations
 4. Inspect retrieval metadata in the JSON response
-5. Optional: `POST /query/stream` for SSE (curl or client)
+5. Optional: `POST /query/stream` for SSE — with **Cohere** (hosted demo), expect one answer chunk then `done`; **Ollama** local dev can stream incrementally
 
 Screenshots: [Live demo](#live-demo-hosted) above. Limits and release process: [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md).
 
@@ -1463,7 +1467,7 @@ The project will be considered complete when all of the following are true.
 
 - [x] FastAPI API works (`/health`, `/ready`, `/query`)
 - [x] Request validation (Pydantic) + structured `ErrorResponse` (`422`, `503`, `504`, `500`)
-- [x] Streaming works (`POST /query/stream`, SSE)
+- [x] Streaming works (`POST /query/stream`, SSE — provider-dependent chunking; Cohere on hosted demo)
 - [x] Unit + integration tests (`pytest src/tests`; **251** at last count)
 - [x] `X-Request-ID`, cooperative query cancel, `QUERY_TIMEOUT_SECONDS`
 - [x] Structured logging exists ([`docs/observability_guide.md`](docs/observability_guide.md), [`week7_sprint.md`](docs/week7_sprint.md))
