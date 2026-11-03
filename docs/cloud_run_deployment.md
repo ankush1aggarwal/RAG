@@ -65,7 +65,7 @@ The application now supports both local and remote Qdrant connections:
 Cloud Run environment variables:
 
 ```text
-QDRANT_URL=https://<your-cluster-host>:6333
+QDRANT_URL=https://<YOUR_QDRANT_CLUSTER_HOST>:6333
 QDRANT_API_KEY=<Secret Manager value>
 ```
 
@@ -155,7 +155,7 @@ gcloud services enable \
 The active Google Cloud CLI account used during deployment was:
 
 ```text
-ankush.aggarwal@iitbombay.org
+<YOUR_GCP_ACCOUNT_EMAIL>
 ```
 
 Check the active CLI identity and project with:
@@ -228,7 +228,7 @@ The deploying user needs the **Service Account User** role on the runtime servic
 ```bash
 gcloud iam service-accounts add-iam-policy-binding \
   fiqa-rag-cloud-run@fiqa-production-rag.iam.gserviceaccount.com \
-  --member="user:ankush.aggarwal@iitbombay.org" \
+  --member="user:<YOUR_GCP_ACCOUNT_EMAIL>" \
   --role="roles/iam.serviceAccountUser" \
   --project=fiqa-production-rag
 ```
@@ -283,7 +283,7 @@ The successful first deployment used:
 | Setting | Value |
 |---|---|
 | Service | `fiqa-rag-api` |
-| Image | `ghcr.io/ankush1aggarwal/fiqa-production-rag:148ead4` (first deploy; **current:** `4f5ddf3`) |
+| Image | `ghcr.io/ankush1aggarwal/fiqa-production-rag:latest` (full deploy command); prefer commit-SHA tags for routine releases (**current:** `4f5ddf3`) |
 | Region | `asia-south1` |
 | Port | `8080` |
 | CPU | `2` |
@@ -297,14 +297,16 @@ The successful first deployment used:
 | LLM provider | Cohere |
 | Vector database | Qdrant Cloud |
 
-### 5.2 Final deployment command
+### 5.2 Full deployment command
 
-Run the following from Google Cloud Shell. Replace `<your-cluster-host>` with the actual Qdrant Cloud cluster hostname; do not include angle brackets in the actual command. The Qdrant URL should use the endpoint shown in the Qdrant Cloud console.
+Run from **Google Cloud Shell** (or any environment with `gcloud` authenticated to the project). Replace **`https://<YOUR_QDRANT_CLUSTER_HOST>:6333`** with the cluster URL from the Qdrant Cloud console (no angle brackets in the real command).
+
+For **routine image updates** after the service exists, you can omit env/secrets flags if unchanged — see [`public_demo_operations_runbook.md` §7](public_demo_operations_runbook.md#7-manual-release-procedure-after-a-merge-to-main).
 
 ```bash
 gcloud run deploy fiqa-rag-api \
   --project=fiqa-production-rag \
-  --image=ghcr.io/ankush1aggarwal/fiqa-production-rag:4f5ddf3 \
+  --image=ghcr.io/ankush1aggarwal/fiqa-production-rag:latest \
   --region=asia-south1 \
   --port=8080 \
   --cpu=2 \
@@ -314,12 +316,16 @@ gcloud run deploy fiqa-rag-api \
   --max=1 \
   --timeout=300 \
   --service-account=fiqa-rag-cloud-run@fiqa-production-rag.iam.gserviceaccount.com \
-  --set-env-vars="LLM_PROVIDER=cohere,QDRANT_URL=https://<your-cluster-host>:6333,COLLECTION_NAME=fiqa_cs200_bge_base_en_v1_5,API_ENFORCE_FROZEN_RETRIEVAL=true,BM25_INDEX_DIR=deploy/index_metadata" \
+  --set-env-vars="LLM_PROVIDER=cohere,QDRANT_URL=https://<YOUR_QDRANT_CLUSTER_HOST>:6333,COLLECTION_NAME=fiqa_cs200_bge_base_en_v1_5,API_ENFORCE_FROZEN_RETRIEVAL=true,BM25_INDEX_DIR=deploy/index_metadata" \
   --set-secrets="COHERE_API_KEY=cohere-api-key:latest,QDRANT_API_KEY=qdrant-api-key:latest" \
   --no-allow-unauthenticated
 ```
 
-The actual deployed image tag and service details observed from the successful deployment are recorded below. The Qdrant URL is deliberately not reproduced here so that no infrastructure endpoint needs to be exposed in this deployment log.
+**Notes:**
+
+- **`--image`:** `:latest` matches the documented first deploy; for controlled releases prefer a **commit-SHA tag** from GHCR (e.g. `4f5ddf3`) instead of `:latest`.
+- **`--no-allow-unauthenticated`:** creates a private service; **public demo access** was enabled afterward via `allUsers` + `roles/run.invoker` ([`public_demo_operations_runbook.md` §8](public_demo_operations_runbook.md#8-check-public-invocation)).
+- **Secrets:** must exist in Secret Manager as `cohere-api-key` and `qdrant-api-key` with accessor granted to the runtime service account (§4.4).
 
 ### 5.3 Successful deployment output
 
@@ -566,4 +572,5 @@ The service is validated for this basic end-to-end test. This does not yet const
 | [`api_contract.md`](api_contract.md) | HTTP endpoints, request/response models, `/ready` fields. |
 | [`architecture.md`](architecture.md) | Dev → CI → GHCR → Cloud Run topology. |
 | [`deploy/index_metadata/README.md`](../deploy/index_metadata/README.md) | Manifest packaging and refresh after re-ingest. |
-| [`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md) | Week 9 progress. |
+| [`PROJECT_CLOSURE.md`](PROJECT_CLOSURE.md) | Portfolio closure — built from scratch, DS + engineering |
+| [`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md) | Roadmap and optional polish checklist |

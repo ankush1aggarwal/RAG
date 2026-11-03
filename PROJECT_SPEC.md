@@ -1,13 +1,15 @@
 # Project specification
 
-**Status:** Week 9 complete (public Cloud Run demo); **Final polish** in progress — [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md)  
+**Status:** **Project complete** (Weeks 0–9); optional portfolio comms remain — [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) · [`docs/PROJECT_CLOSURE.md`](docs/PROJECT_CLOSURE.md)  
 **Last updated:** 2026-11-03
 
 This document maps the **reference architecture** to **this repository’s independent implementation**. It complements [`README.md`](README.md) and [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
 ## Purpose
 
-Build a portfolio-quality, production-minded RAG system for **financial information retrieval** using **BEIR FiQA-2018**, with measurable retrieval and generation quality, a deployable **FastAPI** service, and a path to **Agentic RAG**.
+Build a portfolio-quality, production-minded RAG system for **financial information retrieval** using **BEIR FiQA-2018**, with measurable retrieval quality, a deployable **FastAPI** service, and a path to **Agentic RAG** (Phase 2 — not implemented here).
+
+**Audience:** Hiring managers and engineers evaluating **end-to-end RAG** work that requires both **applied retrieval / experimentation** (qrels, ablations, freeze decisions) and **platform engineering** (API, readiness, CI/CD, cloud ops). Proof points: [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) and [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md). Closure narrative: [`docs/PROJECT_CLOSURE.md`](docs/PROJECT_CLOSURE.md).
 
 **Rule:** The reference repo informs *what* to build and *how to think about production*; **no copying** of its implementation code ([README §19](README.md)).
 

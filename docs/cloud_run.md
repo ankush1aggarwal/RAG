@@ -171,7 +171,7 @@ The GHCR image installs **`pip install ".[api,embeddings,hosted]"`** so `LLM_PRO
 
 1. **Image:** prefer an immutable GHCR tag (`ghcr.io/<owner>/fiqa-production-rag:<git-sha>`). **Current demo:** `4f5ddf3`.
 2. **Port:** Cloud Run sets **`PORT`** (typically `8080`). The container image defaults `PORT=8080`; `serve_api.py` binds to `PORT` unless you pass `--port`. Local dev without `PORT` uses **8000**.
-3. **Secrets / env:** `QDRANT_URL`, `QDRANT_API_KEY`, **`LLM_PROVIDER=cohere`**, **`COHERE_API_KEY`**, `COLLECTION_NAME`, `API_ENFORCE_FROZEN_RETRIEVAL=true`, `BM25_INDEX_DIR=deploy/index_metadata`.
+3. **Secrets / env:** `QDRANT_URL`, `QDRANT_API_KEY`, **`LLM_PROVIDER=cohere`**, **`COHERE_API_KEY`**, `COLLECTION_NAME`, `API_ENFORCE_FROZEN_RETRIEVAL=true`, `BM25_INDEX_DIR=deploy/index_metadata`. **Full `gcloud run deploy`** with `--set-env-vars` / `--set-secrets`: [`cloud_run_deployment.md` §5.2](cloud_run_deployment.md#52-full-deployment-command) and [`public_demo_operations_runbook.md` §7](public_demo_operations_runbook.md#7-manual-release-procedure-after-a-merge-to-main).
 4. **Memory / CPU:** sized for loading baked BGE from disk (successful first deploy used **2 CPU / 4Gi** — details in deployment record).
 5. **Health checks:** liveness → `GET /health`; readiness → `GET /ready` once Qdrant + LLM are configured. Public smoke examples: [`public_demo_operations_runbook.md` §4](public_demo_operations_runbook.md#4-api-endpoints).
 

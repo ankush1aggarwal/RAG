@@ -64,5 +64,6 @@ flowchart TB
 - [`cloud_run_deployment.md`](cloud_run_deployment.md) — first-deploy IAM and validation history  
 - [`cloud_run.md`](cloud_run.md) — Qdrant migration, env vars, app/runtime prep  
 - [`week8_sprint.md`](week8_sprint.md) — container + CI checklist  
+- [`PROJECT_CLOSURE.md`](PROJECT_CLOSURE.md) — portfolio closure (DS + engineering narrative)
 - [`observability_guide.md`](observability_guide.md) — JSON logs on stderr  
 - [`api_contract.md`](api_contract.md) — HTTP API

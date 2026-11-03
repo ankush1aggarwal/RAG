@@ -1,80 +1,59 @@
 # Production-Grade RAG for Financial Information Retrieval
 
-This project is inspired by the architecture and engineering goals of modern production RAG systems, but the implementation, experiments, dataset configuration, engineering decisions, deployment, evaluation methodology, and application are developed independently.
+An **end-to-end FiQA RAG application built from scratch** in this repository—implementation, experiments, evaluation, API, containers, and public hosting are **independent** of any reference codebase (ideas from production RAG patterns only; see [`PROJECT_SPEC.md`](PROJECT_SPEC.md)).
 
-The project is designed to progress from a simple RAG baseline to engineering an end-to-end production RAG application with hybrid retrieval, reranking, evaluation, observability, CI/CD, and finally Public Deployment.
+The work combines an **applied retrieval / data-science** mindset (qrels, ablations, error analysis, frozen production choices) with **production AI engineering** (FastAPI contracts, readiness, observability, CI, Cloud Run, ops runbooks). Canonical code lives in **`src/app/`**; notebooks are exploratory.
+
+**Live demo:** [public API](#live-demo-hosted) · **Evidence:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · **Closure summary:** [`docs/PROJECT_CLOSURE.md`](docs/PROJECT_CLOSURE.md)
 
 ---
 
 ## Why This Project?
 
-The goal is not simply to build "a chatbot with a vector database."
-
-The goal is to understand and implement the complete lifecycle of a modern RAG application:
+The goal is not a chatbot wired to a vector database. It is to **design, measure, and ship** a full RAG lifecycle on **BEIR FiQA-2018**:
 
 ```text
-Document Corpus
-      ↓
-Ingestion
-      ↓
-Chunking
-      ↓
-Embeddings
-      ↓
-Vector Database
-      ↓
-Dense Retrieval ───────┐
-                       │
-BM25 / Sparse Retrieval│
-                       ↓
-                 Hybrid Fusion
-                       ↓
-                    Reranking
-                       ↓
-                 Context Builder
-                       ↓
-                    LLM
-                       ↓
-              Answer + Citations
-                       ↓
-        Evaluation + Observability
-                       ↓
-             API + Web Application
-                       ↓
-            CI/CD + Public Deployment
+Corpus → ingest → chunk → embed → Qdrant (+ BM25 for experiments)
+              ↓
+    Retrieval variants (dense / hybrid / rerank) — evaluated on qrels
+              ↓
+    Frozen production profile (Week 5): dense BGE, 200w, top-k 10
+              ↓
+    Generate + cite → FastAPI → Docker / GHCR → Cloud Run (public demo)
+              ↓
+    Logs, tests, runbooks, experiment reports
 ```
 
-The project will emphasize **experimentation and measurement**, rather than implementing components without understanding their impact.
+**Two skill sets in one repo:**
+
+| Applied IR / data science | Production engineering |
+|---------------------------|-------------------------|
+| Experiment program (E0–E9), NDCG/MRR/MAP, failure analysis | Ingest manifests, `/ready` alignment, frozen `/query` |
+| Chunking, embeddings, hybrid/rerank **in CLI & reports** | Qdrant Cloud, Secret Manager, demo rate limits |
+| Documented **why** dense beat rerank for this corpus | CI, manual release discipline, structured JSON logs |
+
+The **HTTP API** serves **one** frozen retrieval profile; hybrid, BM25, and rerank remain available for learning and reproduction via **scripts and evaluation**—not hidden, not conflated with prod.
 
 ---
 
-## Project Goals
+## What this project demonstrates
 
-By the end of the project, the system should demonstrate:
+### Applied retrieval and evaluation
 
-- A complete RAG ingestion and query pipeline
-- A vector-search implementation using **Qdrant**
-- Dense retrieval using embedding models
-- Lexical retrieval using **BM25**
-- Hybrid retrieval using **Reciprocal Rank Fusion (RRF)**
-- Optional weighted hybrid retrieval
-- Reranking using a cross-encoder and/or Cohere
-- Ground-truth retrieval evaluation
-- Generation-quality evaluation
-- Latency and cost measurement
-- FastAPI-based serving
-- Streaming responses
-- Configuration and provider abstraction
-- Logging, tracing, and observability
-- Automated tests
-- Docker-based packaging
-- GitHub Actions CI/CD
-- Public deployment
-- A simple web demo
-- Technical documentation and experiment reports
-- A clear path to extending the same system into Agentic RAG
+- Full FiQA ingest pipeline and **Qdrant** indexing (local + **Qdrant Cloud** for hosted demo)
+- **Dense**, **BM25**, **hybrid (RRF)**, weighted hybrid, and **rerankers** in CLI/eval—not all exposed on the frozen production API
+- **Qrels-driven** metrics, Week 4–5 experiment program, error analysis
+- **Frozen served profile:** `BAAI/bge-base-en-v1.5`, 200-word chunks, 20% overlap, **dense**, `top_k=10` (test NDCG@10 **0.394** — see results report)
+- **Out of scope for this portfolio:** formal **generation/citation rubric (E10)** and **load/concurrency certification (E11)** — live answers + citations on the public API instead
 
----
+### RAG platform engineering
+
+- **FastAPI:** `/health`, `/ready`, `/query`, `/query/stream` (SSE; **Cohere** on demo often one chunk, **Ollama** incremental — [`docs/api_contract.md`](docs/api_contract.md))
+- Provider abstractions (embeddings, LLM, reranker), settings + `.env`
+- **Observability:** structured JSON logs, stage timings, `X-Request-ID`, token/cost when providers expose usage
+- **Tests + CI:** Ruff, pytest, Docker smoke, **GHCR** publish; **manual** Cloud Run deploy (by design)
+- **Public deployment:** API + OpenAPI `/docs` + README screenshots (no separate web UI)
+- **Documentation:** runbooks, architecture, [`docs/PROJECT_CLOSURE.md`](docs/PROJECT_CLOSURE.md), path to **Agentic RAG** (Phase 2 — not implemented)
 
 # Live demo (hosted)
 
@@ -98,10 +77,12 @@ Example query response (dense retrieval + Cohere answer + citations):
 
 # 1. Current Project Status
 
-Demo quotas and limitations: [`public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §3. No separate web UI — API + OpenAPI only.
+> **Project status:** **Complete** (Weeks 0–9); optional portfolio comms (blog/LinkedIn) in [`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md). Summary: [`docs/PROJECT_CLOSURE.md`](docs/PROJECT_CLOSURE.md).  
 > **Public API:** https://fiqa-rag-api-729436472430.asia-south1.run.app — OpenAPI at `/docs`; ops & manual release: [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) (deployed image **`4f5ddf3`**).  
 > **CI/CD:** merge to `main` → **GHCR** only; **Cloud Run deploy stays manual** (by design).  
 > **Lessons:** [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md) · **Results:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [roadmap](docs/RAG_PROJECT_ROADMAP.md)
+
+Demo quotas and limitations: [`public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §3. No separate web UI — API + OpenAPI only.
 
 Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
 
@@ -119,7 +100,7 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 7 | Observability | **Done** | JSON logs, stage timings, `X-Request-ID`, token/cost when provider exposes usage ([`week7_sprint.md`](docs/week7_sprint.md)) |
 | 8 | Docker + CI | **Done** | GHCR image, Actions Ruff/pytest + container smoke ([`week8_sprint.md`](docs/week8_sprint.md), [`architecture.md`](docs/architecture.md)) |
 | 9 | Ops + deploy | **Done** | Public Cloud Run + Qdrant Cloud; API-only demo; manual release ([`week9_sprint.md`](docs/week9_sprint.md)) |
-| 10 | Portfolio polish | **In progress** | Blog, LinkedIn, clean-environment repro (see roadmap) |
+| 10 | Portfolio polish | **Optional** | Blog, LinkedIn, clean-environment repro (see [`PROJECT_CLOSURE.md`](docs/PROJECT_CLOSURE.md)) |
 
 **Automated tests:** **251** tests — `pytest src/tests` (unit + integration; mocked Qdrant/LLM in tests). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and settings tests fail.
 
