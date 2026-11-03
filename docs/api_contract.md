@@ -2,6 +2,8 @@
 
 Base URL (local): `http://127.0.0.1:8000`
 
+**Public demo (Cloud Run):** https://fiqa-rag-api-729436472430.asia-south1.run.app — example requests, demo quotas (413/429), and release process: [`public_demo_operations_runbook.md`](public_demo_operations_runbook.md).
+
 OpenAPI: `/docs` (FastAPI auto-generated from Pydantic models).
 
 ## Endpoints
@@ -40,7 +42,7 @@ When `API_ENFORCE_FROZEN_RETRIEVAL=true`:
 
 - **Settings** must match E8 (`production_retrieval.py`) at startup.
 - **`POST /query`:** `method=dense`, `use_rerank=false`, `top_k=10` only.
-- **`GET /ready`:** Qdrant + manifest/dense alignment + LLM; BM25 reported but not required. Manifest path: `{BM25_INDEX_DIR}/{collection}.manifest.json` (Cloud Run: copy from local ingest into `deploy/index_metadata/` after re-index — see [`cloud_run.md`](cloud_run.md)).
+- **`GET /ready`:** Qdrant + manifest/dense alignment + LLM; BM25 reported but not required. Manifest path: `{BM25_INDEX_DIR}/{collection}.manifest.json` (Cloud Run: copy from local ingest into `deploy/index_metadata/` after re-index when counts/settings change — see [`cloud_run.md`](cloud_run.md)). Qdrant Cloud migration: [`cloud_run.md#migrate-local-collection--qdrant-cloud`](cloud_run.md#migrate-local-collection--qdrant-cloud). **Hosted example:** [`public_demo_operations_runbook.md` §4–§5](public_demo_operations_runbook.md#4-api-endpoints) — `bm25_index: false` is expected for frozen dense-only.
 
 ### `GET /ready` fields
 
@@ -139,7 +141,7 @@ python src/scripts/smoke_api.py
 python src/scripts/smoke_api.py --stream   # includes SSE /query/stream
 ```
 
-Or manually:
+Or manually (local):
 
 ```bash
 # Liveness + correlation id
@@ -168,6 +170,10 @@ curl -N -X POST http://127.0.0.1:8000/query/stream \
   -H "Content-Type: application/json" \
   -d "{\"question\": \"What is APR?\"}"
 ```
+
+## Public demo smoke
+
+Hosted curls (no auth): [`public_demo_operations_runbook.md` §4](public_demo_operations_runbook.md#4-api-endpoints). Demo quotas (413 / 422 / 429 on `/query`): runbook §3 — may differ from local dev.
 
 Example **validation** body (`422`):
 

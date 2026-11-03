@@ -21,8 +21,8 @@ The intended outcome is a portfolio-quality RAG application for FiQA financial-i
 | Week 6 — Production API engineering | ✅ Complete | Frozen profile, errors, streaming, integration tests, docs |
 | Week 7 — Observability | ✅ | Structured JSON logs, stage timings, correlation ID, token/cost when available |
 | Week 8 — Container + CI | ✅ | GHCR, Actions CI + container smoke, [`architecture.md`](architecture.md) |
-| Week 9 — Deployment + public demo | ⬜ **current** | Hosted API, Qdrant Cloud, smoke tests and demo UI |
-| Final polish — Portfolio | ⬜ | Final docs, architecture image, demo evidence, blog/LinkedIn write-up |
+| Week 9 — Deployment + public demo | ✅ **Done** | Public Cloud Run + Qdrant Cloud; API-only demo ([`public_demo_operations_runbook.md`](public_demo_operations_runbook.md)); image **`4f5ddf3`** |
+| Final polish — Portfolio | 🟡 **In progress** | README demo screenshots ✅; blog/LinkedIn/repro pass still open |
 | Phase 2 — Agentic RAG | ⬜ Future project | Multi-step retrieval/tools/evidence checks built on the proven RAG baseline |
 
 ---
@@ -93,7 +93,7 @@ The project should demonstrate not only a working RAG system, but also disciplin
 | E7 | Chunk overlap sensitivity | Week 5 | High | ✅ 20% @ 200w |
 | E8 | Embedding model comparison | Week 5 | High | ✅ BGE-base |
 | E9 | **Paragraph-aware chunking** (vs E8 BGE 200w) | Week 5 | Medium | ✅ Complete (tie → keep E8) |
-| E10 | Generation + citation grounding | Week 6–7 | Core | ⬜ After retrieval freeze |
+| E10 | Generation + citation grounding | Week 6–7 | Core | ⭐ **Parked** — out of scope for portfolio demo (no citation rubric eval) |
 | E11 | E2E performance / concurrency | Week 8–9 | Core | ⬜ |
 
 ### New priority experiment — E3: duplicate-chunk crowding / candidate diversity
@@ -139,7 +139,7 @@ Run the retrieval experiment sprint in **Week 5** (dedicated experimentation wee
 5. Compare one alternative embedding model (**E8**) only if compute/time budget allows. Rebuild each index with the selected model; never compare models against mismatched embeddings/indexes.
 6. **E9** — paragraph-aware chunking on BGE (vs E8 fixed 200w). Hybrid/RRF sweeps remain optional/deferred (E1).
 7. **Freeze** the production retrieval profile; document in the experiment report. **Week 6** finishes API hardening (streaming, tests); the served pipeline is **already locked** to that profile when enforcement is on (other methods remain CLI/eval-only).
-8. **E10** after retrieval freeze; **E11** uses observability from Week 7 where possible.
+8. **E10** parked for this portfolio (retrieval frozen; production uses live Cohere + structural citations). **E11** uses observability from Week 7 where possible.
 
 For a constrained schedule, the minimum valuable additional experiments are **E3 candidate diversity (done), E6 chunk size, and E8 one alternate embedding model**. **E5** is skipped while rerank stays off; **E7** and **E9** are follow-up/stretch. Do not run a full Cartesian grid across every setting; it multiplies cost and makes the source of improvement hard to explain.
 
@@ -209,30 +209,34 @@ For a constrained schedule, the minimum valuable additional experiments are **E3
 
 **Definition of done:** met.
 
-## Week 9 — Cloud deployment + demo ⬜ **(current)**
+## Week 9 — Cloud deployment + demo ✅ **(complete)**
 
 **Goal:** Give a reviewer a repeatable way to try the system without running your laptop.
 
-1. Provision Qdrant Cloud and configure connection URL/API key through the hosting platform's secrets mechanism.
-2. Decide where the corpus/embeddings are built and how they are loaded. Make the ingestion job repeatable; do not assume ephemeral application filesystem storage preserves indexes. **After re-ingest:** copy `data/bm25_indexes/<collection>.manifest.json` to [`deploy/index_metadata/`](../deploy/index_metadata/) and rebuild the container (see [`cloud_run.md`](cloud_run.md)).
-3. Deploy the API on **Google Cloud Run** (GHCR image) and configure env/secrets, health checks, and resource limits.
-4. Make readiness checks match the deployment architecture. Use a persistent, explicitly managed index generation and avoid destructive ingest at API startup.
-5. Run smoke tests against the deployed URL: health, readiness, dense/BM25/hybrid query, reranked query (if enabled), citations and controlled failure behavior.
-6. Add a lightweight user interface or hosted API demo. Keep it simple: question input, retrieval choice, answer and source citations. Do not add UI features before the API is stable.
-7. Document cost, cold starts, model downloads, rate limits, persistence and operational limitations honestly.
+1. ✅ Qdrant Cloud + Secret Manager — [`cloud_run.md`](cloud_run.md#migrate-local-collection--qdrant-cloud).
+2. ✅ Repeatable ingest; manifest in `deploy/index_metadata/`.
+3. ✅ Cloud Run deployed (GHCR image, env/secrets) — first deploy: [`cloud_run_deployment.md`](cloud_run_deployment.md); **current image:** `4f5ddf3`.
+4. ✅ Frozen dense `/ready` on hosted service.
+5. ✅ Public hosted smoke: `/health`, `/ready`, `/query` — [`public_demo_operations_runbook.md`](public_demo_operations_runbook.md) §4–§5.
+6. ✅ **Public API** (`allUsers` invoker) with lightweight in-app request limits — runbook §3.
+7. ✅ Demo evidence: README screenshots (`docs/live_fiqa_rag_api.png`, `docs/live_api_query_repsonse.png`). Initial cost/latency notes in runbook §5 (formal load testing **parked** — portfolio demo app).
 
-**Deliverables:** deployed API URL, Qdrant Cloud setup notes, demo UI/API examples, smoke-test record and deployment runbook.  
-**Definition of done:** a person outside your laptop can run a documented query and inspect citations; service failures are diagnosable; secrets and data are not committed.
+**Out of scope (explicit):** separate demo UI (`frontend/`), **E10** citation evaluation, automated Cloud Run deploy (WIF **parked**), production-scale traffic testing.
 
-## Final polish — portfolio deliverables ⬜
+**Release process:** merge to `main` → Actions build/push **GHCR only** → **manual** `gcloud run deploy` with commit SHA tag (runbook §6–§7).
 
-1. Update README with architecture, setup, API examples, evaluation tables and links to reports.
-2. Add a clear architecture diagram: ingest → chunks/embeddings → Qdrant + BM25 → RRF → reranker → prompt/LLM → answer/citations; include evaluation/observability separately. **Engineering topology:** [`architecture.md`](architecture.md).
-3. Add a short demo GIF or screenshots only after the deployed path is reliable.
-4. Publish a technical blog that explains the engineering decisions and measured trade-offs, not just a tutorial-style list of features.
-5. Publish a LinkedIn summary that links to the blog and repo, includes one meaningful result, and makes limitations clear.
-6. Add the Agentic RAG direction to the roadmap without representing future capabilities as implemented.
-7. Do one final reproducibility pass from a clean environment and verify links, tests, CI and deployed smoke tests.
+**Deliverables:** ✅ public URL + ops runbook; ✅ API curl examples + README screenshots; ✅ manual release documented.  
+**Definition of done:** met — anonymous reviewers can call the public API and get citations; secrets not in git.
+
+## Final polish — portfolio deliverables 🟡
+
+1. 🟡 Update README with architecture, setup, API examples, evaluation tables and links to reports (live demo section + screenshots added).
+2. ✅ Engineering topology — [`architecture.md`](architecture.md) (+ [`architecture-diagram.png`](architecture-diagram.png) in repo).
+3. ✅ Public demo screenshots in README (`docs/live_fiqa_rag_api.png`, `docs/live_api_query_repsonse.png`).
+4. ⬜ Publish a technical blog that explains the engineering decisions and measured trade-offs, not just a tutorial-style list of features.
+5. ⬜ Publish a LinkedIn summary that links to the blog and repo, includes one meaningful result, and makes limitations clear.
+6. ✅ Agentic RAG direction documented under Phase 2 (below) — not implemented.
+7. ⬜ Final reproducibility pass from a clean environment (links, tests, CI, public API smoke).
 
 **Deliverables:** portfolio-ready README, architecture diagram, public demo evidence, evaluation report, blog and LinkedIn post.  
 **Definition of done:** an interviewer can understand, run or demo the project, see measured evidence and follow the main design choices without needing your verbal explanation.
@@ -260,10 +264,10 @@ Reuse the existing ingestion, Qdrant, BM25, RRF, reranker, evaluation, API and o
 
 Use this as the live checklist in commits/PR descriptions. Complete the current step before starting the next unless there is a clear dependency reason to parallelize.
 
-### Immediate next action — Week 9 deployment
-- [x] Week 8 Docker + CI + GHCR ([`week8_sprint.md`](week8_sprint.md), [`architecture.md`](architecture.md)).
-- [ ] Qdrant Cloud + hosted API on Cloud Run ([`cloud_run.md`](cloud_run.md)).
-- [ ] **E10** generation/citation eval (optional).
+### Immediate next action — Final polish
+- [x] Week 9 complete — [`week9_sprint.md`](week9_sprint.md), [`public_demo_operations_runbook.md`](public_demo_operations_runbook.md) (deployed image **`4f5ddf3`**).
+- [ ] Blog + LinkedIn write-up.
+- [ ] Clean-environment reproduction pass + public API smoke from docs.
 
 ### Week 6 (API)
 - [x] Block 0 baseline (`docs/week6_sprint.md`, `smoke_api.py`)
@@ -289,20 +293,23 @@ Use this as the live checklist in commits/PR descriptions. Complete the current 
 - [x] GitHub Actions Ruff + pytest (`.github/workflows/ci.yml`)
 - [x] Pinned `requirements-git.txt` + [`docs/architecture.md`](architecture.md)
 
-### Week 9
-- [ ] Qdrant Cloud provisioned and secured
-- [ ] Deployment configuration and persistent-index strategy
-- [ ] Hosted API smoke tests
-- [ ] Public demo experience
-- [ ] Deployment runbook and limitations/cost documented
+### Week 9 ✅
+- [x] Qdrant Cloud provisioned and secured (API key in Secret Manager)
+- [x] Deployment configuration and persistent-index strategy (Qdrant Cloud + manifest in image)
+- [x] Hosted API smoke tests ([`public_demo_operations_runbook.md`](public_demo_operations_runbook.md))
+- [x] Public demo API (`allUsers` invoker + in-app limits — runbook §3); **no separate UI** (OpenAPI `/docs` + curl)
+- [x] Deployment / release runbook; manual Cloud Run only (WIF automation **parked**)
+- [x] README demo screenshots
 
 ### Portfolio
-- [ ] Architecture diagram
-- [ ] Final evaluation report + error analysis
-- [ ] README polish and demo screenshots/GIF
+- [x] Engineering topology ([`architecture.md`](architecture.md), [`architecture-diagram.png`](architecture-diagram.png))
+- [x] Evaluation report + error analysis ([`docs/reports/rag_experiment_results.md`](reports/rag_experiment_results.md))
+- [x] Live demo screenshots in README
+- [ ] README final polish pass (ongoing)
 - [ ] Blog published
 - [ ] LinkedIn post published
 - [ ] Clean-environment reproduction pass
+- [x] Agentic RAG direction (Phase 2 — not implemented)
 
 ### Agentic RAG — only after the above is stable
 - [ ] Define an evaluation task set and non-agentic baseline

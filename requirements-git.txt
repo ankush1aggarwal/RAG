@@ -2,4 +2,4 @@
 # or you want a pinned remote checkout. Run after: pip install -r requirements.txt
 #
 # Pin to a commit on main (not a floating branch). Bump when cutting a release.
--e git+https://github.com/ankush1aggarwal/RAG.git@219cfdab757b1be946f34c5261b8767514375281#egg=fiqa-production-rag
+-e git+https://github.com/ankush1aggarwal/RAG.git@4f5ddf364f104e7f3a3b3ef93627e05c5b02f2c7#egg=fiqa-production-rag

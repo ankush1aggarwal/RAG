@@ -32,4 +32,4 @@
 
 **Definition of done:** met.
 
-**Next:** Week 9 — Qdrant Cloud + hosted API ([`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md)).
+**Next:** Final polish — blog, LinkedIn, clean-environment repro ([`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md)); Week 9 closed — [`week9_sprint.md`](week9_sprint.md).

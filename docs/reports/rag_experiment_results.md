@@ -20,7 +20,7 @@
 - **Why selected:** Test **NDCG@10 0.394** (E8) vs **0.370** Week 4 dense baseline (E1 @100w MiniLM); path **0.370 → 0.376 (E6) → 0.394 (E8)**. Method choice: dense beats BM25/hybrid (E1); fusion not worth latency (E1b); CE flat @50 (E2).
 - **Important rejected alternatives:** BM25, hybrid, weighted hybrid, dense+CE, MiniLM @200w, chunk overlap ≠20%, E3 cap policies (test tied).
 - **Incremental insight:** **Indexing hyperparams (E6/E7)** gave small, stable gains; **encoder (E8)** gave the largest test ΔNDCG — see [`eval_protocol_reference.md`](eval_protocol_reference.md) § Incremental experiment insights and **§5.1** below.
-- **Main limitations:** E9 paragraph index removed from disk after tie with E8; generation/citation eval (E10) still open.
+- **Main limitations:** E9 paragraph index removed from disk after tie with E8; **E10** generation/citation rubric eval **parked** (portfolio scope).
 
 ---
 
@@ -179,7 +179,7 @@ Detail sheets: [`experiments/README.md`](experiments/README.md). **Interpretatio
 
 ### E10 — Generation quality and citation grounding
 
-See [E10_generation_citations.md](experiments/E10_generation_citations.md). **Planned** Week 6–7 after retrieval freeze.
+See [E10_generation_citations.md](experiments/E10_generation_citations.md). **Parked** — not run for this portfolio demo; production API uses live Cohere answers with structural citations from retrieval hits.
 
 | Configuration | Answer relevance | Evidence support | Citation correctness | Unsupported claims | Latency | Cost/usage |
 |---|---:|---:|---:|---:|---|---|

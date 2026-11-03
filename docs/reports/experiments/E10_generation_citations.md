@@ -1,9 +1,11 @@
 # E10 — Generation quality and citation grounding
 
+**Status:** Parked for this repository (portfolio demo). Production uses live LLM generation with citations tied to retrieved chunks; no separate citation rubric evaluation was run.
+
 | Field | Value |
 |-------|--------|
 | **ID** | E10 |
-| **Status** | **Planned** (Week 6–7, after retrieval freeze) |
+| **Status** | **Parked** (portfolio scope — no citation rubric eval) |
 | **Primary variable** | LLM / prompt / retrieval profile paired with generation |
 | **Consolidated report** | [`rag_experiment_results.md`](../rag_experiment_results.md) §5 |
 

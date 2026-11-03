@@ -2,7 +2,7 @@
 
 This project is inspired by the architecture and engineering goals of modern production RAG systems, but the implementation, experiments, dataset configuration, engineering decisions, deployment, evaluation methodology, and application are developed independently.
 
-The project is designed to progress from a simple RAG baseline to a production-ready application with hybrid retrieval, reranking, evaluation, observability, CI/CD, and public deployment — and eventually serve as the foundation for an **Agentic RAG** system.
+The project is designed to progress from a simple RAG baseline to engineering an end-to-end production RAG application with hybrid retrieval, reranking, evaluation, observability, CI/CD, and finally Public Deployment.
 
 ---
 
@@ -78,7 +78,9 @@ By the end of the project, the system should demonstrate:
 
 # 1. Current Project Status
 
-> **Current phase: Week 9 — Deployment + public demo** (Week 8 Docker + CI + GHCR complete).  
+[![FiQA Production RAG Demo](demo/fiqa_rag_demo_preview.gif)](demo/fiqa_rag_demo_video.mp4) 
+> **Public API:** https://fiqa-rag-api-729436472430.asia-south1.run.app — OpenAPI at `/docs`; ops & manual release: [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) (deployed image **`4f5ddf3`**).  
+> **CI/CD:** merge to `main` → **GHCR** only; **Cloud Run deploy stays manual** (by design).  
 > **Lessons:** [`docs/reports/rag_retrieval_lessons.md`](docs/reports/rag_retrieval_lessons.md) · **Results:** [`rag_experiment_results.md`](docs/reports/rag_experiment_results.md) · [roadmap](docs/RAG_PROJECT_ROADMAP.md)
 
 Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/code_dev.ipynb`](notebooks/code_dev.ipynb) is used for experiments before porting patterns into `src/`. Authoritative planning docs: [`PROJECT_SPEC.md`](PROJECT_SPEC.md), [`docs/production_rag_project_playbook.pdf`](docs/production_rag_project_playbook.pdf).
@@ -96,13 +98,32 @@ Canonical implementation lives under **`src/app/`**. The notebook [`notebooks/co
 | 6 | Production API | **Done** | Frozen `/query`, errors, SSE stream, integration tests ([`week6_sprint.md`](docs/week6_sprint.md)) |
 | 7 | Observability | **Done** | JSON logs, stage timings, `X-Request-ID`, token/cost when provider exposes usage ([`week7_sprint.md`](docs/week7_sprint.md)) |
 | 8 | Docker + CI | **Done** | GHCR image, Actions Ruff/pytest + container smoke ([`week8_sprint.md`](docs/week8_sprint.md), [`architecture.md`](docs/architecture.md)) |
-| 9–10 | Ops + deploy | **Next** | Qdrant Cloud, hosted API, demo |
+| 9 | Ops + deploy | **Done** | Public Cloud Run + Qdrant Cloud; API-only demo; manual release ([`week9_sprint.md`](docs/week9_sprint.md)) |
+| 10 | Portfolio polish | **In progress** | Blog, LinkedIn, clean-environment repro (see roadmap) |
 
 **Automated tests:** **251** tests — `pytest src/tests` (unit + integration; mocked Qdrant/LLM in tests). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). Unset `FIQA_CORPUS_LIMIT` in shell if `.env` uses `0` and settings tests fail.
 
 **Experiment results:** [`docs/reports/rag_experiment_results.md`](docs/reports/rag_experiment_results.md) (full report); per-experiment [`docs/reports/experiments/`](docs/reports/experiments/README.md); catalog [`rag_experiment_program_report.md`](docs/reports/rag_experiment_program_report.md). Week 4 runbook: [`week4_retrieval_program_report.md`](docs/reports/week4_retrieval_program_report.md).
 
 **Production vs experiments:** CLI/eval scripts can run `dense`, `bm25`, `hybrid`, `weighted_hybrid`, and optional rerank. **Frozen retrieval (Week 5):** dense, rerank off, **`top_k=10`**, **200w / 20%**, **`BAAI/bge-base-en-v1.5`**, collection **`fiqa_cs200_bge_base_en_v1_5`**. The **HTTP API** serves the same frozen profile when `API_ENFORCE_FROZEN_RETRIEVAL=true` (default): startup checks **settings** (encoder, collection, chunking, corpus limit, `retrieval_top_k`) and **requests** (dense only, `top_k=10`, no rerank). Eval rules: [`docs/reports/eval_protocol_reference.md`](docs/reports/eval_protocol_reference.md). Index cleanup: `python src/scripts/cleanup_local_indexes.py` (dry-run; `--execute` to delete).
+
+### Live demo (hosted)
+
+| | |
+|---|---|
+| **URL** | https://fiqa-rag-api-729436472430.asia-south1.run.app |
+| **Try it** | [`/docs`](https://fiqa-rag-api-729436472430.asia-south1.run.app/docs) (Swagger) or `POST /query` — examples in [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §4 |
+| **Release** | Manual `gcloud run deploy` after GHCR push — runbook §7; current image tag **`4f5ddf3`** |
+
+OpenAPI landing page:
+
+![Live FiQA RAG API — OpenAPI docs](docs/live_fiqa_rag_api.png)
+
+Example query response (dense retrieval + Cohere answer + citations):
+
+![Live API query response](docs/live_api_query_repsonse.png)
+
+Demo quotas and limitations: [`public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) §3. No separate web UI — API + OpenAPI only.
 
 ---
 
@@ -291,7 +312,7 @@ python src/scripts/ingest.py --no-recreate
 Copy-Item data\bm25_indexes\fiqa_cs200_bge_base_en_v1_5.manifest.json deploy\index_metadata\
 ```
 
-Linux/macOS: `cp data/bm25_indexes/fiqa_cs200_bge_base_en_v1_5.manifest.json deploy/index_metadata/`. Details: [`deploy/index_metadata/README.md`](deploy/index_metadata/README.md), [`docs/cloud_run.md`](docs/cloud_run.md).
+Linux/macOS: `cp data/bm25_indexes/fiqa_cs200_bge_base_en_v1_5.manifest.json deploy/index_metadata/`. Details: [`deploy/index_metadata/README.md`](deploy/index_metadata/README.md), [`docs/cloud_run.md`](docs/cloud_run.md), [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md) (release after manifest change).
 
 **4. Retrieval smoke test:**
 
@@ -979,10 +1000,9 @@ RAG/
 ├── data/                     # Local Qdrant path, FiQA artifacts (gitignored as needed)
 ├── notebooks/                # code_dev.ipynb — experiments, not canonical app code
 ├── docs/reports/               ✅ week3–week4 experiment + eval reports
-├── docs/                       # Playbook PDFs, plans
+├── docs/                       # Playbook PDFs, runbooks, live demo screenshots
 ├── configs/                    ⬜ planned
-├── frontend/                   ⬜ Week 9 demo UI
-├── .github/workflows/          ✅ ci.yml + container.yml (GHCR)
+├── .github/workflows/          ✅ ci.yml + container.yml (GHCR; Cloud Run deploy manual)
 │
 ├── pyproject.toml
 ├── requirements.txt            # Full workspace freeze (incl. FastAPI, notebooks)
@@ -1144,35 +1164,27 @@ Sprint: [`docs/week8_sprint.md`](docs/week8_sprint.md). Runtime: [`docs/docker.m
 
 ---
 
-## Week 9 — Deployment + Public Demo **(current)**
+## Week 9 — Deployment + Public Demo ✅
 
-Deliverables:
+Sprint checklist: [`docs/week9_sprint.md`](docs/week9_sprint.md).
 
-- Qdrant Cloud
-- Google Cloud Run deployment ([`docs/cloud_run.md`](docs/cloud_run.md)) — **`LLM_PROVIDER=cohere`**, baked BGE embed, manifest in `deploy/index_metadata/`
-- After re-ingest: refresh [`deploy/index_metadata/`](deploy/index_metadata/) manifest (see README setup §3)
-- Environment variables/secrets
-- Production configuration
-- Public API
-- Simple web UI
-- Public demo
-- Deployment documentation
-- Screenshots/GIF/video for README
+**Runbooks:** [`docs/cloud_run.md`](docs/cloud_run.md) · first deploy [`docs/cloud_run_deployment.md`](docs/cloud_run_deployment.md) · **ops + release** [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md).
+
+All Week 9 deliverables complete (API-only demo; no `frontend/` UI). Screenshots in [§1 Live demo](#live-demo-hosted) above.
 
 ---
 
 # 11. Public Demo Goal
 
-The final demo should allow a visitor to:
+The portfolio demo is **API-first** (no separate UI):
 
-1. Open the application
-2. Ask a financial question
-3. See the generated answer
-4. See supporting sources/citations
-5. Optionally inspect retrieval metadata
-6. Experience streaming generation
+1. Open the public URL or Swagger at **`/docs`**
+2. Ask a financial question via `POST /query` (or Try it out in OpenAPI)
+3. See the generated answer and ten citations
+4. Inspect retrieval metadata in the JSON response
+5. Optional: `POST /query/stream` for SSE (curl or client)
 
-A simple UI is sufficient.
+Screenshots: [Live demo](#live-demo-hosted) above. Limits and release process: [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md).
 
 The emphasis is on demonstrating the **RAG engineering system**, not front-end design.
 
@@ -1198,10 +1210,12 @@ GitHub Actions
              ↓
         Build Docker
              ↓
-          Deploy
+   Push to GHCR (on `main`)
+             ↓
+   Manual Cloud Run deploy (see [`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md))
 ```
 
-Exact deployment mechanics may evolve based on the hosting platform.
+Exact deployment mechanics: **automated image build/publish**; **manual** `gcloud run deploy` with commit-SHA tag.
 
 ---
 
@@ -1461,19 +1475,18 @@ The project will be considered complete when all of the following are true.
 - [x] Application runs in container (`/health` smoke in CI)
 - [x] GitHub Actions CI works (Ruff + pytest + container workflow)
 - [ ] Automated evaluation works
-- [ ] Qdrant Cloud works
-- [ ] Public deployment works
-- [ ] Public demo works
+- [x] Qdrant Cloud works (production collection; Cloud Run uses `QDRANT_URL` + Secret Manager)
+- [x] Public Cloud Run deployment works ([`docs/public_demo_operations_runbook.md`](docs/public_demo_operations_runbook.md))
+- [x] Public demo API works (anonymous `POST /query`; see runbook §4)
 
 ## Portfolio
 
-- [ ] README polished
+- [x] README includes live demo URL + screenshots
 - [x] Engineering topology diagram ([`docs/architecture.md`](docs/architecture.md))
 - [x] Experiment results documented (Week 4 `docs/reports/week4_*.md`)
-- [ ] Screenshots/demo GIF added
 - [ ] Blog articles published
 - [ ] LinkedIn post published
-- [ ] Future Agentic RAG roadmap documented
+- [x] Future Agentic RAG roadmap documented ([`docs/RAG_PROJECT_ROADMAP.md`](docs/RAG_PROJECT_ROADMAP.md) Phase 2)
 
 ---
 
