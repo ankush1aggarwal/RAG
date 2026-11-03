@@ -57,7 +57,7 @@ class QueryRequest(BaseModel):
         }
     )
 
-    question: str = Field(..., min_length=1, description="User question for RAG")
+    question: str = Field(..., min_length=1, max_length=2000, description="User question for RAG (maximum 2,000 characters)")
     top_k: int = Field(
         default=FROZEN_RETRIEVAL_TOP_K,
         ge=1,

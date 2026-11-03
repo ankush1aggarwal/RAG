@@ -25,6 +25,15 @@ OpenAPI: `/docs` (FastAPI auto-generated from Pydantic models).
 
 **Before** the response is committed to `text/event-stream`, the same validation as `POST /query` applies: frozen profile, rerank availability, and `query_timeout_seconds` → **422 JSON** (not an SSE `error` under HTTP 200). Pydantic body validation is also JSON **422**.
 
+### Request protection
+
+- Maximum request body: **16 KiB** (413 `payload_too_large`).
+- Maximum question length: **2,000 characters** (422 `validation_error`).
+- `POST /query` and `POST /query/stream`: **10 requests per 60 seconds per running instance** (429 `rate_limit_exceeded`, with `Retry-After`).
+- `GET /health` and `GET /ready` are excluded from the query quota.
+
+The quota is process-local, not per-user or per-IP. It resets when the Cloud Run instance restarts. It is a lightweight demo guard, not distributed abuse protection. Keep Cloud Run maximum instances at one while using it.
+
 ### Frozen production profile (default)
 
 When `API_ENFORCE_FROZEN_RETRIEVAL=true`:
@@ -68,6 +77,8 @@ Every response includes header **`X-Request-ID`** (client may send one; otherwis
 | `422` | `invalid_request` | Business rule (e.g. BM25/hybrid without index, empty question via pipeline) |
 | `422` | `rerank_unavailable` | `use_rerank=true` but no reranker provider |
 | `503` | `not_ready` | `/ready` — dependencies missing or misaligned (`detail` = diagnostics dict) |
+| `413` | `payload_too_large` | Request body exceeds the 16 KiB limit |
+| `429` | `rate_limit_exceeded` | Query request quota exceeded |
 | `504` | `upstream_timeout` | `/query` wall-clock limit (`QUERY_TIMEOUT_SECONDS`) or LLM HTTP timeout |
 | `500` | `internal_error` | Unhandled server exception (no stack trace in response) |
 

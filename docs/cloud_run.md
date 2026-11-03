@@ -98,3 +98,39 @@ The GHCR image installs **`pip install ".[api,embeddings,hosted]"`** so `LLM_PRO
 - [`docker.md`](docker.md) — image contents and GHCR
 - [`architecture.md`](architecture.md) — laptop → Actions → GHCR → cloud
 - [`api_contract.md`](api_contract.md) — `/health`, `/ready`, `/query`
+
+
+## Lightweight request protection for public demo
+
+The API includes a process-local query quota and input bounds:
+
+- Maximum request body: 16 KiB.
+- Maximum question: 2,000 characters.
+- `POST /query` and `POST /query/stream`: 10 requests per 60 seconds per running instance; excess requests receive HTTP 429 and `Retry-After`.
+- `/health` and `/ready` are excluded from the query quota.
+
+This is a simple guard for the single-instance portfolio demo, not a distributed or per-client rate limiter. It resets on instance restart. Keep Cloud Run `--max=1` and `--concurrency=1`. Add Cloud Armor / a shared rate-limit store if the service later attracts sustained public traffic.
+
+### Enable unauthenticated invocation
+
+Deploy the request-protection image and test HTTP 413, 422 and 429 while the service is still private. Then enable public invocation:
+
+```bash
+gcloud run services add-iam-policy-binding fiqa-rag-api \
+  --region=asia-south1 \
+  --project=fiqa-production-rag \
+  --member=allUsers \
+  --role=roles/run.invoker
+```
+
+To revoke public invocation:
+
+```bash
+gcloud run services remove-iam-policy-binding fiqa-rag-api \
+  --region=asia-south1 \
+  --project=fiqa-production-rag \
+  --member=allUsers \
+  --role=roles/run.invoker
+```
+
+Do not enable `allUsers` until the protected revision is deployed and its limit tests pass.
