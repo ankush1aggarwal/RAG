@@ -8,7 +8,9 @@
 
 ## Executive summary
 
-The intended outcome is a portfolio-quality RAG application for FiQA financial-information questions that demonstrates retrieval, reranking, measurable quality, generation, API design, tests, operational reliability, deployment, and technical communication. Build this in small, reviewable increments. Keep `src/app/` canonical and notebooks experimental.
+This repository is a **research-backed, production RAG portfolio**: FiQA corpus → ingestion and retrieval variants → **measured freeze** (Week 5) → hardened API, observability, containers, and **public Cloud Run demo** (Weeks 6–9). It is built **from scratch** in `src/app/` and requires both **data-science-style evaluation** and **engineering delivery**. Notebooks stay experimental; the served API uses **one frozen dense profile** while CLI/eval retain hybrid and rerank paths.
+
+**Closure:** [`PROJECT_CLOSURE.md`](PROJECT_CLOSURE.md)
 
 | Phase | Status | Goal |
 |---|---|---|
@@ -22,7 +24,7 @@ The intended outcome is a portfolio-quality RAG application for FiQA financial-i
 | Week 7 — Observability | ✅ | Structured JSON logs, stage timings, correlation ID, token/cost when available |
 | Week 8 — Container + CI | ✅ | GHCR, Actions CI + container smoke, [`architecture.md`](architecture.md) |
 | Week 9 — Deployment + public demo | ✅ **Done** | Public Cloud Run + Qdrant Cloud; API-only demo ([`public_demo_operations_runbook.md`](public_demo_operations_runbook.md)); image **`4f5ddf3`** |
-| Final polish — Portfolio | 🟡 **In progress** | README demo screenshots ✅; blog/LinkedIn/repro pass still open |
+| Final polish — Portfolio | 🟡 **Optional** | README positioning + demo media ✅; blog/LinkedIn/repro pass if desired |
 | Phase 2 — Agentic RAG | ⬜ Future project | Multi-step retrieval/tools/evidence checks built on the proven RAG baseline |
 
 ---

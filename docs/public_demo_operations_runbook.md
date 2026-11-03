@@ -157,6 +157,32 @@ Cloud Run does not continuously watch the mutable GHCR `latest` tag. A new image
 
 ## 7. Manual release procedure after a merge to `main`
 
+### Initial deploy or env/secret change (full command)
+
+Use when creating the service or changing non-image settings. Replace **`https://<YOUR_QDRANT_CLUSTER_HOST>:6333`** with your Qdrant Cloud URL.
+
+```bash
+gcloud run deploy fiqa-rag-api \
+  --project=fiqa-production-rag \
+  --image=ghcr.io/ankush1aggarwal/fiqa-production-rag:latest \
+  --region=asia-south1 \
+  --port=8080 \
+  --cpu=2 \
+  --memory=4Gi \
+  --concurrency=1 \
+  --min=0 \
+  --max=1 \
+  --timeout=300 \
+  --service-account=fiqa-rag-cloud-run@fiqa-production-rag.iam.gserviceaccount.com \
+  --set-env-vars="LLM_PROVIDER=cohere,QDRANT_URL=https://<YOUR_QDRANT_CLUSTER_HOST>:6333,COLLECTION_NAME=fiqa_cs200_bge_base_en_v1_5,API_ENFORCE_FROZEN_RETRIEVAL=true,BM25_INDEX_DIR=deploy/index_metadata" \
+  --set-secrets="COHERE_API_KEY=cohere-api-key:latest,QDRANT_API_KEY=qdrant-api-key:latest" \
+  --no-allow-unauthenticated
+```
+
+After deploy, grant public invoke if needed (§8). Historical first deploy used `--no-allow-unauthenticated`; the demo is public via IAM `allUsers` + `roles/run.invoker`.
+
+For **image-only** releases on an existing service, follow the steps below (prefer a **commit-SHA** image tag over `:latest`).
+
 ### Step 1 — Wait for GitHub Actions
 
 Open the repository's Actions tab and confirm that both **CI** and **Container** workflows for the merge commit have succeeded.
@@ -181,9 +207,9 @@ Confirm that the corresponding image tag exists in the GHCR package before deplo
 ghcr.io/ankush1aggarwal/fiqa-production-rag:<IMAGE_TAG>
 ```
 
-### Step 3 — Deploy the new image to Cloud Run
+### Step 3 — Deploy the new image to Cloud Run (routine release)
 
-Run from Google Cloud Shell. This updates the container image while retaining the existing service-level environment and secret configuration:
+Run from Google Cloud Shell. This updates the **container image** while retaining existing service-level environment variables and secrets (no `--set-env-vars` / `--set-secrets` unless you intend to change them):
 
 ```bash
 IMAGE_TAG="<7-character-merge-commit-sha>"
@@ -192,6 +218,7 @@ gcloud run deploy fiqa-rag-api \
   --project=fiqa-production-rag \
   --region=asia-south1 \
   --image="ghcr.io/ankush1aggarwal/fiqa-production-rag:${IMAGE_TAG}" \
+  --port=8080 \
   --cpu=2 \
   --memory=4Gi \
   --concurrency=1 \
@@ -201,7 +228,9 @@ gcloud run deploy fiqa-rag-api \
   --service-account=fiqa-rag-cloud-run@fiqa-production-rag.iam.gserviceaccount.com
 ```
 
-Do not add `--no-allow-unauthenticated` or `--allow-unauthenticated` casually during routine image releases. Public invocation is configured separately through the Cloud Run service IAM policy; verify that policy remains as intended after deployment.
+Do not add `--no-allow-unauthenticated` or `--allow-unauthenticated` casually during routine image releases. Public invocation is configured separately through the Cloud Run service IAM policy (§8); verify that policy after deploy.
+
+**Full command** (initial service + env + secrets): see [§7 — Initial deploy](#initial-deploy-or-envsecret-change-full-command) above or [`cloud_run_deployment.md` §5.2](../cloud_run_deployment.md#52-full-deployment-command).
 
 ### Step 4 — Verify the new revision
 
@@ -300,4 +329,5 @@ A future enhancement could add a dedicated GitHub Actions deployment workflow us
 | [`architecture.md`](architecture.md) | Dev → CI → GHCR → manual Cloud Run |
 | [`api_contract.md`](api_contract.md) | HTTP contract and error shapes |
 | [`week9_sprint.md`](week9_sprint.md) | Week 9 closure checklist (complete) |
-| [`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md) | Final polish checklist |
+| [`PROJECT_CLOSURE.md`](PROJECT_CLOSURE.md) | Portfolio closure — DS + engineering narrative |
+| [`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md) | Optional final polish checklist |

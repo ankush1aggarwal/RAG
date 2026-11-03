@@ -27,6 +27,5 @@
 - [`cloud_run.md`](cloud_run.md) — app/env, Qdrant migration
 - [`cloud_run_deployment.md`](cloud_run_deployment.md) — first GCP deploy history
 - [`public_demo_operations_runbook.md`](public_demo_operations_runbook.md) — current ops
-- [`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md) — Final polish checklist
-
-**Next:** Final polish (blog, LinkedIn, clean-environment repro) per roadmap.
+- [`RAG_PROJECT_ROADMAP.md`](RAG_PROJECT_ROADMAP.md) — Final polish checklist (optional)
+- [`PROJECT_CLOSURE.md`](PROJECT_CLOSURE.md) — Portfolio closure summary

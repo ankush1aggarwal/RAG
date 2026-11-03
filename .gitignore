@@ -19,3 +19,11 @@ htmlcov/
 dist/
 build/
 .jupyter/
+
+.env.*
+
+# Credentials and private keys
+*.pem
+*.key
+credentials*.json
+service-account*.json
