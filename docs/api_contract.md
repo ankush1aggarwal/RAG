@@ -13,7 +13,7 @@ OpenAPI: `/docs` (FastAPI auto-generated from Pydantic models).
 | `GET` | `/health` | `200` | Liveness (no dependency checks) |
 | `GET` | `/ready` | `200` / `503` | Readiness for `/query` |
 | `POST` | `/query` | `200` | RAG: retrieve + generate + citations |
-| `POST` | `/query/stream` | `200` (`text/event-stream`) | Same RAG path; SSE token stream + final payload |
+| `POST` | `/query/stream` | `200` (`text/event-stream`) | Same RAG path over **SSE** (see streaming behavior below) |
 
 ## Success bodies
 
@@ -24,6 +24,17 @@ OpenAPI: `/docs` (FastAPI auto-generated from Pydantic models).
   - `event: token` — `{"delta": "<text chunk>"}` (one or more)
   - `event: done` — full `QueryResponse` JSON (includes assembled `answer`, `citations`, `retrieval`)
   - `event: error` — same shape as `ErrorResponse` when failure occurs **after** the stream has started (e.g. timeout, pipeline error)
+
+### `POST /query/stream` — SSE vs token streaming
+
+The endpoint always uses **SSE** (`text/event-stream`). **How** answer text arrives in `token` events depends on **`LLM_PROVIDER`**:
+
+| Provider | `token` events | Notes |
+|----------|----------------|--------|
+| **`ollama`** | Multiple deltas | `OllamaLLM.stream_generate()` reads Ollama’s streaming chat API incrementally. |
+| **`cohere`** (hosted demo default) | Typically **one** delta | `CohereLLM` implements `generate()` only; `iter_llm_tokens()` falls back to a single chunk after the full chat response returns. Same final answer as `POST /query`; not token-by-token from Cohere. |
+
+Clients should treat SSE as the transport and handle both multi-chunk and single-chunk `token` sequences. The **`done`** event always carries the full structured response (answer, citations, retrieval).
 
 **Before** the response is committed to `text/event-stream`, the same validation as `POST /query` applies: frozen profile, rerank availability, and `query_timeout_seconds` → **422 JSON** (not an SSE `error` under HTTP 200). Pydantic body validation is also JSON **422**.
 

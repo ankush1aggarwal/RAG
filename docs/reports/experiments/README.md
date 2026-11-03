@@ -16,7 +16,7 @@ Each file follows [`EXPERIMENT_SHEET_TEMPLATE.md`](EXPERIMENT_SHEET_TEMPLATE.md)
 | **E8** | [E8_embedding_model.md](E8_embedding_model.md) | Complete | BGE-base wins |
 | **E9** | [E9_paragraph_chunking.md](E9_paragraph_chunking.md) | Complete | Tied E8 — reject paragraph |
 | **E10** | [E10_generation_citations.md](E10_generation_citations.md) | **Parked** | Out of scope for portfolio demo |
-| **E11** | — | Planned | E2E performance / concurrency (Week 8–9); sheet TBD |
+| **E11** | — | **Parked** | E2E load/concurrency benchmark out of scope for portfolio demo |
 
 **Week 5 order:** E3 → **E6–E8** (E7 after E6); optional **E9**. **E5** skipped (see E2 + E3).
 

@@ -94,7 +94,7 @@ The project should demonstrate not only a working RAG system, but also disciplin
 | E8 | Embedding model comparison | Week 5 | High | ✅ BGE-base |
 | E9 | **Paragraph-aware chunking** (vs E8 BGE 200w) | Week 5 | Medium | ✅ Complete (tie → keep E8) |
 | E10 | Generation + citation grounding | Week 6–7 | Core | ⭐ **Parked** — out of scope for portfolio demo (no citation rubric eval) |
-| E11 | E2E performance / concurrency | Week 8–9 | Core | ⬜ |
+| E11 | E2E performance / concurrency | Week 8–9 | Core | ⭐ **Parked** — portfolio demo; informal baseline in [`public_demo_operations_runbook.md`](public_demo_operations_runbook.md) §5 only |
 
 ### New priority experiment — E3: duplicate-chunk crowding / candidate diversity
 
@@ -139,7 +139,7 @@ Run the retrieval experiment sprint in **Week 5** (dedicated experimentation wee
 5. Compare one alternative embedding model (**E8**) only if compute/time budget allows. Rebuild each index with the selected model; never compare models against mismatched embeddings/indexes.
 6. **E9** — paragraph-aware chunking on BGE (vs E8 fixed 200w). Hybrid/RRF sweeps remain optional/deferred (E1).
 7. **Freeze** the production retrieval profile; document in the experiment report. **Week 6** finishes API hardening (streaming, tests); the served pipeline is **already locked** to that profile when enforcement is on (other methods remain CLI/eval-only).
-8. **E10** parked for this portfolio (retrieval frozen; production uses live Cohere + structural citations). **E11** uses observability from Week 7 where possible.
+8. **E10** and **E11** parked for this portfolio (no citation rubric eval; no formal load/concurrency benchmark). Week 7 observability covers production logging when you extend the system later.
 
 For a constrained schedule, the minimum valuable additional experiments are **E3 candidate diversity (done), E6 chunk size, and E8 one alternate embedding model**. **E5** is skipped while rerank stays off; **E7** and **E9** are follow-up/stretch. Do not run a full Cartesian grid across every setting; it multiplies cost and makes the source of improvement hard to explain.
 

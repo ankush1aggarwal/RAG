@@ -52,7 +52,7 @@ Implementation note: **Week 6** **enforces** this profile on `/query` and at sta
 | **E8** | Embedding model comparison | Week 5 | ✅ Done | [`experiments/E8_embedding_model.md`](experiments/E8_embedding_model.md) |
 | **E9** | Paragraph-aware chunking (BGE) | Week 5 | ✅ Done | Tied E8 — reject paragraph |
 | **E10** | Generation + citation grounding eval | Week 6–7 | ⭐ Parked | [`experiments/E10_generation_citations.md`](experiments/E10_generation_citations.md) |
-| **E11** | E2E performance / concurrency | Week 8–9 | ⬜ Planned | Deployment target |
+| **E11** | E2E performance / concurrency | Week 8–9 | ⭐ Parked | Informal Cloud Run notes in public demo runbook §5 |
 
 **Week 4 numbered experiments (subset of E1/E2):** see [`week4_experiment_plan.md`](week4_experiment_plan.md) and [`week4_retrieval_program_report.md`](week4_retrieval_program_report.md).
 
